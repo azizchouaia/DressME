@@ -1,0 +1,37 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Runtime storage (keep folder structure only)
+storage/**
+!storage/
+!storage/*/
+!storage/**/.gitkeep
+
+# Blender
+blender/exports/*
+!blender/exports/.gitkeep
+*.blend1
+
+# AI weights
+ai/models/**
+!ai/models/.gitkeep
+
+# OS / editors
+.DS_Store
+.idea/
+*.log
