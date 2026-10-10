@@ -1,0 +1,3 @@
+embedding_model: BAAI/bge-m3
+top_k: 10
+knowledge_base: ml/data/shops/shops.json

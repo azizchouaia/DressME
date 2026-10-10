@@ -1,0 +1,32 @@
+name: dressme
+description: AI digital wardrobe
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+  dio: ^5.5.0
+  camera: ^0.11.0
+  image_picker: ^1.1.2
+  model_viewer_plus: ^1.8.0
+  cached_network_image: ^3.3.1
+  flutter_card_swiper: ^7.0.1
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  json_serializable: ^6.8.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

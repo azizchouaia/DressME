@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" },
+  "[dart]": { "editor.defaultFormatter": "Dart-Code.dart-code" },
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["backend"]
+}

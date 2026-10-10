@@ -1,0 +1,27 @@
+# Replace @member-X with GitHub usernames.
+*                              @azizchouaia
+/backend/shared/               @azizchouaia
+/backend/api/                  @azizchouaia
+/backend/orchestrator/         @azizchouaia
+/infra/                        @azizchouaia
+/.github/                      @azizchouaia
+
+/backend/agents/vision/        @member-1
+/mobile/lib/features/wardrobe/ @member-1
+
+/backend/agents/stylist/       @member-2
+/mobile/lib/features/outfit_of_day/ @member-2
+/mobile/lib/features/builder/  @member-2
+
+/backend/agents/profile/       @member-3
+/mobile/lib/features/onboarding/ @member-3
+/mobile/lib/features/profile/  @member-3
+
+/backend/agents/smartbuy/      @member-4
+/backend/agents/localshop/     @member-4
+/mobile/lib/features/smart_buy/ @member-4
+
+/backend/agents/tryon/         @member-5
+/mobile/lib/features/try_on/   @member-5
+
+/mobile/lib/features/chat/     @azizchouaia

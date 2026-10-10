@@ -1,0 +1,4 @@
+# Extra dependencies for the localshop agent only
+llama-index
+rank-bm25
+sentence-transformers

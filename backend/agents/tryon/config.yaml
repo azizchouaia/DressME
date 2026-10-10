@@ -1,0 +1,3 @@
+body_model: smplx
+templates_dir: ml/models/garment_templates
+fallback: idm-vton
