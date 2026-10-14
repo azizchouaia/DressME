@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M2 Recommendation Lab</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e4ddd2;
+    --accent: #8a5a2b; --accent-soft: #f1e4d4; --good: #3f7d4e; --warn: #b5532f; --chip: #efe9df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --panel: #201e1b; --ink: #f0ebe3; --muted: #a39d93; --line: #35312b;
+      --accent: #d9a46a; --accent-soft: #3a2d20; --good: #7cc08b; --warn: #e48a66; --chip: #2b2824;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+  header .sub { color: var(--muted); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .badge.mock { background: #f6d9cf; color: var(--warn); }
+  main { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 62px); }
+  aside { border-right: 1px solid var(--line); padding: 18px; background: var(--panel); }
+  aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 18px 0 8px; }
+  aside h3:first-child { margin-top: 0; }
+  label { display: block; color: var(--muted); font-size: 12px; margin: 8px 0 4px; }
+  input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+  input[type=checkbox] { width: auto; accent-color: var(--accent); }
+  input[type=range] { padding: 0; border: 0; background: none; accent-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--chip); color: var(--ink); padding: 5px 11px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 13px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .weather { margin-top: 10px; padding: 10px; border-radius: 10px; background: var(--accent-soft); font-size: 13px; }
+  button.primary { width: 100%; margin-top: 16px; padding: 10px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 6px 10px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 12px; }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  section.content { padding: 18px 24px; overflow: hidden; }
+  nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 18px; flex-wrap: wrap; }
+  nav.tabs button { border: 0; background: none; padding: 9px 14px; cursor: pointer; color: var(--muted); font: inherit; border-bottom: 2px solid transparent; }
+  nav.tabs button.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .card h4 { margin: 0 0 2px; display: flex; justify-content: space-between; align-items: center; }
+  .score { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .pieces { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+  .piece { position: relative; cursor: pointer; min-width: 0; }
+  .piece img, .thumb img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; background: var(--chip); display: block; }
+  .piece .lbl, .thumb .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .piece .slot { position: absolute; top: 5px; left: 5px; font-size: 10px; background: rgba(0,0,0,.6); color: #fff; padding: 1px 6px; border-radius: 6px; }
+  .piece .gem { position: absolute; bottom: 24px; left: 5px; font-size: 10px; background: var(--good); color: #fff; padding: 1px 6px; border-radius: 6px; }
+  .piece:hover img { outline: 2px solid var(--accent); }
+  .bars { display: grid; grid-template-columns: 96px 1fr 38px; gap: 4px 8px; font-size: 12px; align-items: center; margin-top: 6px; }
+  .bar { height: 7px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .bar.neg i { background: var(--warn); }
+  .bar.pos i { background: var(--good); }
+  .why { margin: 10px 0 0; padding-left: 18px; font-size: 13px; }
+  .why li { margin: 2px 0; }
+  .actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .swaps { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .swaps .opts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .thumb { cursor: pointer; position: relative; min-width: 0; }
+  .thumb.pinned img { outline: 3px solid var(--accent); }
+  .thumb.off img { opacity: .35; filter: grayscale(1); }
+  .thumb .tag { position: absolute; top: 5px; left: 5px; font-size: 10px; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 6px; }
+  .wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); grid-auto-rows: min-content; gap: 12px; }
+  .mini { display: grid; grid-template-columns: 52px 1fr; gap: 2px 6px; font-size: 10px; color: var(--muted); margin-top: 4px; align-items: center; }
+  .mini .bar { height: 5px; }
+  .muted { color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  table { border-collapse: collapse; width: 100%; max-width: 720px; }
+  td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .pipeline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 20px; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+  .step b { display: block; font-size: 12px; color: var(--accent); }
+  .arrow { color: var(--muted); }
+  .spinner { color: var(--muted); padding: 30px 0; }
+  .err { color: var(--warn); padding: 12px 0; white-space: pre-wrap; }
+  @media (max-width: 820px) {
+    main { grid-template-columns: 1fr; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    section.content { padding: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>DressMe · M2 Recommendation engine</h1>
+  <span class="sub">Lab page: try the real pipeline on a demo wardrobe</span>
+  <span id="mode" class="badge">…</span>
+</header>
+<main>
+  <aside>
+    <h3>Wardrobe</h3>
+    <select id="user"></select>
+    <h3>Context</h3>
+    <label>City</label>
+    <input id="city" value="Tunis">
+    <label>Day</label>
+    <div class="chips" id="day">
+      <button class="chip on" data-v="0">Today</button>
+      <button class="chip" data-v="1">Tomorrow</button>
+    </div>
+    <label class="row" style="margin-top:12px"><input type="checkbox" id="override"> Override the weather</label>
+    <div id="wbox" style="display:none">
+      <label>Temperature: <b id="tval">14</b>°C</label>
+      <input type="range" id="temp" min="-2" max="40" value="14">
+      <label>Condition</label>
+      <select id="cond"><option>clear</option><option>cloudy</option><option>rain</option><option>drizzle</option><option>snow</option></select>
+    </div>
+    <div class="weather" id="wnow">Weather: …</div>
+    <label>Occasion</label>
+    <div class="chips" id="occasion">
+      <button class="chip" data-v="work">Work</button>
+      <button class="chip on" data-v="casual">Casual</button>
+      <button class="chip" data-v="event">Event</button>
+    </div>
+    <label>Mood</label>
+    <div class="chips" id="mood">
+      <button class="chip on" data-v="">Any</button>
+      <button class="chip" data-v="comfy">Comfy</button>
+      <button class="chip" data-v="bold">Bold</button>
+      <button class="chip" data-v="classy">Classy</button>
+    </div>
+    <h3>Options</h3>
+    <label>Rotation window: <b id="rotv">7</b> days</label>
+    <input type="range" id="rot" min="0" max="21" value="7">
+    <label>Forgotten after: <b id="forv">60</b> days</label>
+    <input type="range" id="for" min="0" max="120" step="10" value="60">
+    <button class="primary" id="go">Get outfits</button>
+    <p class="muted" style="font-size:12px;margin-top:12px">Pieces you switch off in the Wardrobe tab are treated as "in the laundry" (M3 status) and excluded.</p>
+  </aside>
+  <section class="content">
+    <nav class="tabs">
+      <button class="on" data-tab="foryou">For you</button>
+      <button data-tab="builder">Builder · Complete with AI</button>
+      <button data-tab="wardrobe">Wardrobe</button>
+      <button data-tab="model">How it works</button>
+    </nav>
+    <div id="tab-foryou"></div>
+    <div id="tab-builder" style="display:none"></div>
+    <div id="tab-wardrobe" style="display:none"></div>
+    <div id="tab-model" style="display:none"></div>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = { user: 'demo_f', wardrobe: [], byId: {}, off: new Set(), pinned: [], dayOffset: 0, today: null };
+const LABELS = { compatibility: 'Compatibility', weather_fit: 'Weather', occasion_fit: 'Occasion', mood_fit: 'Mood',
+  style_match: 'Taste (M5)', novelty: 'Novelty', rotation_penalty: 'Rotation −', forgotten_bonus: 'Forgotten +' };
+
+function chips(id) {
+  $(id).addEventListener('click', e => {
+    if (!e.target.dataset || e.target.dataset.v === undefined) return;
+    $(id).querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === e.target));
+    if (id === '#day') { S.dayOffset = +e.target.dataset.v; refreshWeather(); }
+  });
+}
+const chipVal = id => $(id + ' .chip.on').dataset.v;
+['#day', '#occasion', '#mood'].forEach(chips);
+$('#temp').oninput = () => $('#tval').textContent = $('#temp').value;
+$('#rot').oninput = () => $('#rotv').textContent = $('#rot').value;
+$('#for').oninput = () => $('#forv').textContent = $('#for').value;
+$('#override').onchange = () => { $('#wbox').style.display = $('#override').checked ? '' : 'none'; };
+$('#city').onchange = refreshWeather;
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['foryou', 'builder', 'wardrobe', 'model'].forEach(t => $('#tab-' + t).style.display = t === b.dataset.tab ? '' : 'none');
+});
+
+function isoDay(offset) { const d = new Date(); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }
+
+function payload(extra = {}) {
+  const ctx = { occasion: chipVal('#occasion'), city: $('#city').value, date: isoDay(S.dayOffset) };
+  const mood = chipVal('#mood'); if (mood) ctx.mood = mood;
+  if ($('#override').checked) ctx.weather = { temp_c: +$('#temp').value, condition: $('#cond').value };
+  return { user_id: S.user, payload: { context: ctx,
+    options: { n: 3, rotation_window_days: +$('#rot').value, forgotten_after_days: +$('#for').value, exclude_item_ids: [...S.off] },
+    ...extra } };
+}
+
+async function api(path, body) {
+  const r = await fetch('/m02/' + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+  if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+  const j = await r.json();
+  if ('mocked' in j) { $('#mode').textContent = j.mocked ? 'MOCK DATA (set M02_USE_MOCK=false)' : 'real models'; $('#mode').classList.toggle('mock', j.mocked); }
+  return j;
+}
+
+async function refreshWeather() {
+  try {
+    const j = await api('weather?city=' + encodeURIComponent($('#city').value) + '&date=' + isoDay(S.dayOffset));
+    const w = j.result;
+    $('#wnow').innerHTML = `${esc(w.city)} · ${isoDay(S.dayOffset)}: <b>${w.temp_c}°C, ${esc(w.condition)}</b> <span class="muted">(${esc(w.source)})</span>`;
+  } catch (e) { $('#wnow').textContent = 'Weather unavailable'; }
+}
+
+function img(it) { return it && it.image ? `<img src="${esc(it.image)}" alt="${esc(it.name)}" loading="lazy">` : `<img alt="">`; }
+
+function bars(b) {
+  return '<div class="bars">' + Object.keys(LABELS).map(k => {
+    const v = b[k] ?? 0, cls = k === 'rotation_penalty' ? 'neg' : k === 'forgotten_bonus' ? 'pos' : '';
+    const w = k === 'rotation_penalty' ? v / 0.25 : k === 'forgotten_bonus' ? v / 0.04 : v;
+    return `<span class="muted">${LABELS[k]}</span><span class="bar ${cls}"><i style="width:${Math.round(w * 100)}%"></i></span><span>${v.toFixed(2)}</span>`;
+  }).join('') + '</div>';
+}
+
+function card(o, items, i, opts = {}) {
+  const order = ['outerwear', 'top', 'dress', 'bottom', 'shoes', 'accessory'];
+  const ids = [...o.items].sort((a, b) => order.indexOf(items[a].category) - order.indexOf(items[b].category));
+  return `<div class="card" data-oid="${o.outfit_id}">
+    <h4><span>${esc(opts.title || 'Outfit ' + (i + 1))}</span><span class="score">${(o.score * 100).toFixed(0)}</span></h4>
+    <div class="muted" style="font-size:12px">${esc(o.context.weather.temp_c)}°C · ${esc(o.context.weather.condition)} · ${esc(o.context.occasion)}</div>
+    <div class="pieces">${ids.map(id => `<div class="piece" data-swap="${id}" title="Click to swap this piece">${img(items[id])}
+      <span class="slot">${esc(items[id].category)}</span>${o.forgotten_item_id === id ? '<span class="gem">forgotten gem</span>' : ''}
+      <div class="lbl">${esc(items[id].name)}</div></div>`).join('')}</div>
+    ${bars(o.score_breakdown)}
+    <ul class="why">${o.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+    ${opts.noActions ? '' : `<div class="actions"><button class="ghost" data-act="remix">Remix this</button>
+      <button class="ghost" data-act="builder">Open in builder</button><span class="muted" style="font-size:12px;align-self:center">Tip: click a piece to swap it</span></div>`}
+    <div class="swaps" style="display:none"></div>
+  </div>`;
+}
+
+function wire(container, outfits, items) {
+  container.querySelectorAll('.card').forEach(el => {
+    const o = outfits.find(x => x.outfit_id === el.dataset.oid); if (!o) return;
+    el.querySelectorAll('.piece').forEach(p => p.onclick = () => doSwap(el, o, items[p.dataset.swap]));
+    const rb = el.querySelector('[data-act=remix]'); if (rb) rb.onclick = () => doRemix(o);
+    const bb = el.querySelector('[data-act=builder]'); if (bb) bb.onclick = () => {
+      S.pinned = o.items.slice(0, 1); renderBuilder(); document.querySelector('[data-tab=builder]').click(); };
+  });
+}
+
+async function run() {
+  const box = $('#tab-foryou');
+  box.innerHTML = '<div class="spinner">Generating outfits: weather → filters → beam search (CIR) → OutfitTransformer-CP → ranking…</div>';
+  document.querySelector('[data-tab=foryou]').click();
+  try {
+    const t = performance.now();
+    const j = await api('recommend', payload());
+    const r = j.result;
+    box.innerHTML = `<p class="note">${r.outfits.length} outfits in ${Math.round(performance.now() - t)} ms · weather ${r.context.weather.temp_c}°C ${esc(r.context.weather.condition)} (${esc(r.weather_source)}).
+      The score is a weighted sum of the bars below, minus the rotation penalty, plus the forgotten-piece bonus.</p>
+      <div class="grid">${r.outfits.map((o, i) => card(o, r.items, i, { title: i === 0 ? 'Outfit of the day' : 'Option ' + (i + 1) })).join('')}</div><div id="remixbox"></div>`;
+    wire(box, r.outfits, r.items);
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+async function doRemix(o) {
+  const box = $('#remixbox');
+  box.innerHTML = '<div class="spinner">Remixing: boosting pieces never worn together…</div>';
+  try {
+    const j = await api('remix', payload({ base_item_ids: o.items }));
+    const r = j.result;
+    box.innerHTML = `<h3 style="margin-top:24px">Remix</h3><p class="note">Shares at most one piece with the original; novelty weighs 0.30 instead of 0.08.</p>
+      <div class="grid">${r.outfits.map((x, i) => card(x, r.items, i, { title: 'Remix ' + (i + 1) })).join('')}</div>`;
+    wire(box, r.outfits, r.items);
+    box.scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+async function doSwap(el, o, item) {
+  const box = el.querySelector('.swaps');
+  box.style.display = ''; box.innerHTML = `<div class="muted">Finding a better ${esc(item.category)}…</div>`;
+  try {
+    const j = await api('swap', payload({ item_ids: o.items, slot: item.category === 'dress' ? 'dress' : item.category, options: { ...payload().payload.options, n: 5 } }));
+    const r = j.result;
+    box.innerHTML = `<div class="muted" style="font-size:12px;margin-bottom:6px">Swap the ${esc(item.name)}: best replacements, rest of the outfit unchanged (score)</div>
+      <div class="opts">${r.outfits.map(x => { const nid = x.items.find(id => !o.items.includes(id)); const it = r.items[nid];
+        return `<div class="thumb" data-new="${x.outfit_id}">${img(it)}<div class="lbl">${esc(it.name)} · ${(x.score * 100).toFixed(0)}</div></div>`; }).join('')}</div>`;
+    box.querySelectorAll('.thumb').forEach(t => t.onclick = () => {
+      const x = r.outfits.find(y => y.outfit_id === t.dataset.new);
+      const tmp = document.createElement('div'); tmp.innerHTML = card(x, r.items, 0, { title: 'Swapped' });
+      const nc = tmp.firstElementChild; el.replaceWith(nc); wire(nc.parentElement, [x], r.items);
+    });
+  } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+function renderBuilder() {
+  const box = $('#tab-builder');
+  const groups = ['top', 'bottom', 'dress', 'outerwear', 'shoes'];
+  box.innerHTML = `<p class="note">Pin 1–2 pieces, then let the AI fill the empty slots (OutfitTransformer-CIR predicts the ideal missing piece, the nearest pieces of your wardrobe are tried, OutfitTransformer-CP ranks the results). Pinned pieces never change.</p>
+    <div class="row" style="margin-bottom:14px"><button class="primary" id="complete" style="width:auto;margin:0;padding:9px 18px">Complete with AI (${S.pinned.length} pinned)</button>
+    <button class="ghost" id="clearpins">Clear pins</button></div>
+    <div id="completions"></div>
+    ${groups.map(g => { const its = S.wardrobe.filter(i => i.category === g); if (!its.length) return '';
+      return `<h3 style="margin:18px 0 8px;font-size:13px">${g}</h3><div class="wgrid">${its.map(i => `<div class="thumb ${S.pinned.includes(i.item_id) ? 'pinned' : ''} ${S.off.has(i.item_id) ? 'off' : ''}" data-id="${i.item_id}">
+        ${img(i)}${S.pinned.includes(i.item_id) ? '<span class="tag">pinned</span>' : ''}<div class="lbl">${esc(i.name)}</div></div>`).join('')}</div>`; }).join('')}`;
+  box.querySelectorAll('.thumb').forEach(t => t.onclick = () => {
+    const id = t.dataset.id;
+    if (S.pinned.includes(id)) S.pinned = S.pinned.filter(x => x !== id);
+    else if (S.pinned.length < 2) S.pinned.push(id);
+    else S.pinned = [S.pinned[1], id];
+    renderBuilder();
+  });
+  $('#clearpins').onclick = () => { S.pinned = []; renderBuilder(); };
+  $('#complete').onclick = async () => {
+    const c = $('#completions');
+    if (!S.pinned.length) { c.innerHTML = '<div class="err">Pin at least one piece.</div>'; return; }
+    c.innerHTML = '<div class="spinner">Filling the empty slots…</div>';
+    try {
+      const j = await api('complete', payload({ pinned_item_ids: S.pinned }));
+      const r = j.result;
+      c.innerHTML = `<div class="grid">${r.outfits.map((o, i) => card(o, r.items, i, { title: 'Completion ' + (i + 1) + ' of ' + r.outfits.length, noActions: true })).join('')}</div>`;
+      wire(c, r.outfits, r.items);
+    } catch (e) { c.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  };
+}
+
+function renderWardrobe() {
+  const box = $('#tab-wardrobe');
+  const days = it => it.last_worn ? Math.round((new Date(S.today) - new Date(it.last_worn)) / 864e5) : null;
+  const mini = (k, v) => `<span>${k}</span><span class="bar"><i style="width:${Math.round(v * 100)}%"></i></span>`;
+  box.innerHTML = `<p class="note">${S.wardrobe.length} pieces (photos from the Kaggle clothing dataset). Warmth / formality / mood are read from each photo by FashionCLIP zero-shot.
+    Last-worn dates come from a synthetic 120-day wear log (stand-in for M3). Click a piece to put it in the laundry.</p>
+    <div class="wgrid">${S.wardrobe.map(i => { const d = days(i);
+      return `<div class="thumb ${S.off.has(i.item_id) ? 'off' : ''}" data-id="${i.item_id}">${img(i)}${S.off.has(i.item_id) ? '<span class="tag">laundry</span>' : ''}
+      <div class="lbl"><b>${esc(i.name)}</b></div><div class="lbl">${d === null ? 'never worn' : 'worn ' + d + 'd ago'} · ${i.wear_count}×</div>
+      <div class="mini">${mini('warmth', i.attrs.warmth)}${mini('formality', i.attrs.formality)}${mini('comfy', i.attrs.comfy)}${mini('bold', i.attrs.bold)}${mini('classy', i.attrs.classy)}</div></div>`; }).join('')}</div>`;
+  box.querySelectorAll('.thumb').forEach(t => t.onclick = () => {
+    const id = t.dataset.id; S.off.has(id) ? S.off.delete(id) : S.off.add(id); renderWardrobe(); });
+}
+
+async function renderModel() {
+  const box = $('#tab-model');
+  let m = null; try { const r = await fetch('/m02/demo/metrics'); if (r.ok) m = await r.json(); } catch (e) {}
+  box.innerHTML = `<h3 style="margin-top:0">Pipeline (all models pretrained, nothing trained by us)</h3>
+    <div class="pipeline">
+      <div class="step"><b>1 · Context</b>Open-Meteo weather, occasion, mood</div><span class="arrow">→</span>
+      <div class="step"><b>2 · Attributes</b>FashionCLIP zero-shot: warmth, formality, mood</div><span class="arrow">→</span>
+      <div class="step"><b>3 · Filter</b>laundry, extreme weather / formality</div><span class="arrow">→</span>
+      <div class="step"><b>4 · Generate</b>slot templates + beam search, OutfitTransformer-CIR retrieves each missing piece</div><span class="arrow">→</span>
+      <div class="step"><b>5 · Compatibility</b>OutfitTransformer-CP</div><span class="arrow">→</span>
+      <div class="step"><b>6 · Rank</b>weighted criteria, rotation, forgotten pieces</div><span class="arrow">→</span>
+      <div class="step"><b>7 · Diversify + explain</b>≤ 1 shared piece, reasons</div>
+    </div>
+    <h3>Models</h3>
+    <table><tr><th>Model</th><th>Role in M2</th><th>Source</th></tr>
+      <tr><td>FashionCLIP (patrickjohncyh/fashion-clip)</td><td>Item vector = image + text embedding; zero-shot colour, warmth, formality, mood</td><td>Hugging Face, pretrained on 800k fashion products</td></tr>
+      <tr><td>OutfitTransformer-CP</td><td>P(outfit is compatible), the "compatibility" bar</td><td>FlorindoDev/OutfitTransformer-weights (Polyvore)</td></tr>
+      <tr><td>OutfitTransformer-CIR</td><td>"Ideal missing piece" embedding: Complete with AI, beam search candidates</td><td>same repository</td></tr>
+      <tr><td>Open-Meteo</td><td>Temperature and rain for the city and day</td><td>free public API</td></tr></table>
+    <h3>Check of the pretrained weights (Polyvore test set, run locally)</h3>
+    ${m ? `<table><tr><th>Task</th><th>Our result</th><th>Published (validation)</th><th>Chance</th></tr>
+      <tr><td>Compatibility AUC (${m.compatibility.outfits} outfits)</td><td><b>${m.compatibility.auc.toFixed(3)}</b></td><td>${m.compatibility.published_validation_auc.toFixed(3)}</td><td>0.500</td></tr>
+      <tr><td>Fill-in-the-blank, CIR (${m.fill_in_the_blank.questions} questions, 4 choices)</td><td><b>${(m.fill_in_the_blank.cir_accuracy * 100).toFixed(1)}%</b></td><td>${(m.fill_in_the_blank.published_validation_cir_accuracy * 100).toFixed(1)}%</td><td>25%</td></tr>
+      <tr><td>Fill-in-the-blank, CP scoring each candidate</td><td><b>${(m.fill_in_the_blank.cp_accuracy * 100).toFixed(1)}%</b></td><td>–</td><td>25%</td></tr></table>`
+      : '<p class="err">eval_metrics.json not found: run ml/scripts/m02/eval_pretrained.py</p>'}`;
+}
+
+async function loadUser() {
+  const j = await (await fetch('/m02/demo/wardrobe/' + S.user)).json();
+  S.wardrobe = j.items; S.today = j.today; S.byId = Object.fromEntries(j.items.map(i => [i.item_id, i]));
+  if (!$('#user').options.length) {
+    $('#user').innerHTML = j.users.map(u => `<option value="${u}">${u === 'demo_f' ? 'Demo wardrobe · womenswear' : u === 'demo_m' ? 'Demo wardrobe · menswear' : u}</option>`).join('');
+    $('#user').value = S.user;
+  }
+  S.pinned = []; S.off = new Set(S.wardrobe.filter(i => i.status !== 'available').map(i => i.item_id));
+  renderBuilder(); renderWardrobe();
+}
+$('#user').onchange = async () => { S.user = $('#user').value; await loadUser(); run(); };
+$('#go').onclick = run;
+
+(async () => {
+  refreshWeather(); renderModel();
+  try { await loadUser(); run(); } catch (e) { $('#tab-foryou').innerHTML = `<div class="err">Could not load the demo wardrobe: ${esc(e.message)}\nRun the build scripts first (see the module README).</div>`; }
+})();
+</script>
+</body>
+</html>
