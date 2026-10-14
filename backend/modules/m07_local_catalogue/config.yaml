@@ -1,0 +1,23 @@
+# M7 Local catalogue (BO6).
+# Data and weights live under ml/ (tracked with DVC, not git); paths are relative to the repo root.
+data_dir: ml/data/shops                    # scraped CSV, photos, cleaned knowledge base, index
+catalogue_csv: local_catalogue_clean.csv   # in data_dir
+index_dir: index                           # in data_dir; FashionCLIP embeddings from pipeline/ingest.py
+embedding_model: patrickjohncyh/fashion-clip
+model_dir: ml/models/fashion-clip          # used instead of the Hugging Face download when present
+embedding_dim: 512
+top_k: 10
+
+# Score = weighted mix of the parts that apply to the request (weights are renormalised).
+weights:
+  visual: 0.45      # FashionCLIP: query text (or probe photo) vs product photo
+  text: 0.20        # BM25 on name / category / colour / shop / city
+  attributes: 0.20  # requested subcategory and colour match the product
+  style: 0.15       # user's style vector (Profile agent, same FashionCLIP space) vs product photo
+
+# Cosine ranges mapped to 0..1 (FashionCLIP text->image similarities are low in absolute value).
+visual_text_range: [0.15, 0.33]   # text vs photo: p50 ~0.11, p99 ~0.30, max ~0.34
+visual_image_range: [0.40, 0.85]  # photo vs photo: catalogue p50 ~0.42, p99 ~0.66
+style_range: [0.20, 0.80]
+
+mmr_lambda: 0.75    # diversity of the final list (1 = pure relevance)
