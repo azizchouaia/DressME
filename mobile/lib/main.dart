@@ -15,6 +15,7 @@ class DressMeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'DressMe',
+      debugShowCheckedModeBanner: false,
       theme: appTheme,
       routerConfig: router,
     );
