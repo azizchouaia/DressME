@@ -1,18 +1,22 @@
-"""HTTP endpoints of M18. Included automatically by api/main.py."""
+"""M18 Size & fit advice: size from body measurements + brand size charts."""
+
+from pathlib import Path
 
 from fastapi import APIRouter
+from pydantic import BaseModel
 
-from shared.config import settings
-
-from . import mock, service
-from .contract import AdviseRequest, AdviseResponse
+from . import service
 
 router = APIRouter(prefix="/m18", tags=["M18 Size & fit advice"])
+DATA = Path(__file__).resolve().parents[3] / "ml" / "data" / "bo5"
 
 
-def _impl():
-    return mock if getattr(settings, "use_mocks", True) else service
+class AdviseRequest(BaseModel):
+    brand: str
+    category: str
+    body: dict
 
-@router.post("/advise", response_model=AdviseResponse)
+
+@router.post("/advise")
 def advise(req: AdviseRequest):
-    return _impl().advise(req.model_dump())
+    return {"advice": service.advise(service.load_charts(DATA), req.brand, req.category, req.body)}

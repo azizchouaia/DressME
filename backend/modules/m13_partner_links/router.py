@@ -1,18 +1,23 @@
-"""HTTP endpoints of M13. Included automatically by api/main.py."""
+"""M13 Partner commerce links: buy links + promo codes for a type / colour."""
+
+from pathlib import Path
 
 from fastapi import APIRouter
+from pydantic import BaseModel
 
-from shared.config import settings
-
-from . import mock, service
-from .contract import LinksRequest, LinksResponse
+from . import service
 
 router = APIRouter(prefix="/m13", tags=["M13 Partner commerce links"])
+DATA = Path(__file__).resolve().parents[3] / "ml" / "data" / "bo5"
 
 
-def _impl():
-    return mock if getattr(settings, "use_mocks", True) else service
+class LinksRequest(BaseModel):
+    subcategory: str
+    colour: str
+    max_price_tnd: float | None = None
+    k: int = 3
 
-@router.post("/links", response_model=LinksResponse)
+
+@router.post("/links")
 def links(req: LinksRequest):
-    return _impl().links(req.model_dump())
+    return {"links": service.links(service.load(DATA), req.subcategory, req.colour, req.max_price_tnd, req.k)}

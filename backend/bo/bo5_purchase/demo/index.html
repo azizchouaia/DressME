@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DressMe · Smart Buy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16151A;--paper:#F6F4F0;--linen:#E9E4DC;--line:#D8D3CB;--mute:#5C5A60;--pink:#C2185B;--indigo:#3C3489;--brass:#D9A441;
+--buy:#1F6B4F;--think:#8A5A0B;--skip:#A32D2D}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:28px 32px 18px;border-bottom:2px solid var(--ink)}
+h1{margin:0;font-family:'DM Serif Display',serif;font-weight:400;font-size:48px;line-height:1}
+h1 i{color:var(--pink)}
+.cap{font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+main{display:flex;flex-wrap:wrap;gap:28px;padding:24px 32px 48px}
+.left{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:22px}
+.right{flex:999 1 460px;min-width:0}
+section h2,.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+label{display:block;font-size:12px;color:var(--mute);margin:10px 0 4px}
+select,input{width:100%;height:44px;padding:0 12px;border:1.5px solid var(--ink);border-radius:4px;background:#fff;font:inherit;font-size:15px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.tab{height:36px;padding:0 14px;white-space:nowrap;border-radius:18px;border:1px solid var(--ink);background:transparent;font:inherit;cursor:pointer}
+.tab[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:34px;height:34px;border-radius:17px;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed=true]{outline:3px solid var(--pink);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+.tile{background:var(--linen);border-radius:4px;padding:6px 4px 4px;text-align:center;font-size:11px;line-height:1.2}
+.tile svg{display:block;margin:0 auto 4px}
+.tile.hit{outline:2px solid var(--pink)}
+.gaps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{padding:5px 11px;border-radius:14px;font-size:12px;border:1px dashed var(--indigo);color:var(--indigo)}
+.btn{margin-top:16px;width:100%;height:52px;border:none;border-radius:26px;background:var(--pink);color:#fff;font:inherit;font-size:16px;font-weight:700;letter-spacing:.04em;cursor:pointer}
+.btn:disabled{opacity:.5}
+.preview{display:flex;gap:14px;align-items:center;margin-top:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:24px}
+.empty{color:var(--mute);font-size:15px;line-height:1.6;padding:40px 24px;text-align:center;border:1px dashed var(--line);border-radius:6px}
+.vhead{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.verdict{font-family:'DM Serif Display',serif;font-size:72px;line-height:.9}
+.ring{width:96px;height:96px;flex:none}
+.expl{font-size:17px;line-height:1.5;margin:14px 0 4px}
+.exp{font-size:12px;color:var(--mute)}
+.bars{display:grid;grid-template-columns:110px 1fr 40px;gap:8px 10px;align-items:center;margin:18px 0;font-size:13px}
+.bar{height:8px;background:var(--linen);border-radius:4px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--indigo)}
+ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
+.sub{margin-top:20px}
+.links{display:flex;flex-direction:column;gap:8px}
+.link{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:4px;text-decoration:none;color:inherit}
+.code{margin-left:auto;padding:4px 10px;border-radius:12px;background:#F3E4C4;color:#6B4A0E;font-size:12px;white-space:nowrap}
+.tile img{display:block;width:100%;height:64px;object-fit:cover;border-radius:3px;margin-bottom:4px}
+.tile button{all:unset;cursor:pointer;display:block}
+.ai{border:1px dashed var(--indigo);color:var(--indigo)}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:96px;border:1.5px dashed var(--ink);border-radius:6px;cursor:pointer;text-align:center;padding:12px;font-size:14px}
+.drop input{display:none}
+.seen{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
+.seen img{width:110px;height:130px;object-fit:cover;border-radius:4px;flex:none}
+.tag{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;margin:2px 4px 2px 0}
+.edit{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.mini{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--ink);background:transparent;font:inherit;cursor:pointer}
+.mini.danger{border-color:var(--skip);color:var(--skip)}
+.xai{display:grid;grid-template-columns:150px 1fr;gap:6px 10px;align-items:center;font-size:13px;margin-top:8px}
+.xbar{position:relative;height:10px;background:var(--linen);border-radius:5px}
+.xbar span{position:absolute;top:0;height:100%;border-radius:5px}
+.xbar:before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mute)}
+.ask{margin-top:16px;padding:14px;border:1px dashed var(--indigo);border-radius:6px;color:var(--indigo)}
+.ask .mini{margin-right:8px;margin-top:8px;border-color:var(--indigo);color:var(--indigo)}
+.whatif{margin-top:16px;padding:14px;background:var(--linen);border-radius:6px}
+.probs{display:flex;gap:10px;font-size:12px;color:var(--mute);margin-top:4px}
+.err{color:var(--skip);font-size:14px;margin-top:8px}
+.note{font-size:12px;color:var(--mute);margin-top:6px}
+@media (max-width:600px){header,main{padding-left:16px;padding-right:16px}.verdict{font-size:56px}h1{font-size:38px}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="cap">BO5 · purchase decision · test UI</div><h1>Smart <i>Buy</i></h1></div>
+  <div class="cap" id="cfg"></div>
+</header>
+<main>
+  <div class="left">
+    <section>
+      <h2>1 · Who is shopping</h2>
+      <label for="user">Wardrobe</label>
+      <select id="user"></select>
+      <div class="gaps" id="gaps"></div>
+      <div id="closetTools" hidden>
+        <label class="drop" id="addDrop">
+          <input type="file" id="addFiles" accept="image/*" multiple>
+          <b>+ Add photos to my closet</b><span class="note">one piece per photo · the AI tags it, you fix it</span>
+        </label>
+        <div class="note" id="addStatus" role="status"></div>
+        <label for="gapsInput">My gaps (what I'm missing), comma separated — e.g. white shirt, any jacket</label>
+        <div class="row"><input id="gapsInput"><button class="mini" id="saveGaps" style="flex:none">Save</button></div>
+      </div>
+      <div class="grid" id="wardrobe" style="margin-top:12px"></div>
+      <div id="editor"></div>
+    </section>
+    <section>
+      <h2>2 · The piece in the shop</h2>
+      <div class="tabs" role="group" aria-label="Piece source">
+        <button class="tab" id="tabList" aria-pressed="true">Generated pieces</button>
+        <button class="tab" id="tabCustom" aria-pressed="false">Build my own</button>
+        <button class="tab" id="tabPhoto" aria-pressed="false">Upload a photo</button>
+      </div>
+      <div id="paneList">
+        <label for="cand">Candidate (labelled by the stylist rules)</label>
+        <select id="cand"></select>
+      </div>
+      <div id="paneCustom" hidden>
+        <label for="type">Type</label>
+        <select id="type"></select>
+        <label>Colour</label>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div id="panePhoto" hidden>
+        <label class="drop"><input type="file" id="photo" accept="image/*"><b>Take or choose a photo of the piece</b><span class="note">the AI recognises type and colour</span></label>
+        <div id="seen"></div>
+      </div>
+      <div class="preview" id="preview"></div>
+      <div class="row">
+        <div><label for="price">Price (TND)</label><input id="price" type="number" min="1" step="1"></div>
+        <div><label for="brand">Shop brand</label><select id="brand"></select></div>
+      </div>
+      <div class="row">
+        <div><label for="chest">Chest (cm)</label><input id="chest" type="number" value="98"></div>
+        <div><label for="waist">Waist (cm)</label><input id="waist" type="number" value="84"></div>
+      </div>
+      <button class="btn" id="go">Should I buy it?</button>
+      <div class="err" id="err" role="alert"></div>
+    </section>
+  </div>
+  <div class="right" id="result"><div class="empty">Pick a wardrobe and a piece, then ask.<br>The agent checks duplicates, outfits unlocked, gaps and price, then answers BUY, THINK or SKIP.</div></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let META,WARD={},MODE="list",COLOUR=null;
+const COL={buy:"var(--buy)",think:"var(--think)",skip:"var(--skip)"};
+
+function garment(sub,colour,size=56){
+  const f=(META&&META.colours[colour])||"#999",s='stroke="#16151A" stroke-opacity=".35" stroke-width="1.5"';
+  const cat=META.types[sub]?META.types[sub].category:"top";
+  const P={
+    top:'M14 10 L24 6 Q32 12 40 6 L50 10 L56 24 L47 27 L46 54 L18 54 L17 27 L8 24 Z',
+    outerwear:'M12 8 L24 4 L32 12 L40 4 L52 8 L58 26 L50 28 L50 58 L14 58 L14 28 L6 26 Z',
+    bottom: sub==="skirt"?'M20 10 L44 10 L54 52 L10 52 Z':'M18 6 L46 6 L50 58 L36 58 L32 22 L28 58 L14 58 Z',
+    shoes:'M6 36 L22 30 L30 36 Q44 38 58 42 L58 50 L6 50 Z',
+    dress:'M24 4 L40 4 L38 18 L52 58 L12 58 L26 18 Z',
+    traditional:'M22 4 L42 4 L50 14 L48 60 L16 60 L14 14 Z'};
+  let extra=cat==="outerwear"?'<line x1="32" y1="12" x2="32" y2="58" stroke="#16151A" stroke-opacity=".35"/>':'';
+  if(sub==="shirt"||sub==="blouse") extra='<line x1="32" y1="12" x2="32" y2="54" stroke="#16151A" stroke-opacity=".3"/>';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><path d="${P[cat]}" fill="${f}" ${s}/>${extra}</svg>`;
+}
+const pic=(it,size)=>it.image?`<img src="/api/closet/image/${it.image}" alt="">`:garment(it.subcategory,it.colour,size);
+const tile=(it,hit)=>`<div class="tile${hit?" hit":""}${it.ai&&!it.checked?" ai":""}">${pic(it,48)}${it.label}</div>`;
+const opts=(arr,sel)=>arr.map(x=>`<option${x===sel?" selected":""}>${x}</option>`).join("");
+let PHOTO=null,LAST=null,NEED=null;
+
+async function api(p,body){const r=await fetch(p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
+  if(!r.ok){const t=await r.json().catch(()=>({}));throw new Error(t.detail?JSON.stringify(t.detail):r.statusText)}return r.json()}
+
+async function loadUser(){
+  const u=$("user").value; WARD=await api("/api/wardrobe/"+u);
+  $("gaps").innerHTML=WARD.gaps.map(g=>`<span class="chip">gap · ${g}</span>`).join("")||'<span class="note">no gaps recorded</span>';
+  const me=u==="usr_me";$("closetTools").hidden=!me;$("editor").innerHTML="";
+  if(me)$("gapsInput").value=WARD.gaps.join(", ");
+  $("wardrobe").innerHTML=me?(WARD.items.map(i=>`<button class="tile${i.ai&&!i.checked?" ai":""}" data-id="${i.id}" style="font:inherit;font-size:11px;cursor:pointer" title="edit">${pic(i,48)}${i.label}</button>`).join("")||'<p class="note">Your closet is empty: add photos above.</p>')
+    :WARD.items.map(i=>tile(i)).join("");
+  const cs=META.candidates.filter(c=>c.user_id===u);
+  $("cand").innerHTML=cs.map(c=>`<option value="${c.id}">${c.label} · ${c.price_tnd} TND${c.expected?" · stylist: "+c.expected:""}</option>`).join("");
+  pickCand();
+}
+function pickCand(){NEED=null;
+  if(MODE==="list"){const c=META.candidates.find(x=>x.id===$("cand").value); if(!c)return; $("price").value=c.price_tnd;
+    $("preview").innerHTML=garment(c.subcategory,c.colour,72)+`<div><b>${c.label}</b><div class="note">${c.subcategory} · ${c.colour}</div></div>`;}
+  else{const t=$("type").value,cols=META.types[t].colours; if(!cols.includes(COLOUR))COLOUR=cols[0];
+    $("swatches").innerHTML=cols.map(c=>`<button class="sw" title="${c}" aria-label="${c}" aria-pressed="${c===COLOUR}" style="background:${META.colours[c]}" data-c="${c}"></button>`).join("");
+    if(!$("price").value)$("price").value=META.types[t].price;
+    $("preview").innerHTML=garment(t,COLOUR,72)+`<div><b>${COLOUR} ${t}</b><div class="note">typical price ${META.types[t].price} TND</div></div>`;}
+}
+function setMode(m){MODE=m;for(const [t,k] of [["tabList","list"],["tabCustom","custom"],["tabPhoto","photo"]])$(t).setAttribute("aria-pressed",m===k);
+  $("paneList").hidden=m!=="list";$("paneCustom").hidden=m!=="custom";$("panePhoto").hidden=m!=="photo";
+  if(m==="custom")$("price").value="";if(m==="photo"){$("preview").innerHTML="";if(PHOTO)showSeen();return}pickCand();}
+function showSeen(){const p=PHOTO,cf=p.confidence;
+  $("seen").innerHTML=`<div class="seen"><img src="${p.url}" alt="uploaded piece"><div style="flex:1;min-width:0">
+   <div class="note">AI saw — fix it if wrong</div>
+   <span class="tag ai">type ${p.subcategory} · ${Math.round(cf.type*100)}%</span><span class="tag ai">colour ${p.colour} · ${Math.round(cf.colour*100)}%</span>
+   <div class="row"><div><label for="pType">Type</label><select id="pType">${opts(Object.keys(META.types),p.subcategory)}</select></div>
+   <div><label for="pCol">Colour</label><select id="pCol">${opts(Object.keys(META.colours),p.colour)}</select></div></div>
+   <div class="note">other guesses: ${p.alternatives.type.slice(1).map(t=>t[0]+" "+Math.round(t[1]*100)+"%").join(", ")}</div></div></div>`;
+  $("pType").onchange=e=>{PHOTO.subcategory=e.target.value};$("pCol").onchange=e=>{PHOTO.colour=e.target.value};
+  if(!$("price").value)$("price").value=META.types[p.subcategory].price;}
+async function upload(path,file){const fd=new FormData();fd.append("file",file);const r=await fetch(path,{method:"POST",body:fd});
+  if(!r.ok){const t=await r.json().catch(()=>({}));throw new Error(t.detail||r.statusText)}return r.json()}
+async function onPhoto(e){NEED=null;const f=e.target.files[0];if(!f)return;$("err").textContent="";$("seen").innerHTML='<p class="note">Analysing… (first time: the model downloads, ~1 min)</p>';
+  try{PHOTO={...(await upload("/api/analyze",f)),url:URL.createObjectURL(f)};$("price").value="";showSeen()}catch(x){$("seen").innerHTML="";$("err").textContent=x.message}}
+async function onAdd(e){const fs=[...e.target.files];let n=0;$("err").textContent="";
+  for(const f of fs){$("addStatus").textContent=`Analysing ${++n}/${fs.length}… (first time: the model downloads)`;
+    try{await upload("/api/closet",f)}catch(x){$("err").textContent=x.message;break}}
+  $("addStatus").textContent=n?`${n} piece(s) added — dashed = AI tags not checked yet, click to fix`:"";e.target.value="";await refreshUsers();await loadUser();}
+function editItem(id){const it=WARD.items.find(i=>i.id===id);if(!it)return;
+  $("editor").innerHTML=`<div class="edit"><div class="seen">${it.image?`<img src="/api/closet/image/${it.image}" alt="">`:""}<div style="flex:1">
+   ${it.ai?`<div class="note">AI saw ${it.ai.colour} ${it.ai.subcategory}</div>`:""}
+   <div class="row"><div><label for="eType">Type</label><select id="eType">${opts(Object.keys(META.types),it.subcategory)}</select></div>
+   <div><label for="eCol">Colour</label><select id="eCol">${opts(Object.keys(META.colours),it.colour)}</select></div></div>
+   <div class="row" style="margin-top:10px"><button class="mini" id="eSave">Looks right · save</button><button class="mini danger" id="eDel">Delete</button></div></div></div></div>`;
+  $("eSave").onclick=async()=>{await api2("PATCH","/api/closet/"+id,{subcategory:$("eType").value,colour:$("eCol").value});await loadUser()};
+  $("eDel").onclick=async()=>{await api2("DELETE","/api/closet/"+id);await refreshUsers();await loadUser()};}
+async function api2(m,p,b){const r=await fetch(p,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined});if(!r.ok)throw new Error(r.statusText);return r.status===204?null:r.json()}
+async function refreshUsers(){const cur=$("user").value;META=await api("/api/meta");fillUsers();$("user").value=cur}
+function fillUsers(){const us=[...META.users].sort((a,b)=>(b.id==="usr_me")-(a.id==="usr_me"));
+  $("user").innerHTML=us.map(u=>`<option value="${u.id}">${u.id==="usr_me"?"My closet (your photos)":u.id} · ${u.items} items</option>`).join("")}
+
+function ring(score,v){const r=40,c=2*Math.PI*r,o=c*(1-score/100);
+  return `<svg class="ring" viewBox="0 0 96 96" role="img" aria-label="score ${score} out of 100"><circle cx="48" cy="48" r="${r}" fill="none" stroke="#E9E4DC" stroke-width="8"/>
+  <circle cx="48" cy="48" r="${r}" fill="none" stroke="${COL[v]}" stroke-width="8" stroke-dasharray="${c}" stroke-dashoffset="${o}" transform="rotate(-90 48 48)" stroke-linecap="round"/>
+  <text x="48" y="54" text-anchor="middle" font-size="22" font-family="Space Grotesk" font-weight="700" fill="#16151A">${score}</text></svg>`}
+
+function render(o,expected){
+  LAST=o;
+  const byId=Object.fromEntries(WARD.items.map(i=>[i.id,i]));
+  const B=o.breakdown,names={new_outfits:"New outfits",gap_fill:"Fills a gap",novelty:"Novelty",price_value:"Price value"};
+  const P=o.probabilities;
+  let h=`<div class="card"><div class="vhead">${ring(o.score,o.verdict)}<div><div class="verdict" style="color:${COL[o.verdict]}">${o.verdict.toUpperCase()}</div>
+   <div class="probs">${o.decision_mode==="learned"?"learned model":"rules"}${P?` · buy ${Math.round(P.buy*100)}% · think ${Math.round(P.think*100)}% · skip ${Math.round(P.skip*100)}%`:""}${o.threshold_offset?` · your strictness ${o.threshold_offset>0?"+":""}${o.threshold_offset}`:""}</div>
+   ${expected?`<div class="exp">stylist rules said: <b>${expected}</b> ${expected===o.verdict?"· match":"· different"}</div>`:""}</div></div>
+   <p class="expl">${o.explanation}</p>`;
+  if(o.uncertain&&o.question){h+=`<div class="ask"><b>Not sure.</b> ${o.question}`;
+    if(o.question_key==="need_for_occasion")h+=`<div><button class="mini" data-ans="yes">Yes, I need it</button><button class="mini" data-ans="no">No</button></div>`;
+    h+=`</div>`}
+  const C=o.contributions||{},mx=Math.max(1,...Object.values(C).map(Math.abs));
+  if(Object.keys(C).length)h+=`<div class="sub"><h2>What pushed the decision</h2><div class="xai">${Object.entries(C).map(([k,v])=>{const w=Math.abs(v)/mx*50;
+     return `<span>${k}</span><div class="xbar" title="${v>0?"+":""}${v}"><span style="${v>=0?`left:50%;width:${w}%;background:var(--buy)`:`right:50%;width:${w}%;background:var(--skip)`}"></span></div>`}).join("")}</div>
+     <p class="note">green = toward BUY · red = toward SKIP, compared with an average piece</p></div>`;
+  if(o.what_if&&o.what_if.length)h+=`<div class="whatif"><h2>What would change the answer</h2><ul>${o.what_if.map(w=>`<li>${w}</li>`).join("")}</ul></div>`;
+  h+=`<div class="bars">${Object.keys(names).map(k=>`<span>${names[k]}</span><div class="bar"><span style="width:${Math.round(B[k]*100)}%"></span></div><span>${Math.round(B[k]*100)}%</span>`).join("")}</div>
+   <div class="sub"><h2>Why</h2><ul>${o.reasons.map(r=>`<li>${r}</li>`).join("")}</ul></div>`;
+  if(o.predicted_wears!=null)h+=`<div class="sub"><h2>Predicted use</h2><p style="margin:0"><b style="font-size:22px">~${o.predicted_wears}</b> wears a year${o.cost_per_wear_tnd?` · <b>${o.cost_per_wear_tnd} TND</b> per wear`:""}<br><span class="note">from how often you wear similar pieces</span></p></div>`;
+  if(o.similar_items.length) h+=`<div class="sub"><h2>Similar in your wardrobe</h2><div class="grid">${o.similar_items.map(s=>byId[s.item_id]?tile({...byId[s.item_id],label:byId[s.item_id].label+" · "+s.similarity},o.is_duplicate):"").join("")}</div></div>`;
+  if(o.pairs_with.length) h+=`<div class="sub"><h2>Pairs with (${o.new_outfits} new outfits)</h2><div class="grid">${o.pairs_with.slice(0,12).map(id=>byId[id]?tile(byId[id]):"").join("")}</div></div>`;
+  if(o.size_advice) h+=`<div class="sub"><h2>Size</h2><p style="margin:0"><b style="font-size:22px">${o.size_advice.size}</b> at ${o.size_advice.brand}<br><span class="note">${o.size_advice.note}</span></p></div>`;
+  if(o.buy_links.length) h+=`<div class="sub"><h2>Buy locally</h2><div class="links">${o.buy_links.map(l=>`<a class="link" href="${l.url}" target="_blank" rel="noopener">${l.subcategory?garment(l.subcategory,l.colour,40):""}<div><b>${l.item}</b><div class="note">${l.shop} · ${l.price_tnd} TND</div></div><span class="code">${l.promo_code||""}</span></a>`).join("")}</div><p class="note">Fictional shops (synthetic data).</p></div>`;
+  h+=`<div class="sub"><h2>Was this good advice?</h2><button class="mini" data-fb="1">Good advice</button> <button class="mini danger" data-fb="0">Not for me</button> <span class="note" id="fbMsg"></span></div>`;
+  $("result").innerHTML=h+"</div>";
+}
+$("result").onclick=async e=>{
+  const a=e.target.closest("[data-ans]");if(a){NEED=a.dataset.ans==="yes";await go();return}
+  const f=e.target.closest("[data-fb]");if(f&&LAST){try{const r=await api("/api/feedback",{user_id:$("user").value,offset:LAST.threshold_offset,good:f.dataset.fb==="1"});
+    $("fbMsg").textContent=r.personalize?`thanks: your strictness is now learned as ${r.best>0?"+":""}${r.best}`:"thanks (turn on personalize in config.yaml to learn from it)"}catch(x){$("fbMsg").textContent=x.message}}
+};
+async function go(){
+  $("err").textContent="";const price=parseFloat($("price").value);
+  if(!(price>0)){$("err").textContent="Enter a price first";$("price").focus();return}
+  if(MODE==="photo"&&!PHOTO){$("err").textContent="Upload a photo first";return}
+  if(!WARD.items.length){$("err").textContent="This wardrobe is empty: add photos to your closet first";return}
+  const img=MODE==="list"?$("cand").value:MODE==="photo"?`custom:${PHOTO.subcategory}:${PHOTO.colour}`:`custom:${$("type").value}:${COLOUR}`;
+  const expected=MODE==="list"?(META.candidates.find(c=>c.id===img)||{}).expected:null;
+  const body={user_id:$("user").value,probe_image:img,price_tnd:price,shop_brand:$("brand").value||null,
+    body:{chest_cm:parseFloat($("chest").value)||null,waist_cm:parseFloat($("waist").value)||null},
+    need_for_occasion:NEED,ai_confidence:MODE==="photo"?PHOTO.confidence.type:null};
+  $("go").disabled=true;
+  try{render(await api("/api/verdict",body),expected)}catch(e){$("err").textContent=e.message}finally{$("go").disabled=false}
+}
+
+(async()=>{
+  META=await api("/api/meta");
+  const c=META.config;$("cfg").textContent=`${c.decision==="learned"?"learned model":`buy ≥ ${c.buy_threshold} · skip < ${c.skip_threshold}`} · duplicate ≥ ${c.duplicate_threshold}${c.personalize?" · personalised":""}`;
+  fillUsers();
+  $("brand").innerHTML='<option value="">— no size advice —</option>'+META.brands.map(b=>`<option>${b}</option>`).join("");
+  $("type").innerHTML=Object.keys(META.types).map(t=>`<option>${t}</option>`).join("");
+  $("user").onchange=loadUser;$("cand").onchange=pickCand;$("type").onchange=()=>{$("price").value="";pickCand()};
+  $("swatches").onclick=e=>{const b=e.target.closest(".sw");if(b){COLOUR=b.dataset.c;pickCand()}};
+  $("tabList").onclick=()=>setMode("list");$("tabCustom").onclick=()=>setMode("custom");$("tabPhoto").onclick=()=>setMode("photo");
+  $("photo").onchange=onPhoto;$("addFiles").onchange=onAdd;
+  $("wardrobe").onclick=e=>{const b=e.target.closest("button[data-id]");if(b)editItem(b.dataset.id)};
+  $("saveGaps").onclick=async()=>{await api2("PUT","/api/closet/gaps",{gaps:$("gapsInput").value.split(",")});await loadUser()};
+  $("price").oninput=()=>$("err").textContent="";$("go").onclick=go;
+  await loadUser();
+})();
+</script>
+</body>
+</html>

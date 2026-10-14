@@ -19,7 +19,7 @@ git push -u origin feat/vision-segmentation
    The router serves the mock while `USE_MOCKS=true`, so nobody waits for you.
 2. Write the real logic in `service.py` with the SAME signatures; flip `USE_MOCKS=false` when it is ready.
 3. Need something from another module? Call its API (or its mock). Never re-implement it; ask the owner to add it.
-4. A module the assistant should call ships a `tool.py` (a LangChain `StructuredTool` named `tool`): the
+4. A module the assistant should call ships a `tool.py` (see `modules/m06_smartbuy/tool.py`): the
    orchestrator picks it up automatically.
 
 ## Working on your BO

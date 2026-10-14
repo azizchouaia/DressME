@@ -1,0 +1,16 @@
+"""Exposes the agent to the orchestrator (M8 / BO8) as a tool."""
+
+from langchain_core.tools import StructuredTool
+
+from .agent import SmartBuyAgent
+from .contract import SmartBuyInput
+
+_agent = SmartBuyAgent()
+
+
+async def _run(**kwargs) -> dict:
+    return await _agent(kwargs)
+
+
+tool = StructuredTool.from_function(coroutine=_run, name=_agent.name,
+                                    description=_agent.description, args_schema=SmartBuyInput)
