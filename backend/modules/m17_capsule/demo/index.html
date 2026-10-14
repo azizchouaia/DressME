@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M17 Capsule Lab</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e4ddd2;
+    --accent: #8a5a2b; --accent-soft: #f1e4d4; --good: #3f7d4e; --warn: #b5532f; --chip: #efe9df; --work: #3b6db3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --panel: #201e1b; --ink: #f0ebe3; --muted: #a39d93; --line: #35312b;
+      --accent: #d9a46a; --accent-soft: #3a2d20; --good: #7cc08b; --warn: #e48a66; --chip: #2b2824; --work: #7ea6e0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { margin: 0; font-size: 20px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .badge.mock { background: #f6d9cf; color: var(--warn); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; min-width: 0; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 10px; }
+  label.l { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 5px; }
+  select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--ink); font: inherit; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--chip); color: var(--ink); padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn { width: 100%; margin-top: 14px; border: 0; background: var(--accent); color: #fff; padding: 12px; border-radius: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .btn:disabled { opacity: .5; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .headline { font-size: 22px; font-weight: 700; margin: 0; }
+  .headline span { color: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+  .stat { background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+  .stat b { display: block; font-size: 18px; color: var(--accent); }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .cmp { margin-top: 12px; display: grid; grid-template-columns: 70px minmax(0, 1fr) 70px; gap: 6px 8px; align-items: center; font-size: 13px; }
+  .bar { height: 10px; border-radius: 5px; background: var(--chip); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .bar.g i { background: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+  .piece { position: relative; min-width: 0; }
+  .piece img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; background: var(--chip); display: block; }
+  .piece .n { position: absolute; top: 5px; right: 5px; font-size: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 1px 6px; border-radius: 6px; }
+  .piece .lbl { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal .hd { font-size: 11px; color: var(--muted); text-align: center; }
+  .cal .cell { position: relative; border-radius: 8px; overflow: hidden; background: var(--chip); aspect-ratio: 3/4; cursor: pointer; border: 2px solid transparent; }
+  .cal .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cal .cell .d { position: absolute; top: 2px; left: 3px; font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 0 3px #000; }
+  .cal .cell .o { position: absolute; bottom: 3px; left: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+  .cal .cell .o.work { background: var(--work); } .cal .cell .o.event { background: var(--warn); }
+  .cal .cell.sel { border-color: var(--accent); }
+  .cal .empty { aspect-ratio: 3/4; }
+  .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); margin: 8px 0; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .outfit { display: flex; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .outfit img { width: 46px; height: 60px; object-fit: cover; border-radius: 7px; background: var(--chip); }
+  .outfit .meta { margin-left: auto; text-align: right; font-size: 12px; color: var(--muted); }
+  .pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+  .pill.work { background: var(--work); color: #fff; } .pill.casual { background: var(--good); color: #fff; } .pill.event { background: var(--warn); color: #fff; }
+  .spin { color: var(--muted); padding: 10px 0; }
+  .err { color: var(--warn); white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>DressMe · M17 Capsule</h1><span id="mode" class="badge">…</span></header>
+
+  <div class="card">
+    <h2>Create a capsule</h2>
+    <select id="user"><option value="demo_f">Demo wardrobe · womenswear</option><option value="demo_m">Demo wardrobe · menswear</option></select>
+    <label class="l">Size: <b id="sizev">12</b> pieces</label>
+    <input type="range" id="size" min="6" max="20" value="12">
+    <label class="l">Season</label>
+    <div class="chips" id="season">
+      <button class="chip on" data-v="auto">Auto</button><button class="chip" data-v="spring">Spring</button>
+      <button class="chip" data-v="summer">Summer</button><button class="chip" data-v="autumn">Autumn</button><button class="chip" data-v="winter">Winter</button>
+    </div>
+    <label class="l">It must dress (occasions)</label>
+    <div class="chips" id="occ">
+      <button class="chip on" data-v="casual">Casual</button><button class="chip on" data-v="work">Work</button><button class="chip" data-v="event">Event</button>
+    </div>
+    <label class="l">Optimiser</label>
+    <div class="chips" id="method">
+      <button class="chip on" data-v="both">ILP vs greedy</button><button class="chip" data-v="ilp">ILP only</button>
+    </div>
+    <button class="btn" id="go">Create capsule</button>
+    <div class="small muted" style="margin-top:8px">Pieces are scored by M2 (pretrained OutfitTransformer), then an integer linear program picks the set that makes the most good outfits. Takes ~15–25 s on this PC.</div>
+  </div>
+
+  <div id="out"></div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const single = id => $(id).addEventListener('click', e => { if (!e.target.dataset.v) return; $(id).querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === e.target)); });
+single('#season'); single('#method');
+$('#occ').addEventListener('click', e => { if (!e.target.dataset.v) return; e.target.classList.toggle('on'); if (!$('#occ .chip.on')) e.target.classList.add('on'); });
+$('#size').oninput = () => $('#sizev').textContent = $('#size').value;
+const R = { r: null, sel: null };
+const order = ['outerwear', 'top', 'dress', 'bottom', 'shoes', 'accessory'];
+const sortIds = (ids, items) => [...ids].sort((a, b) => order.indexOf(items[a].category) - order.indexOf(items[b].category));
+const img = (id, items) => `<img src="${esc((items[id] || {}).image || '')}" alt="${esc((items[id] || {}).name || id)}" loading="lazy">`;
+
+$('#go').onclick = async () => {
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Optimising…';
+  $('#out').innerHTML = '<div class="card spin">Scoring pairs and outfits with M2, then solving the integer program…</div>';
+  const payload = { size: +$('#size').value, season: $('#season .chip.on').dataset.v, method: $('#method .chip.on').dataset.v,
+    occasions: [...document.querySelectorAll('#occ .chip.on')].map(c => c.dataset.v), plan_days: 30 };
+  try {
+    const t = performance.now();
+    const r = await fetch('/m17/capsule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: $('#user').value, payload }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || r.status);
+    $('#mode').textContent = j.mocked ? 'MOCK (set M17_USE_MOCK=false)' : 'live'; $('#mode').classList.toggle('mock', !!j.mocked);
+    R.r = j.result; R.sel = 0; R.ms = Math.round(performance.now() - t);
+    render();
+  } catch (e) { $('#out').innerHTML = `<div class="card err">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = 'Create capsule';
+};
+
+function render() {
+  const r = R.r, it = r.items, cmp = r.comparison || {};
+  const maxv = Math.max(...Object.values(cmp).map(c => c.n_outfits || 0), 1);
+  const season = r.season[0].toUpperCase() + r.season.slice(1);
+  let html = `<div class="card"><p class="headline">${esc(season)} capsule · ${r.size} pieces · <span>${r.n_outfits} outfits</span></p>
+    <div class="stats">
+      ${Object.entries(r.by_occasion).map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)} outfits</span></div>`).join('')}
+      ${r.wardrobe ? `<div class="stat"><b>${r.wardrobe.pieces}</b><span>pieces in season</span></div><div class="stat"><b>${r.wardrobe.valid_outfits}</b><span>valid outfits checked</span></div>` : ''}
+      ${r.plan_stats ? `<div class="stat"><b>${r.plan_stats.different_outfits}</b><span>different outfits in 30 days</span></div>` : ''}
+      <div class="stat"><b>${(R.ms / 1000).toFixed(1)} s</b><span>computed</span></div>
+    </div>
+    ${Object.keys(cmp).length ? `<div class="cmp">${Object.entries(cmp).map(([k, c]) => `<span><b>${k === 'ilp' ? 'ILP' : 'Greedy'}</b></span>
+      <span class="bar ${k === 'greedy' ? 'g' : ''}"><i style="width:${Math.round(100 * c.n_outfits / maxv)}%"></i></span><span>${c.n_outfits} outfits</span>`).join('')}</div>
+      <div class="small muted" style="margin-top:6px">${cmp.ilp ? `ILP: ${esc(cmp.ilp.optimal ? 'proven optimal' : cmp.ilp.status)} in ${cmp.ilp.seconds}s (HiGHS). ` : ''}Same pieces pool, same constraints: the integer program finds the set that completes the most good outfits.</div>` : ''}
+  </div>`;
+  html += `<div class="card"><h2>The ${r.size} pieces <span class="small">(in N outfits)</span></h2><div class="grid">${r.pieces.map(p => `<div class="piece">${img(p.item_id, it)}<span class="n">${p.outfits}</span><div class="lbl">${esc(p.name)}</div></div>`).join('')}</div></div>`;
+  if (r.plan) {
+    const first = new Date(r.plan[0].date + 'T12:00'), lead = (first.getDay() + 6) % 7;
+    html += `<div class="card"><h2>30-day plan</h2><div class="legend"><span><i style="background:var(--work)"></i>work</span><span><i style="background:var(--good)"></i>casual</span><span><i style="background:var(--warn)"></i>event</span><span>tap a day</span></div>
+      <div class="cal">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="hd">${d}</div>`).join('')}${'<div class="empty"></div>'.repeat(lead)}
+      ${r.plan.map((d, k) => { const ids = d.outfit ? sortIds(d.outfit.items, it) : []; const main = ids.find(i => ['top', 'dress'].includes(it[i].category)) || ids[0];
+        return `<div class="cell ${k === R.sel ? 'sel' : ''}" data-k="${k}">${main ? img(main, it) : ''}<span class="d">${new Date(d.date + 'T12:00').getDate()}</span><span class="o ${esc(d.occasion)}"></span></div>`; }).join('')}</div>
+      <div id="dayd" style="margin-top:10px"></div></div>`;
+  }
+  html += `<div class="card"><h2>Best outfits of the capsule</h2>${r.outfits.slice(0, 15).map(o => `<div class="outfit">${sortIds(o.items, it).map(i => img(i, it)).join('')}
+    <div class="meta">${o.occasions.map(x => `<span class="pill ${esc(x)}">${esc(x)}</span>`).join(' ')}<br>${Math.round(o.value * 100)}</div></div>`).join('')}
+    ${r.n_outfits > 15 ? `<div class="small muted" style="margin-top:6px">+ ${r.n_outfits - 15} more</div>` : ''}</div>`;
+  $('#out').innerHTML = html;
+  document.querySelectorAll('.cal .cell').forEach(c => c.onclick = () => { R.sel = +c.dataset.k; document.querySelectorAll('.cal .cell').forEach(x => x.classList.toggle('sel', x === c)); day(); });
+  day();
+}
+if (new URLSearchParams(location.search).has('run')) $('#go').click();  // /m17/demo?run creates one on load
+function day() {
+  const r = R.r; if (!r.plan || !$('#dayd')) return;
+  const d = r.plan[R.sel], it = r.items;
+  $('#dayd').innerHTML = d.outfit ? `<div class="outfit">${sortIds(d.outfit.items, it).map(i => img(i, it)).join('')}<div class="meta"><b>${esc(d.weekday || '')} ${esc(d.date)}</b><br>
+    <span class="pill ${esc(d.occasion)}">${esc(d.occasion)}</span> ${esc(d.reason)}<br>${sortIds(d.outfit.items, it).map(i => esc(it[i].name)).join(' + ')}</div></div>` : '<div class="muted">No outfit for this day.</div>';
+}
+</script>
+</body>
+</html>
