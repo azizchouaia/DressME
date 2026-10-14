@@ -1,0 +1,2 @@
+apscheduler>=3.10,<4   # in-process scheduler (scheduler.py)
+tzdata>=2024.1        # time zones on Windows

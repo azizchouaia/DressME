@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M4 Scheduler Lab</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e4ddd2;
+    --accent: #8a5a2b; --accent-soft: #f1e4d4; --good: #3f7d4e; --warn: #b5532f; --chip: #efe9df;
+    --lock: linear-gradient(160deg, #2b3a55, #5a3f5e 55%, #8a5a2b);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --panel: #201e1b; --ink: #f0ebe3; --muted: #a39d93; --line: #35312b;
+      --accent: #d9a46a; --accent-soft: #3a2d20; --good: #7cc08b; --warn: #e48a66; --chip: #2b2824;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px; }
+  header { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { margin: 0; font-size: 20px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .badge.mock { background: #f6d9cf; color: var(--warn); }
+  .cols { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; min-width: 0; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  select, input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--ink); font: inherit; min-width: 0; }
+  button { font: inherit; cursor: pointer; }
+  .btn { border: 0; background: var(--accent); color: #fff; padding: 9px 14px; border-radius: 10px; font-weight: 600; }
+  .ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 8px 12px; border-radius: 10px; }
+  .ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  /* phone lock screen */
+  .phone { background: var(--lock); border-radius: 26px; padding: 18px 12px 14px; color: #fff; min-height: 300px; }
+  .phone .clock { text-align: center; font-size: 46px; font-weight: 300; line-height: 1; }
+  .phone .date { text-align: center; opacity: .85; margin-bottom: 14px; font-size: 13px; }
+  .notif { background: rgba(255,255,255,.16); backdrop-filter: blur(8px); border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; }
+  .notif.read { opacity: .55; }
+  .notif .top { display: flex; justify-content: space-between; font-size: 11px; opacity: .85; }
+  .notif b { display: block; margin-top: 2px; }
+  .notif .body { font-size: 13px; }
+  .notif .pics { display: flex; gap: 4px; margin-top: 6px; }
+  .notif .pics img { width: 34px; height: 44px; object-fit: cover; border-radius: 6px; }
+  .notif .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .notif .acts button { border: 0; background: rgba(255,255,255,.22); color: #fff; padding: 6px 12px; border-radius: 9px; font-size: 13px; }
+  .notif .done { font-size: 12px; opacity: .85; margin-top: 6px; }
+  /* outfit cards */
+  .outfit .pieces { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+  .outfit img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; background: var(--chip); display: block; }
+  .outfit .lbl { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pill { font-size: 11px; padding: 2px 9px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .pill.on { background: var(--accent); color: #fff; }
+  .pill.good { background: var(--good); color: #fff; }
+  .pill.ev { background: var(--warn); color: #fff; }
+  .widget { display: flex; gap: 10px; align-items: center; background: var(--accent-soft); border-radius: 18px; padding: 10px; }
+  .widget img { width: 38px; height: 50px; object-fit: cover; border-radius: 7px; }
+  .day { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .day .d { font-size: 12px; color: var(--muted); }
+  .day .d b { display: block; color: var(--ink); font-size: 14px; }
+  .day .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 3px; }
+  .weekgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .weekgrid .pieces { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .form { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .form label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .sim { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+  .sim button { text-align: left; }
+  .sim button small { display: block; color: var(--muted); font-size: 11px; }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 9; }
+  .toast.show { opacity: 1; }
+  .spin { color: var(--muted); font-size: 13px; padding: 8px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DressMe · M4 Scheduler</h1>
+    <span id="mode" class="badge">…</span>
+    <select id="user" style="margin-left:auto"><option value="demo_f">Demo · womenswear</option><option value="demo_m">Demo · menswear</option></select>
+  </header>
+
+  <div class="card">
+    <h2>Simulate the clock <span id="sched" class="pill"></span></h2>
+    <div class="row">
+      <input type="date" id="simdate"> <input type="time" id="simtime" value="05:00">
+      <button class="btn" id="due">Run what is due</button>
+      <button class="ghost" id="reset">Reset</button>
+    </div>
+    <div class="sim">
+      <button class="ghost" data-job="morning">05:00 morning<small>compute today's outfit</small></button>
+      <button class="ghost" data-job="notify">07:00 push<small>"Good morning" + Wear / Change</small></button>
+      <button class="ghost" data-job="evening">20:00 evening<small>tomorrow's outfit, tips, laundry</small></button>
+      <button class="ghost" data-job="events">Event countdown<small>looks 5 days before, reminder</small></button>
+      <button class="ghost" data-job="season">Season check<small>7-day trend crosses 18°C</small></button>
+    </div>
+    <div id="runlog" class="small muted" style="margin-top:8px"></div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="card" style="padding:10px">
+        <div class="phone">
+          <div class="clock" id="clock">07:00</div>
+          <div class="date" id="cdate"></div>
+          <div id="notifs"><div class="small" style="text-align:center;opacity:.8">No notifications yet. Run a job above.</div></div>
+        </div>
+      </div>
+      <div class="card"><h2>Home-screen widget</h2><div id="widget" class="spin">…</div></div>
+    </div>
+    <div>
+      <div class="card outfit" id="today"><h2>Today</h2><div class="spin">…</div></div>
+      <div class="card outfit" id="tomorrow"><h2>Tomorrow</h2><div class="spin">…</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Calendar · next 30 days <span class="pill">Tunisian holidays included</span></h2>
+    <div class="form">
+      <label>Date<input type="date" id="evdate"></label>
+      <label>Title<input id="evtitle" placeholder="Cousin's wedding"></label>
+      <label>Occasion<select id="evocc"><option>event</option><option>work</option><option>casual</option></select></label>
+      <label>Dress code<input id="evcode" placeholder="festive"></label>
+      <label>Looks ready (days before)<input type="number" id="evdays" value="5" min="0" max="30"></label>
+      <label>&nbsp;<button class="btn" id="evadd">Add event</button></label>
+    </div>
+    <div id="cal" style="margin-top:10px" class="spin">…</div>
+  </div>
+
+  <div class="card">
+    <h2>Week plan <button class="ghost" id="weekbtn">Plan my week</button></h2>
+    <div id="week" class="muted small">7 outfits, each with its own forecast and occasion; no top, bottom or dress twice.</div>
+  </div>
+
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="form" id="prefs"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="save">Save</button><span id="next" class="small muted"></span></div>
+  </div>
+  <p class="small muted">Outfits come from M2, "Wear" logs into M3. Pages: <a href="/m02/demo" style="color:var(--accent)">M2</a> · <a href="/m03/demo" style="color:var(--accent)">M3</a></p>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = { user: 'demo_f' };
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (s, k) => { const d = new Date(s + 'T12:00'); d.setDate(d.getDate() + k); return iso(d); };
+$('#simdate').value = iso(new Date());
+$('#evdate').value = addDays(iso(new Date()), 4);
+
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3500); }
+async function api(path, payload = {}) {
+  const r = await fetch('/m04/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: S.user, payload }) });
+  if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 200));
+  const j = await r.json();
+  $('#mode').textContent = j.mocked ? 'MOCK (set M04_USE_MOCK=false)' : 'live';
+  $('#mode').classList.toggle('mock', !!j.mocked);
+  return j.result;
+}
+const order = ['outerwear', 'top', 'dress', 'bottom', 'shoes', 'accessory'];
+function pieces(v, cls = '') {
+  if (!v.outfit) return '<div class="muted small">No outfit.</div>';
+  const ids = [...v.outfit.items].sort((a, b) => order.indexOf((v.items[a] || {}).category) - order.indexOf((v.items[b] || {}).category));
+  return `<div class="pieces ${cls}">${ids.map(id => { const it = v.items[id] || {};
+    return `<div><img src="${esc(it.image || '')}" alt="${esc(it.name)}"><div class="lbl">${esc(it.name || id)}</div></div>`; }).join('')}</div>`;
+}
+function weather(v) { const w = v.weather || {}; return w.temp_c != null ? `${Math.round(w.temp_c)}°C · ${esc(w.condition)}` : ''; }
+
+function outfitCard(el, title, v, kindDate) {
+  const ctx = v.context || {};
+  const tags = [`<span class="pill on">${esc(v.occasion)}</span>`, `<span class="pill">${esc(ctx.occasion_reason || '')}</span>`,
+    ...(ctx.holidays || []).map(h => `<span class="pill ev">${esc(h.title)}</span>`), v.approved ? '<span class="pill good">approved</span>' : ''].join(' ');
+  el.innerHTML = `<h2>${title} · ${esc(v.date)} <span class="small">${weather(v)}</span></h2><div class="row">${tags}</div>${pieces(v)}
+    <div class="small muted">${esc(v.summary)}</div>
+    <div class="small muted">option ${v.choice + 1}/${v.options} · computed ${esc(new Date(v.computed_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }))} by <b>${esc(v.source)}</b>${v._ms != null ? ` · served in ${v._ms} ms` : ''}</div>
+    <div class="row" style="margin-top:8px"><button class="btn" data-a="wear">Wear</button><button class="ghost" data-a="change">Change</button><button class="ghost" data-a="approve">Approve</button></div>`;
+  el.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const r = await api(b.dataset.a, { date: v.date, kind: 'day' });
+      toast(b.dataset.a === 'wear' ? 'Logged as worn in M3' + (r.logged && r.logged.moved_to_laundry.length ? ' · moved to the laundry' : '')
+        : b.dataset.a === 'change' ? 'Next option' : 'Approved: locked for the morning');
+      loadOutfits(); loadCalendar();
+    } catch (e) { toast(e.message); b.disabled = false; }
+  });
+}
+
+async function loadOutfits() {
+  try { let t = performance.now(); const v = await api('today'); v._ms = Math.round(performance.now() - t); outfitCard($('#today'), 'Today', v); }
+  catch (e) { $('#today').innerHTML = `<h2>Today</h2><div class="muted">${esc(e.message)}</div>`; }
+  try { const v = await api('tomorrow'); outfitCard($('#tomorrow'), 'Tomorrow', v); }
+  catch (e) { $('#tomorrow').innerHTML = `<h2>Tomorrow</h2><div class="muted">${esc(e.message)}</div>`; }
+  try {
+    const w = await api('widget');
+    $('#widget').innerHTML = `<div class="widget"><div style="flex:1;min-width:0"><b>${w.temp_c != null ? Math.round(w.temp_c) + '°C' : ''} · ${esc(w.condition || '')}</b>
+      <div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(w.summary)}</div><div class="small muted">${esc(w.deep_link)}</div></div>
+      ${w.items.map(i => `<img src="${esc(i.image || '')}" alt="${esc(i.name)}">`).join('')}</div>`;
+  } catch (e) { $('#widget').textContent = e.message; }
+}
+
+async function loadNotifs() {
+  const r = await api('notifications', { limit: 12 });
+  $('#notifs').innerHTML = r.notifications.length ? r.notifications.map(n => `<div class="notif ${n.status !== 'unread' ? 'read' : ''}">
+    <div class="top"><span>DRESSME · ${esc(n.kind.replace('_', ' '))}</span><span>${esc(new Date(n.created_at).toTimeString().slice(0, 5))}</span></div>
+    <b>${esc(n.title)}</b><div class="body">${esc(n.body)}</div>
+    ${(n.data.images || []).length ? `<div class="pics">${n.data.images.map(src => `<img src="${esc(src || '')}" alt="">`).join('')}</div>` : ''}
+    ${n.status === 'unread' ? `<div class="acts">${n.actions.map(a => `<button data-n="${n.notif_id}" data-a="${a}">${esc(a.replace(/_/g, ' '))}</button>`).join('')}</div>`
+      : `<div class="done">${n.action_taken ? '✓ ' + esc(n.action_taken.replace(/_/g, ' ')) : 'read'}</div>`}</div>`).join('')
+    : '<div class="small" style="text-align:center;opacity:.8">No notifications yet. Run a job above.</div>';
+  $('#notifs').querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const r = await api('notifications/action', { notif_id: b.dataset.n, action: b.dataset.a });
+      toast(b.dataset.a === 'wear' ? 'Worn, logged in M3' : b.dataset.a === 'change' ? 'New option: ' + (r.summary || '') :
+        b.dataset.a === 'approve' ? 'Approved' : b.dataset.a === 'back_in_closet' ? 'Back in the closet' : 'OK');
+      refresh();
+    } catch (e) { toast(e.message); }
+  });
+}
+
+async function loadCalendar() {
+  const r = await api('calendar', { days: 30 });
+  $('#cal').innerHTML = r.days.map(d => { const dt = new Date(d.date + 'T12:00');
+    return `<div class="day"><div class="d"><b>${dt.getDate()} ${dt.toLocaleString('en', { month: 'short' })}</b>${d.weekday.slice(0, 3)}</div><div style="min-width:0">
+    <div class="tags"><span class="pill ${d.occasion === 'event' ? 'ev' : d.occasion === 'work' ? 'on' : ''}">${esc(d.occasion)}</span>
+      ${d.events.map(e => `<span class="pill ev">${esc(e.title)}${e.dress_code ? ' · ' + esc(e.dress_code) : ''} <a href="#" data-del="${e.event_id}" style="color:#fff">✕</a></span>`).join('')}
+      ${d.holidays.map(h => `<span class="pill" title="${h.approximate ? 'Islamic date, ±1 day (moon sighting)' : ''}">🇹🇳 ${esc(h.title)}${h.approximate ? ' ≈' : ''}</span>`).join('')}
+      ${d.seasons.map(s => `<span class="pill">${esc(s.title)}</span>`).join('')}
+      ${d.approved ? '<span class="pill good">approved</span>' : ''}</div>
+    <div class="small muted">${d.outfit ? esc(d.outfit.text) : ''}</div></div></div>`; }).join('');
+  $('#cal').querySelectorAll('[data-del]').forEach(a => a.onclick = async e => { e.preventDefault(); await api('events/delete', { event_id: a.dataset.del }); toast('Event deleted'); loadCalendar(); });
+}
+
+async function loadPrefs() {
+  const r = await api('schedule');
+  const p = r.prefs, days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  $('#prefs').innerHTML = `<label>City<input id="p_city" value="${esc(p.city)}"></label>
+    <label>Compute at<input type="time" id="p_morning" value="${esc(p.morning_time)}"></label>
+    <label>Push at<input type="time" id="p_notify" value="${esc(p.notify_time)}"></label>
+    <label>Tomorrow at<input type="time" id="p_evening" value="${esc(p.evening_time)}"></label>
+    ${days.map((d, k) => `<label>${d}<select id="p_wd${k}">${['work', 'casual', 'event'].map(o => `<option ${p.weekday_occasions[k] === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>`).join('')}
+    ${Object.keys(p.jobs).map(j => `<label><span><input type="checkbox" id="p_job_${j}" ${p.jobs[j] ? 'checked' : ''}> ${j.replace('_', ' ')}</span></label>`).join('')}`;
+  $('#next').textContent = 'Next runs: ' + Object.entries(r.next_runs).map(([k, v]) => `${k} ${v.replace('T', ' ')}`).join(' · ');
+  const st = await (await fetch('/m04/status')).json();
+  $('#sched').textContent = st.result.scheduler_running ? `scheduler running · tick ${st.result.tick_minutes} min` : 'scheduler off';
+}
+
+async function refresh() { await Promise.all([loadNotifs(), loadOutfits(), loadCalendar()]); }
+
+$('#save').onclick = async () => {
+  const jobs = {}; document.querySelectorAll('[id^=p_job_]').forEach(c => jobs[c.id.slice(6)] = c.checked);
+  await api('schedule', { set: { city: $('#p_city').value, morning_time: $('#p_morning').value, notify_time: $('#p_notify').value,
+    evening_time: $('#p_evening').value, weekday_occasions: [0, 1, 2, 3, 4, 5, 6].map(k => $('#p_wd' + k).value), jobs } });
+  toast('Saved'); loadPrefs(); loadCalendar();
+};
+$('#evadd').onclick = async () => {
+  if (!$('#evtitle').value) { toast('Give the event a title'); return; }
+  await api('events/add', { date: $('#evdate').value, title: $('#evtitle').value, occasion: $('#evocc').value,
+    dress_code: $('#evcode').value || null, remind_days: +$('#evdays').value });
+  $('#evtitle').value = ''; toast('Event added: run "Event countdown" to get its looks'); loadCalendar(); loadOutfits();
+};
+async function runJob(job) {
+  const now = `${$('#simdate').value}T${$('#simtime').value}`;
+  $('#clock').textContent = $('#simtime').value;
+  $('#runlog').textContent = `Running ${job} at ${now.replace('T', ' ')}… (M2 computes outfits, a few seconds)`;
+  try {
+    const r = await api('run', { job, now });
+    $('#runlog').textContent = r.runs.length ? r.runs.map(x => `✓ ${x.job} at ${x.at.replace('T', ' ')}` + (x.error ? ' · ' + x.error : '')).join(' · ')
+      : `Nothing due at ${now.replace('T', ' ')} (each job runs once a day, from its time to 3 hours later).`;
+    refresh();
+  } catch (e) { $('#runlog').textContent = e.message; }
+}
+document.querySelectorAll('[data-job]').forEach(b => b.onclick = () => {
+  const t = { morning: '#p_morning', notify: '#p_notify', evening: '#p_evening' }[b.dataset.job];
+  if (t && $(t)) $('#simtime').value = $(t).value;
+  runJob(b.dataset.job);
+});
+$('#due').onclick = () => runJob('due');
+$('#reset').onclick = async () => { if (!confirm('Delete ' + S.user + "'s M4 data (prefs, events, cache, notifications)?")) return;
+  await fetch('/m04/demo/reset/' + S.user, { method: 'POST' }); toast('Reset'); loadPrefs(); refresh(); };
+$('#weekbtn').onclick = async () => {
+  $('#week').innerHTML = '<div class="spin">Planning 7 days (one M2 call per day)…</div>';
+  try {
+    const r = await api('week', { days: 7, refresh: true });
+    $('#week').innerHTML = `<div class="weekgrid">${r.days.map(v => `<div class="outfit"><div class="row"><b>${esc(new Date(v.date + 'T12:00').toLocaleDateString('en', { weekday: 'short', day: 'numeric' }))}</b>
+      <span class="pill ${v.occasion === 'event' ? 'ev' : v.occasion === 'work' ? 'on' : ''}">${esc(v.occasion)}</span></div>
+      <div class="small muted">${weather(v)} · ${esc((v.context || {}).occasion_reason || '')}</div>${pieces(v)}</div>`).join('')}</div>`;
+    loadCalendar(); loadOutfits();
+  } catch (e) { $('#week').textContent = e.message; }
+};
+$('#user').onchange = () => { S.user = $('#user').value; loadPrefs(); refresh(); };
+function tickClock() { const d = new Date(); $('#cdate').textContent = d.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' }); }
+tickClock(); $('#clock').textContent = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
+loadPrefs().then(refresh).catch(e => toast(e.message));
+</script>
+</body>
+</html>
