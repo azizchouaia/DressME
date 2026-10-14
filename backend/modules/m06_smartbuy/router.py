@@ -22,3 +22,13 @@ async def verdict(inp: SmartBuyInput):
         return await agent()(inp.model_dump())
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
+
+
+@router.post("/shopping-list")
+def shopping_list(user_id: str):
+    """Wardrobe gap shopping list from the user's goals (M5) + gaps: most useful pieces first."""
+    from .shopping import shopping_list as build
+    try:
+        return {"items": build(agent(), user_id)}
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e

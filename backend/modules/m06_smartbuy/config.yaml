@@ -42,3 +42,4 @@ feature_means:                 # 'average piece' used to explain contributions (
   gap_fill: 0.2
   novelty: 0.6
   price_value: 0.6
+goal_points: 15                # rules mode: a candidate that helps (+) / breaks (-) the user's goals moves the score by up to 15

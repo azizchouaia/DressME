@@ -47,6 +47,8 @@ class MockClients:
         self.wardrobes = {demo_w["user_id"]: demo_w}
         self.candidates = {c["id"]: {**c, "demo": True} for c in _load(MOCKS / "candidates_demo.json")}
         folder = DATA / dataset
+        self._goals_file = folder / "goals.json"   # mock of M5's goal store
+        self._goals = _load(self._goals_file) or {}
         for w in _load(folder / "wardrobes.json") or []:
             w["items"] = [_complete(i, folder) for i in w["items"]]
             w.setdefault("gaps", [])
@@ -79,6 +81,9 @@ class MockClients:
                 for it in self._items(user_id)]
         return sorted(sims, key=lambda s: -s["similarity"])[:k]
 
+    def items(self, user_id):
+        return self._items(user_id)
+
     def count_type(self, user_id, subcategory):
         return sum(it["subcategory"] == subcategory for it in self._items(user_id))
 
@@ -98,6 +103,15 @@ class MockClients:
     # ---------------- M5 · style profile
     def gaps(self, user_id):
         return self.wardrobes[user_id].get("gaps", [])
+
+    def goals(self, user_id):
+        return self._goals.get(user_id, {"templates": [], "budget": {}})
+
+    def set_goals(self, user_id, goals):
+        self._goals[user_id] = goals
+        self._goals_file.parent.mkdir(parents=True, exist_ok=True)
+        self._goals_file.write_text(json.dumps(self._goals, indent=1), encoding="utf-8")
+        return goals
 
     # ---------------- M7 · local catalogue
     def catalogue_search(self, category, colour, max_price):

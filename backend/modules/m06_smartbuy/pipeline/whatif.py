@@ -16,8 +16,11 @@ def explain(facts: dict, cfg: dict, model: dict | None, offset: int, current: st
     sub = facts["subcategory"]
     if facts["red"]["is_duplicate"]:
         return [f"Only worth it if it replaces your {facts['red']['duplicate_of']['label'].lower()}."]
+    gl = facts.get("goal", {})
+    if gl.get("over_budget") and gl.get("budget_left") is not None:
+        out.append(f"Fits your budget at {gl['budget_left']:.0f} TND or less (what is left this month).")
     # price
-    if price:
+    if price and not gl.get("over_budget"):
         if current != "buy":
             for p in range(int(price) - 5, 0, -5):
                 v = decide(_with(facts, price=float(p)), cfg, model, offset)["verdict"]

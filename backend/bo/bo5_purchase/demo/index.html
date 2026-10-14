@@ -69,6 +69,12 @@ ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
 .ask .mini{margin-right:8px;margin-top:8px;border-color:var(--indigo);color:var(--indigo)}
 .whatif{margin-top:16px;padding:14px;background:var(--linen);border-radius:6px}
 .probs{display:flex;gap:10px;font-size:12px;color:var(--mute);margin-top:4px}
+.goals{display:flex;flex-wrap:wrap;gap:6px}
+.goal{height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--ink);background:transparent;font:inherit;font-size:13px;cursor:pointer}
+.goal[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.goalchip{display:inline-block;padding:4px 10px;border-radius:12px;background:#E8F1EC;color:var(--buy);font-size:12px;margin-top:6px}
+.shop{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.shop .rank{font-family:'DM Serif Display',serif;font-size:28px;width:28px;color:var(--mute)}
 .err{color:var(--skip);font-size:14px;margin-top:8px}
 .note{font-size:12px;color:var(--mute);margin-top:6px}
 @media (max-width:600px){header,main{padding-left:16px;padding-right:16px}.verdict{font-size:56px}h1{font-size:38px}}
@@ -86,6 +92,16 @@ ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
       <label for="user">Wardrobe</label>
       <select id="user"></select>
       <div class="gaps" id="gaps"></div>
+      <div class="goalbox">
+        <div class="cap" style="margin:14px 0 6px">My goals</div>
+        <div class="goals" id="goals" role="group" aria-label="Personal goals"></div>
+        <div class="row" id="budgetRow">
+          <div><label for="bMonth">Monthly budget (TND)</label><input id="bMonth" type="number" min="0"></div>
+          <div><label for="bSpent">Spent this month (TND)</label><input id="bSpent" type="number" min="0"></div>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="mini" id="saveGoals">Save goals</button><button class="mini" id="showList" style="background:var(--ink);color:var(--paper)">My shopping list</button></div>
+        <div class="note" id="goalMsg" role="status"></div>
+      </div>
       <div id="closetTools" hidden>
         <label class="drop" id="addDrop">
           <input type="file" id="addFiles" accept="image/*" multiple>
@@ -156,7 +172,7 @@ function garment(sub,colour,size=56){
 const pic=(it,size)=>it.image?`<img src="/api/closet/image/${it.image}" alt="">`:garment(it.subcategory,it.colour,size);
 const tile=(it,hit)=>`<div class="tile${hit?" hit":""}${it.ai&&!it.checked?" ai":""}">${pic(it,48)}${it.label}</div>`;
 const opts=(arr,sel)=>arr.map(x=>`<option${x===sel?" selected":""}>${x}</option>`).join("");
-let PHOTO=null,LAST=null,NEED=null;
+let PHOTO=null,LAST=null,NEED=null,GOALS={templates:[],budget:{}};
 
 async function api(p,body){const r=await fetch(p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
   if(!r.ok){const t=await r.json().catch(()=>({}));throw new Error(t.detail?JSON.stringify(t.detail):r.statusText)}return r.json()}
@@ -164,6 +180,7 @@ async function api(p,body){const r=await fetch(p,body?{method:"POST",headers:{"C
 async function loadUser(){
   const u=$("user").value; WARD=await api("/api/wardrobe/"+u);
   $("gaps").innerHTML=WARD.gaps.map(g=>`<span class="chip">gap · ${g}</span>`).join("")||'<span class="note">no gaps recorded</span>';
+  GOALS=await api("/api/goals/"+u);renderGoals();
   const me=u==="usr_me";$("closetTools").hidden=!me;$("editor").innerHTML="";
   if(me)$("gapsInput").value=WARD.gaps.join(", ");
   $("wardrobe").innerHTML=me?(WARD.items.map(i=>`<button class="tile${i.ai&&!i.checked?" ai":""}" data-id="${i.id}" style="font:inherit;font-size:11px;cursor:pointer" title="edit">${pic(i,48)}${i.label}</button>`).join("")||'<p class="note">Your closet is empty: add photos above.</p>')
@@ -218,6 +235,29 @@ function ring(score,v){const r=40,c=2*Math.PI*r,o=c*(1-score/100);
   <circle cx="48" cy="48" r="${r}" fill="none" stroke="${COL[v]}" stroke-width="8" stroke-dasharray="${c}" stroke-dashoffset="${o}" transform="rotate(-90 48 48)" stroke-linecap="round"/>
   <text x="48" y="54" text-anchor="middle" font-size="22" font-family="Space Grotesk" font-weight="700" fill="#16151A">${score}</text></svg>`}
 
+function renderGoals(){
+  const T=META.goal_templates,on=new Set(GOALS.templates||[]);
+  $("goals").innerHTML=Object.entries(T).map(([k,t])=>`<button class="goal" data-g="${k}" aria-pressed="${on.has(k)}" title="${t.description}">${t.name}</button>`).join("");
+  const b=GOALS.budget||{};$("bMonth").value=b.monthly_tnd??"";$("bSpent").value=b.spent_tnd??"";
+  $("budgetRow").hidden=!on.has("budget");$("goalMsg").textContent="";
+}
+async function saveGoals(){
+  const t=[...document.querySelectorAll("#goals .goal[aria-pressed=true]")].map(b=>b.dataset.g);
+  const m=parseFloat($("bMonth").value),s=parseFloat($("bSpent").value)||0;
+  if(t.includes("budget")&&!(m>0)){$("goalMsg").textContent="Enter a monthly budget first";$("bMonth").focus();return}
+  GOALS=await api2("PUT","/api/goals/"+$("user").value,{templates:t,budget:t.includes("budget")?{monthly_tnd:m,spent_tnd:s}:{}});
+  renderGoals();$("goalMsg").textContent="Goals saved: verdicts now take them into account";
+}
+async function showList(){
+  const r=await api("/api/shopping-list/"+$("user").value),T=META.goal_templates;
+  const names=(r.goals.templates||[]).map(g=>T[g]?T[g].name:g).join(" · ")||"no goals yet: pick some on the left";
+  let h=`<div class="card"><div class="cap">Shopping list for my goals</div><h2 style="font-family:'DM Serif Display',serif;font-size:40px;font-weight:400;margin:6px 0 4px;letter-spacing:0;text-transform:none">What to buy next</h2><p class="note">${names}</p>`;
+  if(!r.items.length)h+=`<p class="expl">Nothing missing for these goals.</p>`;
+  r.items.forEach((it,i)=>{h+=`<div class="shop"><span class="rank">${i+1}</span>${garment(it.subcategory,it.colour,56)}<div style="flex:1;min-width:0"><b>${it.piece}</b>
+    <div class="note">${it.why} · creates ${it.new_outfits} outfits${it.typical_price_tnd?` · usually ~${it.typical_price_tnd} TND`:""}${it.within_budget===false?" · over your budget left":""}</div>
+    ${it.links.map(l=>`<a class="link" style="margin-top:6px" href="${l.url}" target="_blank" rel="noopener"><div><b>${l.item}</b><div class="note">${l.shop} · ${l.price_tnd} TND</div></div><span class="code">${l.promo_code||""}</span></a>`).join("")}</div></div>`});
+  $("result").innerHTML=h+`<p class="note">Goals are a mock of M5 (style profile, BO4).</p></div>`;
+}
 function render(o,expected){
   LAST=o;
   const byId=Object.fromEntries(WARD.items.map(i=>[i.id,i]));
@@ -226,7 +266,7 @@ function render(o,expected){
   let h=`<div class="card"><div class="vhead">${ring(o.score,o.verdict)}<div><div class="verdict" style="color:${COL[o.verdict]}">${o.verdict.toUpperCase()}</div>
    <div class="probs">${o.decision_mode==="learned"?"learned model":"rules"}${P?` · buy ${Math.round(P.buy*100)}% · think ${Math.round(P.think*100)}% · skip ${Math.round(P.skip*100)}%`:""}${o.threshold_offset?` · your strictness ${o.threshold_offset>0?"+":""}${o.threshold_offset}`:""}</div>
    ${expected?`<div class="exp">stylist rules said: <b>${expected}</b> ${expected===o.verdict?"· match":"· different"}</div>`:""}</div></div>
-   <p class="expl">${o.explanation}</p>`;
+   <p class="expl">${o.explanation}</p>${o.fills_goal?`<span class="goalchip">fills your goal: ${o.fills_goal}</span>`:""}`;
   if(o.uncertain&&o.question){h+=`<div class="ask"><b>Not sure.</b> ${o.question}`;
     if(o.question_key==="need_for_occasion")h+=`<div><button class="mini" data-ans="yes">Yes, I need it</button><button class="mini" data-ans="no">No</button></div>`;
     h+=`</div>`}
@@ -270,6 +310,9 @@ async function go(){
   fillUsers();
   $("brand").innerHTML='<option value="">— no size advice —</option>'+META.brands.map(b=>`<option>${b}</option>`).join("");
   $("type").innerHTML=Object.keys(META.types).map(t=>`<option>${t}</option>`).join("");
+  $("goals").onclick=e=>{const b=e.target.closest(".goal");if(!b)return;b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");
+    $("budgetRow").hidden=!document.querySelector('#goals .goal[data-g="budget"][aria-pressed=true]')};
+  $("saveGoals").onclick=saveGoals;$("showList").onclick=showList;
   $("user").onchange=loadUser;$("cand").onchange=pickCand;$("type").onchange=()=>{$("price").value="";pickCand()};
   $("swatches").onclick=e=>{const b=e.target.closest(".sw");if(b){COLOUR=b.dataset.c;pickCand()}};
   $("tabList").onclick=()=>setMode("list");$("tabCustom").onclick=()=>setMode("custom");$("tabPhoto").onclick=()=>setMode("photo");

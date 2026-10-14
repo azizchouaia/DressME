@@ -17,6 +17,7 @@ from modules.m18_size_fit import service as sizefit
 from .bandit import PersonalThresholds
 from .clients import get_clients
 from .contract import SmartBuyInput, SmartBuyOutput
+from . import goals as goals_mod
 from .pipeline import gap, redundancy, score, uncertainty, unlock, wear, whatif
 from .pipeline.decide import NAMES, decide
 
@@ -59,6 +60,10 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             return "good price per outfit" if contrib >= 0 else "high price per outfit"
         if k == "new_outfits":
             return "creates many outfits" if contrib >= 0 else "creates few outfits"
+        if k == "over_budget":
+            return "over your monthly budget"
+        if k == "goal_fit":
+            return "fits your goals" if contrib >= 0 else "goes against your goals"
         if k == "novelty":
             return "new to your wardrobe" if contrib >= 0 else "close to what you own"
         return NAMES.get(k, k)
@@ -72,10 +77,13 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
         g = gap.fill(cl.gaps(user_id), cand["subcategory"], cand["colour"])         # M5
         if not g and need_for_occasion:
             g = "needed for an occasion"
+        user_goals = cl.goals(user_id)                                               # M5 (mock)
+        gf = goals_mod.goal_fit(user_goals, cl.items(user_id), cand, price)
         return {"cand": cand, "subcategory": cand["subcategory"], "colour": cand["colour"], "neigh": neigh,
                 "red": red, "n_same": cl.count_type(user_id, cand["subcategory"]),  # M1
                 "unl": unlock.count(cl.recommend_with(user_id, cand)),             # M2
-                "gap": g, "price": price, "typical_price": self.typical.get(cand["subcategory"])}
+                "gap": g, "price": price, "typical_price": self.typical.get(cand["subcategory"]),
+                "goal": gf, "goals": user_goals}
 
     async def run(self, inp: SmartBuyInput) -> SmartBuyOutput:
         cfg, cl = self.config, self.clients
@@ -89,6 +97,7 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
         rs = score.reasons(red, unl, g, d["cost_per_outfit"], lambda n: n["label"], n_same, cand["subcategory"], cfg)
         items = {i["id"]: i for i in getattr(cl, "wardrobes", {}).get(inp.user_id, {}).get("items", [])}
         wp = wear.predict(f["neigh"], items, cand["category"], inp.price_tnd)          # idea 5
+        rs = f["goal"]["reasons"][:2] + rs                                           # goals first: the user chose them
         typ = f["typical_price"]
         if typ and inp.price_tnd and inp.price_tnd > typ * 1.3:
             rs.append(f"expensive for a {cand['subcategory']}: usually about {round(typ)} TND in local shops")
@@ -115,4 +124,6 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             contributions=contrib, what_if=wi, uncertain=unc["uncertain"], question=unc["question"],
             question_key=unc["question_key"], predicted_wears=wp["predicted_wears"],
             cost_per_wear_tnd=wp["cost_per_wear"], threshold_offset=offset,
+            goal_fit=round(f["goal"]["score"], 2) if f["goals"].get("templates") else None,
+            fills_goal=f["goal"]["fills"], goals=f["goals"].get("templates", []),
         )

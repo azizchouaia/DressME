@@ -117,3 +117,58 @@ def test_learned_mode_gives_probabilities():
     out = asyncio.run(a({"user_id": "usr_demo", "probe_image": "cand_navy_shirt", "price_tnd": 69}))
     assert out["decision_mode"] == "learned" and abs(sum(out["probabilities"].values()) - 1) < 0.01
     assert out["verdict"] == "skip"  # duplicates stay a hard rule
+
+
+# ---------------- personal goals (mock M5)
+from modules.m06_smartbuy import goals as G  # noqa: E402
+
+ITEMS = [{"subcategory": "blazer", "colour": "navy", "category": "outerwear"},
+         {"subcategory": "t-shirt", "colour": "black", "category": "top"},
+         {"subcategory": "t-shirt", "colour": "white", "category": "top"},
+         {"subcategory": "t-shirt", "colour": "grey", "category": "top"}]
+
+
+def test_work_goal_lists_missing_pieces():
+    gaps = {g["subcategory"]: g for g in G.goal_gaps({"templates": ["work"]}, ITEMS)}
+    assert gaps["blazer"]["have"] == 1 and gaps["blazer"]["missing"] == 1
+    assert gaps["shirt"]["missing"] == 4
+
+
+def test_candidate_that_serves_goal_scores_positive():
+    cand = {"subcategory": "shirt", "colour": "white", "category": "top"}
+    gf = G.goal_fit({"templates": ["work"]}, ITEMS, cand, 70)
+    assert gf["score"] > 0 and gf["fills"] == "Work wardrobe"
+
+
+def test_budget_and_minimalism_push_away():
+    cand = {"subcategory": "t-shirt", "colour": "red", "category": "top"}
+    gf = G.goal_fit({"templates": ["minimalist", "budget"], "budget": {"monthly_tnd": 100, "spent_tnd": 90}}, ITEMS, cand, 40)
+    assert gf["score"] == -1.0
+    assert any("budget" in r for r in gf["reasons"]) and any("minimalist" in r for r in gf["reasons"])
+
+
+def test_no_goals_is_neutral():
+    assert G.goal_fit({}, ITEMS, {"subcategory": "shirt", "colour": "white", "category": "top"}, 50)["score"] == 0
+
+
+def test_goal_shows_in_verdict_and_shopping_list():
+    from modules.m06_smartbuy.agent import CONFIG
+    from modules.m06_smartbuy.shopping import shopping_list
+    import asyncio
+    a = SmartBuyAgent({**CONFIG, "decision": "rules", "personalize": False})
+    a.clients.set_goals = lambda u, g: g  # never write files in tests
+    a.clients._goals["usr_demo"] = {"templates": ["work"], "budget": {}}
+    out = asyncio.run(a({"user_id": "usr_demo", "probe_image": "custom:blazer:black", "price_tnd": 200}))
+    assert out["fills_goal"] == "Work wardrobe" and out["goal_fit"] > 0
+    rows = shopping_list(a, "usr_demo")
+    assert rows and rows[0]["new_outfits"] >= rows[-1]["new_outfits"]
+
+
+def test_over_budget_caps_buy_and_says_what_is_left():
+    from modules.m06_smartbuy.agent import CONFIG
+    import asyncio
+    a = SmartBuyAgent({**CONFIG, "decision": "rules", "personalize": False})
+    a.clients._goals["usr_demo"] = {"templates": ["budget"], "budget": {"monthly_tnd": 100, "spent_tnd": 50}}
+    out = asyncio.run(a({"user_id": "usr_demo", "probe_image": "cand_white_shirt", "price_tnd": 79}))
+    assert out["verdict"] != "buy"
+    assert any("50 TND" in w for w in out["what_if"])

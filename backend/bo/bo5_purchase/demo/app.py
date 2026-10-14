@@ -13,7 +13,8 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
-from modules.m06_smartbuy import synthetic as syn, vision
+from modules.m06_smartbuy import goals as goals_mod, synthetic as syn, vision
+from modules.m06_smartbuy.shopping import shopping_list
 from bo.bo5_purchase import closet
 from modules.m06_smartbuy.agent import SmartBuyAgent
 from modules.m06_smartbuy.contract import SmartBuyInput
@@ -62,6 +63,7 @@ def meta():
         "types": {s: {"category": v[0], "price": v[2], "colours": syn.TYPE_COLOURS[s]} for s, v in syn.TYPES.items()},
         "colours": {c: v[0] for c, v in syn.COLOURS.items()},
         "brands": [b for b, v in agent.charts.items() if isinstance(v, dict)],
+        "goal_templates": {k: {"name": t["name"], "description": t["description"]} for k, t in goals_mod.TEMPLATES.items()},
         "config": {**{k: agent.config[k] for k in ("buy_threshold", "skip_threshold", "duplicate_threshold", "max_same_type")},
                    "decision": "learned" if agent.model else "rules", "personalize": bool(agent.bandit)},
     }
@@ -79,6 +81,33 @@ def wardrobe(user_id: str):
 async def verdict(inp: SmartBuyInput):
     try:
         return await agent(inp.model_dump())
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+# ---------------- personal goals (mock of M5) + shopping list
+class Goals(BaseModel):
+    templates: list[str] = []
+    budget: dict = {}
+
+
+@app.get("/api/goals/{user_id}")
+def get_goals(user_id: str):
+    return agent.clients.goals(user_id)
+
+
+@app.put("/api/goals/{user_id}")
+def put_goals(user_id: str, g: Goals):
+    bad = [t for t in g.templates if t not in goals_mod.TEMPLATES]
+    if bad:
+        raise HTTPException(400, f"unknown goal(s): {bad}")
+    return agent.clients.set_goals(user_id, g.model_dump())
+
+
+@app.get("/api/shopping-list/{user_id}")
+def get_shopping_list(user_id: str):
+    try:
+        return {"goals": agent.clients.goals(user_id), "items": shopping_list(agent, user_id)}
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
 

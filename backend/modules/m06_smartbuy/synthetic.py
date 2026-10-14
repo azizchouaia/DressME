@@ -137,6 +137,16 @@ def stylist_label(c: dict, w: dict, rng: random.Random) -> str:
             lab = "buy"
         else:
             lab = "think"
+    from .goals import goal_fit  # local import: goals.py imports this module
+    gres = goal_fit(w.get("goals", {}), items, c, c["price_tnd"])
+    gf = gres["score"]
+    if lab != "skip" or not any(i["subcategory"] == c["subcategory"] and i["colour"] == c["colour"] for i in items):
+        if gf >= 0.7 and lab == "think" and c["price_tnd"] <= TYPES[c["subcategory"]][2] * 1.3:
+            lab = "buy"      # the stylist backs a piece that serves the user's own goal
+        elif gf <= -0.7:
+            lab = {"buy": "think", "think": "skip"}.get(lab, lab)  # breaks the goal (budget, minimalism)
+        if gres["over_budget"] and lab == "buy":
+            lab = "think"    # over the user's own budget: never a clear BUY
     if rng.random() < 0.08:  # human disagreement
         lab = rng.choice([x for x in ("buy", "think", "skip") if x != lab])
     return lab
@@ -204,7 +214,17 @@ def main(out: Path | None = None, seed: int = 42):
     rng = random.Random(seed)
     users = [("usr_amine", 28), ("usr_sarra", 34), ("usr_lina", 40), ("usr_kenza", 36), ("usr_karim", 24)]
     wardrobes = [make_wardrobe(u, rng, n) for u, n in users]
+    goals = {  # mock of what users chose in M5 (BO4)
+        "usr_amine": {"templates": ["work", "budget"], "budget": {"monthly_tnd": 250, "spent_tnd": 120}},
+        "usr_sarra": {"templates": ["more_colour", "budget"], "budget": {"monthly_tnd": 150, "spent_tnd": 90}},
+        "usr_lina": {"templates": ["minimalist"], "budget": {}},
+        "usr_kenza": {"templates": ["more_colour", "casual"], "budget": {}},
+        "usr_karim": {"templates": ["casual", "budget"], "budget": {"monthly_tnd": 200, "spent_tnd": 40}},
+    }
+    for w in wardrobes:
+        w["goals"] = goals[w["user_id"]]
     cands = make_candidates(wardrobes, rng, 120)
+    (syn / "goals.json").write_text(json.dumps({w["user_id"]: w.pop("goals") for w in wardrobes}, indent=1), encoding="utf-8")
     (syn / "wardrobes.json").write_text(json.dumps(wardrobes, indent=1), encoding="utf-8")
     (syn / "candidates.json").write_text(json.dumps(cands, indent=1), encoding="utf-8")
     with (syn / "labels.csv").open("w", newline="", encoding="utf-8") as f:

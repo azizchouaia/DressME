@@ -16,6 +16,15 @@ class HttpClients:
     def recommend_with(self, user_id, candidate):
         raise NotImplementedError("POST M2 /recommend (locked_items=[candidate])")
 
+    def items(self, user_id):
+        raise NotImplementedError("GET M1 /items?user_id=...")
+
+    def goals(self, user_id):
+        raise NotImplementedError("GET M5 /profile/{user_id}/goals")
+
+    def set_goals(self, user_id, goals):
+        raise NotImplementedError("PUT M5 /profile/{user_id}/goals")
+
     def gaps(self, user_id):
         raise NotImplementedError("GET M5 /profile/{user_id}/gaps")
 

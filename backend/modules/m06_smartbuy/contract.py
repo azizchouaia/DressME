@@ -76,3 +76,7 @@ class SmartBuyOutput(BaseModel):
     predicted_wears: int | None = None                 # per year
     cost_per_wear_tnd: float | None = None
     threshold_offset: int = 0                          # personal strictness (bandit)
+    # --- personal goals (M5, mocked)
+    goals: list[str] = []
+    goal_fit: float | None = None                      # -1 breaks the goals .. +1 helps them
+    fills_goal: str | None = None

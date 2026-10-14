@@ -11,12 +11,12 @@ import math
 
 from . import score
 
-FEATURES = ["new_outfits", "gap_fill", "novelty", "price_value", "fair_price", "same_type", "duplicate"]
+FEATURES = ["new_outfits", "gap_fill", "novelty", "price_value", "fair_price", "same_type", "duplicate", "goal_fit"]
 CLASSES = ["buy", "think", "skip"]
 ORDER = {"skip": 0, "think": 1, "buy": 2}
 NAMES = {"new_outfits": "new outfits", "gap_fill": "fills a gap", "novelty": "novelty",
          "price_value": "price per outfit", "fair_price": "fair price for this type",
-         "same_type": "pieces of same type", "duplicate": "duplicate"}
+         "same_type": "pieces of same type", "duplicate": "duplicate", "goal_fit": "fits your goals"}
 
 
 def features(facts: dict, cfg: dict) -> dict:
@@ -28,8 +28,10 @@ def features(facts: dict, cfg: dict) -> dict:
         fair = 1.0 if ratio <= 1 else max(0.0, 1 - (ratio - 1) / 0.6)  # 1.6x the usual price -> 0
     else:
         fair = 0.5
-    return {**b, "fair_price": round(fair, 2), "same_type": min(facts["n_same"] / 5, 1.0), "duplicate": 1.0 if facts["red"]["is_duplicate"] else 0.0,
-            "_score": sc["score"], "_cpo": sc["cost_per_outfit"]}
+    goal = facts.get("goal", {}).get("score", 0.0)
+    sc_goal = max(0, min(100, sc["score"] + round(cfg.get("goal_points", 15) * goal)))
+    return {**b, "goal_fit": round((goal + 1) / 2, 2), "_goal": goal, "fair_price": round(fair, 2), "same_type": min(facts["n_same"] / 5, 1.0), "duplicate": 1.0 if facts["red"]["is_duplicate"] else 0.0,
+            "_score": sc_goal, "_cpo": sc["cost_per_outfit"]}
 
 
 def _softmax(z):
@@ -63,9 +65,15 @@ def decide(facts: dict, cfg: dict, model: dict | None = None, offset: int = 0) -
         contrib = {k: round(100 * w[k] * (f[k] - mean.get(k, 0.5)), 1) for k in w}
         if facts["n_same"] >= cfg.get("max_same_type", 99):
             contrib["same_type"] = -15.0
+        if f["_goal"]:
+            contrib["goal_fit"] = round(cfg.get("goal_points", 15) * f["_goal"], 1)
         if facts["red"]["is_duplicate"]:
             contrib["duplicate"] = -100.0
         probs = None
+    if facts.get("goal", {}).get("over_budget"):
+        contrib["over_budget"] = -20.0
+    if v == "buy" and facts.get("goal", {}).get("over_budget"):
+        v = "think"  # the user's own budget is a hard limit, like owning too many of a type
     return {"verdict": v, "score": sc, "features": {k: f[k] for k in FEATURES}, "breakdown": {k: f[k] for k in
             ("new_outfits", "gap_fill", "novelty", "price_value")}, "cost_per_outfit": f["_cpo"],
             "contributions": contrib, "probabilities": probs}
