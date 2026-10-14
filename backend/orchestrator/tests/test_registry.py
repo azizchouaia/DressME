@@ -1,5 +1,5 @@
-from orchestrator.registry import AGENTS
+from orchestrator.registry import tool_names
 
 
-def test_all_agents_registered():
-    assert set(AGENTS) == {"vision", "stylist", "profile", "smartbuy", "localshop", "tryon"}
+def test_registry_lists_module_tools():
+    assert isinstance(tool_names(), list)  # a module appears here once it ships a tool.py

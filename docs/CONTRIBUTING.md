@@ -14,17 +14,22 @@ git push -u origin feat/vision-segmentation
 ## Commit messages
 `<area>: <what>` — e.g. `stylist: add MMR diversity`, `mobile/wardrobe: item grid`.
 
-## Adding a new agent
-1. Copy `backend/agents/_template/` to `backend/agents/<name>/`.
-2. Define `contract.py` (input/output) — reuse models from `backend/shared/schemas`.
-3. Implement `agent.py` (`run()`), keep steps in `pipeline/`.
-4. Register it in `backend/orchestrator/registry.py` (one line).
-5. Add fixtures + tests in `tests/`.
+## Working on a shared module
+1. Week 1: write `contract.py` (agree it with the BOs that use you) and `mock.py` (fixed data in that shape).
+   The router serves the mock while `USE_MOCKS=true`, so nobody waits for you.
+2. Write the real logic in `service.py` with the SAME signatures; flip `USE_MOCKS=false` when it is ready.
+3. Need something from another module? Call its API (or its mock). Never re-implement it; ask the owner to add it.
+4. A module the assistant should call ships a `tool.py` (a LangChain `StructuredTool` named `tool`): the
+   orchestrator picks it up automatically.
+
+## Working on your BO
+Your own tasks (`backend/bo/<your bo>/README.md`) live in `backend/bo/<your bo>/` and
+`mobile/lib/features/<your bo>/`. Build them on top of the modules' APIs.
 
 ## Data and models
 Never commit them. Use DVC:
 ```bash
-dvc add ml/data/tunisian_garments
-git add ml/data/tunisian_garments.dvc && git commit -m "data: add tunisian garments v1"
+dvc add ml/data/<dataset>
+git add ml/data/<dataset>.dvc && git commit -m "data: add <dataset> v1"
 dvc push
 ```

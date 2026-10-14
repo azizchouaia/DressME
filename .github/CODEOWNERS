@@ -1,27 +1,47 @@
-# Replace @member-X with GitHub usernames.
-*                              @azizchouaia
-/backend/shared/               @azizchouaia
-/backend/api/                  @azizchouaia
-/backend/orchestrator/         @azizchouaia
-/infra/                        @azizchouaia
-/.github/                      @azizchouaia
+# Owners per business objective. Replace @boX-owner by GitHub usernames.
+*                                   @azizchouaia
+/backend/shared/                    @azizchouaia
+/backend/api/                       @azizchouaia
+/infra/                             @azizchouaia
+/.github/                           @azizchouaia
 
-/backend/agents/vision/        @member-1
-/mobile/lib/features/wardrobe/ @member-1
+# Shared modules (Part 1)
+/backend/modules/m01_wardrobe/          @bo3-owner
+/backend/modules/m02_recommendation/    @bo1-owner @bo2-owner
+/backend/modules/m03_wear_log/          @bo1-owner @bo2-owner
+/backend/modules/m04_scheduler/         @bo1-owner @bo2-owner
+/backend/modules/m05_style_profile/     @bo4-owner
+/backend/modules/m06_smartbuy/          @azizchouaia
+/backend/modules/m07_local_catalogue/   @bo6-owner
+/backend/modules/m08_llm_layer/         @bo8-owner
+/backend/modules/m09_avatar_3d/         @bo9-owner
+/backend/modules/m10_share_cards/       @bo7-owner
+/backend/modules/m11_trip_planner/      @bo3-owner
+/backend/modules/m12_style_evolution/   @bo4-owner
+/backend/modules/m13_partner_links/     @azizchouaia
+/backend/modules/m14_stylist_mode/      @bo6-owner
+/backend/modules/m15_challenges/        @bo7-owner
+/backend/modules/m16_sustainability/    @bo3-owner
+/backend/modules/m17_capsule/           @bo1-owner @bo2-owner
+/backend/modules/m18_size_fit/          @azizchouaia
 
-/backend/agents/stylist/       @member-2
-/mobile/lib/features/outfit_of_day/ @member-2
-/mobile/lib/features/builder/  @member-2
-
-/backend/agents/profile/       @member-3
-/mobile/lib/features/onboarding/ @member-3
-/mobile/lib/features/profile/  @member-3
-
-/backend/agents/smartbuy/      @member-4
-/backend/agents/localshop/     @member-4
-/mobile/lib/features/smart_buy/ @member-4
-
-/backend/agents/tryon/         @member-5
-/mobile/lib/features/try_on/   @member-5
-
-/mobile/lib/features/chat/     @azizchouaia
+# Own tasks (Part 2)
+/backend/bo/bo1_recommendations/        @bo1-owner
+/backend/bo/bo2_time/                   @bo2-owner
+/backend/bo/bo3_sustainability/         @bo3-owner
+/backend/bo/bo4_style/                  @bo4-owner
+/backend/bo/bo5_purchase/               @azizchouaia
+/backend/bo/bo6_local_market/           @bo6-owner
+/backend/bo/bo7_sharing/                @bo7-owner
+/backend/bo/bo8_assistant/              @bo8-owner
+/backend/bo/bo9_try_on/                 @bo9-owner
+/mobile/lib/features/bo1_recommendations/@bo1-owner
+/mobile/lib/features/bo2_time/          @bo2-owner
+/mobile/lib/features/bo3_sustainability/@bo3-owner
+/mobile/lib/features/bo4_style/         @bo4-owner
+/mobile/lib/features/bo5_smart_buy/     @azizchouaia
+/mobile/lib/features/bo6_local_market/  @bo6-owner
+/mobile/lib/features/bo7_sharing/       @bo7-owner
+/mobile/lib/features/bo8_assistant/     @bo8-owner
+/mobile/lib/features/bo9_try_on/        @bo9-owner
+/backend/orchestrator/                  @bo8-owner

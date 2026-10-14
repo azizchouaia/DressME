@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     weather_api_url: str = "https://api.open-meteo.com/v1/forecast"
     jwt_secret: str = "change_me"
+    use_mocks: bool = True          # modules serve mock.py until their service.py is ready
 
 
 settings = Settings()

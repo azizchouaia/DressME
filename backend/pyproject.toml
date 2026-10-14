@@ -8,4 +8,4 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]
-testpaths = ["agents", "orchestrator", "api", "shared"]
+testpaths = ["modules", "bo", "orchestrator", "api", "shared"]

@@ -1,7 +1,0 @@
-# Extra dependencies for the vision agent only
-rembg
-torch
-transformers
-open_clip_torch
-scikit-learn
-pillow

@@ -1,31 +1,24 @@
-"""The only place where agents are registered. Adding an agent = one line."""
+"""Tools the orchestrator (BO8) can call = every module that ships a tool.py. Nothing to edit by hand."""
 
-from agents.localshop.agent import LocalShopAgent
-from agents.profile.agent import ProfileAgent
-from agents.smartbuy.agent import SmartBuyAgent
-from agents.stylist.agent import StylistAgent
-from agents.tryon.agent import TryOnAgent
-from agents.vision.agent import VisionAgent
+import importlib
+import pkgutil
 
-AGENTS = {
-    a.name: a
-    for a in [
-        VisionAgent(),
-        StylistAgent(),
-        ProfileAgent(),
-        SmartBuyAgent(),
-        LocalShopAgent(),
-        TryOnAgent(),
-    ]
-}
+import modules
+
+
+def _tool_modules():
+    for m in sorted(pkgutil.iter_modules(modules.__path__), key=lambda m: m.name):
+        try:
+            yield importlib.import_module(f"modules.{m.name}.tool")
+        except ModuleNotFoundError as e:
+            if e.name != f"modules.{m.name}.tool":
+                raise
 
 
 def get_tools():
-    from agents.localshop.tool import tool as localshop
-    from agents.profile.tool import tool as profile
-    from agents.smartbuy.tool import tool as smartbuy
-    from agents.stylist.tool import tool as stylist
-    from agents.tryon.tool import tool as tryon
-    from agents.vision.tool import tool as vision
+    return [t.tool for t in _tool_modules()]
 
-    return [vision, stylist, profile, smartbuy, localshop, tryon]
+
+def tool_names() -> list[str]:
+    return [m.name for m in pkgutil.iter_modules(modules.__path__)
+            if importlib.util.find_spec(f"modules.{m.name}.tool") is not None]

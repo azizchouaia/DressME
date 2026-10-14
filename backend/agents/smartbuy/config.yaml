@@ -1,5 +1,0 @@
-duplicate_threshold: 0.85
-weights:
-  gap_fill: 0.4
-  compatibility: 0.4
-  redundancy: 0.2

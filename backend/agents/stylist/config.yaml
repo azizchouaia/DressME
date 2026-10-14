@@ -1,4 +1,0 @@
-compatibility_model: clip-cosine-baseline
-mmr_lambda: 0.7
-max_candidates: 200
-slots: [top, bottom, shoes, outerwear]

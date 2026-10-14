@@ -1,24 +1,26 @@
 import 'package:go_router/go_router.dart';
 
-import '../features/onboarding/ui/onboarding_screen.dart';
-import '../features/wardrobe/ui/wardrobe_screen.dart';
-import '../features/outfit_of_day/ui/outfit_of_day_screen.dart';
-import '../features/builder/ui/builder_screen.dart';
-import '../features/chat/ui/chat_screen.dart';
-import '../features/smart_buy/ui/smart_buy_screen.dart';
-import '../features/try_on/ui/try_on_screen.dart';
-import '../features/profile/ui/profile_screen.dart';
+import '../features/bo1_recommendations/ui/bo1_recommendations_screen.dart';
+import '../features/bo2_time/ui/bo2_time_screen.dart';
+import '../features/bo3_sustainability/ui/bo3_sustainability_screen.dart';
+import '../features/bo4_style/ui/bo4_style_screen.dart';
+import '../features/bo5_smart_buy/ui/bo5_smart_buy_screen.dart';
+import '../features/bo6_local_market/ui/bo6_local_market_screen.dart';
+import '../features/bo7_sharing/ui/bo7_sharing_screen.dart';
+import '../features/bo8_assistant/ui/bo8_assistant_screen.dart';
+import '../features/bo9_try_on/ui/bo9_try_on_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/outfit_of_day',
+  initialLocation: '/bo2_time',
   routes: [
-    GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-    GoRoute(path: '/wardrobe', builder: (_, __) => const WardrobeScreen()),
-    GoRoute(path: '/outfit_of_day', builder: (_, __) => const OutfitOfDayScreen()),
-    GoRoute(path: '/builder', builder: (_, __) => const BuilderScreen()),
-    GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
-    GoRoute(path: '/smart_buy', builder: (_, __) => const SmartBuyScreen()),
-    GoRoute(path: '/try_on', builder: (_, __) => const TryOnScreen()),
-    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+    GoRoute(path: '/bo1_recommendations', builder: (_, __) => const RecommendationsScreen()),
+    GoRoute(path: '/bo2_time', builder: (_, __) => const OutfitOfDayScreen()),
+    GoRoute(path: '/bo3_sustainability', builder: (_, __) => const InventoryScreen()),
+    GoRoute(path: '/bo4_style', builder: (_, __) => const StyleProfileScreen()),
+    GoRoute(path: '/bo5_smart_buy', builder: (_, __) => const SmartBuyScreen()),
+    GoRoute(path: '/bo6_local_market', builder: (_, __) => const LocalMarketScreen()),
+    GoRoute(path: '/bo7_sharing', builder: (_, __) => const FeedScreen()),
+    GoRoute(path: '/bo8_assistant', builder: (_, __) => const ChatScreen()),
+    GoRoute(path: '/bo9_try_on', builder: (_, __) => const TryOnScreen()),
   ],
 );

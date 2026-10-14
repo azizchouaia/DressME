@@ -1,5 +1,0 @@
-segmentation_model: rembg
-classifier: fashionclip-zero-shot
-embedding_model: patrickjohncyh/fashion-clip
-embedding_dim: 512
-confidence_threshold: 0.6

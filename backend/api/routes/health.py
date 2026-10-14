@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
-from orchestrator.registry import AGENTS
+from orchestrator.registry import tool_names
 
 router = APIRouter()
 
 
 @router.get("/health")
 def health():
-    return {"api": "ok", "agents": [a.health() for a in AGENTS.values()]}
+    return {"api": "ok", "tools": tool_names()}
