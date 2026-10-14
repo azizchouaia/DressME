@@ -52,6 +52,9 @@ POLES: dict[str, tuple[list[str], list[str]]] = {
     ),
 }
 ATTRS = list(POLES)
+# Warmth is absolute (a coat is warmer than a t-shirt). Formality and mood are relative to the category,
+# otherwise every shoe looks "formal" next to clothes and lifts any outfit.
+PER_CATEGORY = {"formality", "comfy", "bold", "classy"}
 SLOPE = 1.6  # z-score -> sigmoid slope
 
 
@@ -61,19 +64,38 @@ class AttributeScorer:
         self.lo = {a: d[f"{a}_lo"] for a in ATTRS}
         self.hi = {a: d[f"{a}_hi"] for a in ATTRS}
         self.mu, self.sd = d["mu"], d["sd"]
+        # per-category calibration: a t-shirt is compared with other tops, a shoe with other shoes
+        cats = [str(c) for c in d["cats"]] if "cats" in d else []
+        self.cat_mu = {c: d[f"mu_{c}"] for c in cats}
+        self.cat_sd = {c: d[f"sd_{c}"] for c in cats}
 
     def raw(self, emb: np.ndarray) -> np.ndarray:
         """emb (N, 512) -> raw pole differences (N, n_attrs)."""
         return np.stack([(emb @ self.hi[a].T).mean(1) - (emb @ self.lo[a].T).mean(1) for a in ATTRS], 1)
 
-    def __call__(self, emb: np.ndarray) -> list[dict[str, float]]:
-        z = (self.raw(emb) - self.mu) / self.sd
+    def __call__(self, emb: np.ndarray, categories: list[str] | None = None) -> list[dict[str, float]]:
+        raw = self.raw(emb)
+        cats = categories or [""] * len(emb)
+        glob = np.array([a not in PER_CATEGORY for a in ATTRS])
+        mu = np.stack([np.where(glob, self.mu, self.cat_mu.get(_group(c), self.mu)) for c in cats])
+        sd = np.stack([np.where(glob, self.sd, self.cat_sd.get(_group(c), self.sd)) for c in cats])
+        z = (raw - mu) / sd
         p = 1 / (1 + np.exp(-SLOPE * z))
         return [dict(zip(ATTRS, map(float, row), strict=True)) for row in p]
 
 
-def build_prompt_file(embed_texts, reference_emb: np.ndarray, path: Path = artifacts.PROMPTS) -> None:
-    """Embed the poles with FashionCLIP and calibrate on a reference set of item embeddings."""
+def _group(category: str) -> str:
+    return {"traditional": "dress"}.get(category, category)
+
+
+def build_prompt_file(
+    embed_texts,
+    reference_emb: np.ndarray,
+    categories: list[str] | None = None,
+    path: Path = artifacts.PROMPTS,
+) -> None:
+    """Embed the poles with FashionCLIP and calibrate them on reference item embeddings (globally and, when
+    categories are given, per category)."""
     arrays = {}
     for a, (lo, hi) in POLES.items():
         arrays[f"{a}_lo"], arrays[f"{a}_hi"] = embed_texts(lo), embed_texts(hi)
@@ -84,4 +106,9 @@ def build_prompt_file(embed_texts, reference_emb: np.ndarray, path: Path = artif
         ],
         1,
     )
+    if categories:
+        cats = np.array([_group(c) for c in categories])
+        for c in sorted(set(cats)):
+            arrays[f"mu_{c}"], arrays[f"sd_{c}"] = raw[cats == c].mean(0), raw[cats == c].std(0) + 1e-6
+        arrays["cats"] = np.array(sorted(set(cats)))
     np.savez(path, mu=raw.mean(0), sd=raw.std(0) + 1e-6, **arrays)

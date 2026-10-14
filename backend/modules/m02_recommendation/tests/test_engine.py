@@ -16,7 +16,7 @@ TODAY = dt.date(2026, 10, 14)
 class StubAttributes:
     """Warmth / formality are stored in the first two dims of the fake embedding."""
 
-    def __call__(self, emb):
+    def __call__(self, emb, categories=None):
         return [
             {"warmth": float(e[0]), "formality": float(e[1]), "comfy": 0.5, "bold": 0.5, "classy": 0.5}
             for e in emb

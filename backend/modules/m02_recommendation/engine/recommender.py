@@ -22,16 +22,49 @@ import numpy as np
 
 from .wardrobe import Item
 
-OCCASION_FORMALITY = {"work": 0.64, "casual": 0.36, "event": 0.76}
+OCCASION_FORMALITY = {"work": 0.62, "casual": 0.32, "event": 0.78}
 WEIGHTS = {
-    "compatibility": 0.40,
-    "weather_fit": 0.18,
-    "occasion_fit": 0.16,
-    "mood_fit": 0.08,
-    "style_match": 0.10,
+    "compatibility": 0.30,
+    "weather_fit": 0.17,
+    "occasion_fit": 0.23,
+    "mood_fit": 0.14,
+    "style_match": 0.08,
     "novelty": 0.08,
 }
-REMIX_WEIGHTS = {**WEIGHTS, "compatibility": 0.32, "novelty": 0.30}
+REMIX_WEIGHTS = {**WEIGHTS, "compatibility": 0.24, "novelty": 0.30, "occasion_fit": 0.17, "mood_fit": 0.08}
+# Typical formality of a garment type (0 = gym wear, 1 = black tie), blended 50/50 with the zero-shot score.
+FORMALITY_PRIOR = {
+    "t-shirt": 0.15,
+    "tee": 0.15,
+    "tank top": 0.1,
+    "hoodie": 0.05,
+    "sweatshirt": 0.1,
+    "polo shirt": 0.35,
+    "long-sleeve top": 0.35,
+    "top": 0.4,
+    "knit": 0.45,
+    "sweater": 0.4,
+    "shirt": 0.7,
+    "blouse": 0.7,
+    "shorts": 0.1,
+    "jeans": 0.3,
+    "pants": 0.5,
+    "trousers": 0.6,
+    "skirt": 0.55,
+    "dress": 0.6,
+    "jacket": 0.45,
+    "coat": 0.6,
+    "blazer": 0.85,
+    "suit": 0.95,
+    "sneakers": 0.15,
+    "sandals": 0.2,
+    "boots": 0.45,
+    "shoes": 0.5,
+    "heels": 0.85,
+    "loafers": 0.65,
+}
+# how much each slot counts in the outfit's formality / mood (the top or dress is what people see first)
+SLOT_WEIGHT = {"top": 2.0, "dress": 2.5, "bottom": 1.5, "outerwear": 1.2, "shoes": 1.0, "accessory": 0.5}
 CORE = ("top", "bottom", "dress")
 TEMPLATES = (("top", "bottom", "shoes"), ("dress", "shoes"))
 PREFILTER_K = 14  # anchors (first slot) kept per template, by context fit
@@ -76,19 +109,45 @@ class Ctx:
         return "optional"
 
 
+def occasion_fit(formality: float, ctx: Ctx) -> float:
+    """Event: dressier is never wrong. Casual: too dressy is off. Work: both directions, milder above."""
+    t = ctx.target_formality
+    if ctx.occasion == "event" and formality >= t:
+        return 1.0
+    if ctx.occasion == "casual" and formality <= t:
+        return 1.0
+    if ctx.occasion == "work" and formality > t:
+        return gauss(formality, t, 0.3)
+    return gauss(formality, t, 0.18)
+
+
+def shape(outfit) -> str:
+    """Outfit shape key, e.g. "bottom+shoes+top"."""
+    return "+".join(sorted(i.slot for i in outfit))
+
+
 def gauss(x: float, mu: float, sd: float) -> float:
     return float(np.exp(-(((x - mu) / sd) ** 2)))
 
 
 class Recommender:
-    def __init__(self, ot, attributes):
+    def __init__(self, ot, attributes, calibration: dict[str, list[float]] | None = None):
         self.ot = ot  # pretrained OutfitTransformer (CP + CIR)
         self.attributes = attributes  # AttributeScorer (FashionCLIP zero-shot)
+        # CP gives higher raw scores to outfits with more pieces (dress+shoes vs top+bottom+shoes+jacket);
+        # the raw score is turned into a percentile among random outfits of the same shape.
+        self.calibration = {k: np.asarray(v) for k, v in (calibration or {}).items()}
 
     # ---------------- items ----------------
     def prepare(self, items: list[Item], ctx: Ctx, exclude: set[str]) -> list[Item]:
         if items:
-            for it, a in zip(items, self.attributes(np.stack([i.image_emb for i in items])), strict=True):
+            attrs = self.attributes(np.stack([i.image_emb for i in items]), [i.category for i in items])
+            for it, a in zip(items, attrs, strict=True):
+                prior = FORMALITY_PRIOR.get((it.subcategory or "").lower())
+                if (
+                    prior is not None
+                ):  # photo says how dressy this piece is, its type says how dressy it can be
+                    a["formality"] = 0.5 * a["formality"] + 0.5 * prior
                 it.attrs = a
             for it, v in zip(items, self.ot.item_space(np.stack([i.emb for i in items])), strict=True):
                 it.cir = v
@@ -113,7 +172,7 @@ class Recommender:
         if it.slot != "outerwear":
             s += gauss(it.attrs["warmth"], ctx.target_warmth, 0.35)
         if ctx.mood in it.attrs:
-            s += 0.5 * it.attrs[ctx.mood]
+            s += 0.8 * it.attrs[ctx.mood]
         return s
 
     # ---------------- scoring ----------------
@@ -131,9 +190,15 @@ class Recommender:
         weather = gauss(warmth, ctx.target_warmth, 0.25)
         if ctx.rainy and outer:
             weather = min(1.0, weather + 0.1)
-        formality = float(np.mean([i.attrs["formality"] for i in outfit]))
+        sw = [SLOT_WEIGHT.get(i.slot, 1.0) for i in outfit]
+        f = [i.attrs["formality"] for i in outfit]
+        # weighted mean, pulled toward the least formal piece: a t-shirt spoils an evening outfit
+        if ctx.target_formality >= 0.5:
+            formality = 0.65 * float(np.average(f, weights=sw)) + 0.35 * min(f)
+        else:  # casual: a single very formal piece looks off
+            formality = 0.65 * float(np.average(f, weights=sw)) + 0.35 * max(f)
         mood = (
-            float(np.mean([i.attrs[ctx.mood] for i in outfit]))
+            float(np.average([i.attrs[ctx.mood] for i in outfit], weights=sw))
             if ctx.mood in ("comfy", "bold", "classy")
             else 0.5
         )
@@ -161,7 +226,7 @@ class Recommender:
         return {
             "compatibility": float(compat),
             "weather_fit": weather,
-            "occasion_fit": gauss(formality, ctx.target_formality, 0.22),
+            "occasion_fit": occasion_fit(formality, ctx),
             "mood_fit": mood,
             "style_match": style,
             "novelty": float(novelty),
@@ -173,8 +238,16 @@ class Recommender:
     def total(b: dict[str, float], weights: dict[str, float]) -> float:
         return sum(w * b[k] for k, w in weights.items()) - b["rotation_penalty"] + b["forgotten_bonus"]
 
-    def compat_scores(self, outfits: list[list[Item]]) -> np.ndarray:
-        return self.ot.compatibility([np.stack([i.emb for i in o]) for o in outfits])
+    def compat_scores(self, outfits: list[list[Item]], calibrated: bool = False) -> np.ndarray:
+        raw = self.ot.compatibility([np.stack([i.emb for i in o]) for o in outfits])
+        if not calibrated or not self.calibration:
+            return raw
+        out = raw.copy()
+        for k, o in enumerate(outfits):
+            q = self.calibration.get(shape(o))
+            if q is not None:
+                out[k] = np.searchsorted(q, raw[k]) / len(q)
+        return out
 
     def retrieve(self, partials: list[list[Item]], pool: list[Item], k: int = RETRIEVE_K) -> list[list[Item]]:
         """CIR: for each partial outfit, the k pool pieces nearest to the predicted missing piece."""
@@ -226,7 +299,7 @@ class Recommender:
             if len(nxt) > width and len(nxt[0]) >= 2:
                 comp = self.compat_scores(nxt)
                 fit = np.array([np.mean([self.item_fit(i, ctx) for i in o]) for o in nxt])
-                keep = np.argsort(-(comp + 0.25 * fit))[:width]
+                keep = np.argsort(-(comp + 0.4 * fit))[:width]
                 nxt = [nxt[k] for k in keep]
             partials = nxt
         return partials
@@ -240,7 +313,7 @@ class Recommender:
                 uniq.append(o)
         if not uniq:
             return []
-        comp = self.compat_scores(uniq)
+        comp = self.compat_scores(uniq, calibrated=True)
         scored = []
         for o, c in zip(uniq, comp, strict=True):
             b = self.breakdown(o, c, ctx)
@@ -299,7 +372,7 @@ class Recommender:
         return ranked[:n]
 
     def score(self, outfits: list[list[Item]], ctx: Ctx) -> list[dict]:
-        comp = self.compat_scores(outfits) if outfits else []
+        comp = self.compat_scores(outfits, calibrated=True) if outfits else []
         return [
             {"items": o, "breakdown": (b := self.breakdown(o, c, ctx)), "score": self.total(b, WEIGHTS)}
             for o, c in zip(outfits, comp, strict=True)

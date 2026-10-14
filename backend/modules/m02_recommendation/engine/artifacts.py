@@ -11,6 +11,7 @@ CP_MODEL = DIR / "outfit_transformer/cp_best.pt"  # pretrained OutfitTransformer
 CIR_MODEL = DIR / "outfit_transformer/cir_best.pt"  # pretrained OutfitTransformer, retrieval head
 EVAL_METRICS = DIR / "eval_metrics.json"  # our check of the pretrained weights on Polyvore test
 PROMPTS = DIR / "prompts.npz"
+COMPAT_CALIBRATION = DIR / "compat_calibration.json"  # CP score quantiles per outfit shape
 WARDROBE_ITEMS = DIR / "wardrobe_items.json"
 WARDROBE_EMB = DIR / "wardrobe_emb.npy"
 DEMO_WARDROBES = DIR / "demo_wardrobes.json"

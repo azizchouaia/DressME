@@ -11,11 +11,15 @@ from .contract import CompletePayload, RecommendPayload, RemixPayload, ScorePayl
 
 @lru_cache(maxsize=1)
 def engine():
+    import json
+
+    from .engine import artifacts
     from .engine.attributes import AttributeScorer
     from .engine.outfit_transformer import OutfitTransformer
     from .engine.recommender import Recommender
 
-    return Recommender(OutfitTransformer(), AttributeScorer())
+    cal = json.load(open(artifacts.COMPAT_CALIBRATION)) if artifacts.COMPAT_CALIBRATION.exists() else None
+    return Recommender(OutfitTransformer(), AttributeScorer(), cal)
 
 
 def _setup(user_id: str | None, p):

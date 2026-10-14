@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "backend"))
 from modules.m02_recommendation.engine import encoder  # noqa: E402
 from modules.m02_recommendation.engine.attributes import build_prompt_file  # noqa: E402
+from modules.m02_recommendation.engine.outfit_transformer import OutfitTransformer  # noqa: E402
 
 DATA = ROOT / "ml/data/clothing_dataset"
 OUT = ROOT / "ml/models/m02"
@@ -142,7 +143,7 @@ def main() -> None:
     vec = encoder.item_vectors(img, descriptions)
     json.dump(items, open(OUT / "wardrobe_items.json", "w"), indent=1)
     np.save(OUT / "wardrobe_emb.npy", vec)
-    build_prompt_file(encoder.embed_texts, img)
+    build_prompt_file(encoder.embed_texts, img, [LABELS[r["label"]][0] for r in rows])
     part.unlink(missing_ok=True)
 
     rng = random.Random(2026)
@@ -157,6 +158,32 @@ def main() -> None:
             ids += rng.sample(pool, min(n + (6 if g == "m" and cat == "top" else 0), len(pool)))
         demo[user] = ids
     json.dump(demo, open(OUT / "demo_wardrobes.json", "w"), indent=1)
+
+    # Compatibility calibration (no training): raw OutfitTransformer-CP scores of random outfits, per outfit
+    # shape, so a dress+shoes look and a top+bottom+shoes+jacket look are compared fairly.
+    ot = OutfitTransformer()
+    crng = np.random.default_rng(0)
+    pools = {
+        (g, c): [k for k, it in enumerate(items) if it["gender"] == g and it["category"] == c]
+        for g in ("f", "m")
+        for c in quota
+    }
+    shapes = [
+        ("dress", "shoes"),
+        ("dress", "outerwear", "shoes"),
+        ("bottom", "shoes", "top"),
+        ("bottom", "outerwear", "shoes", "top"),
+    ]
+    calibration = {}
+    for shp in shapes:
+        outfits = []
+        for _ in range(3000):
+            g = "f" if "dress" in shp else crng.choice(["f", "m"])
+            outfits.append(vec[[crng.choice(pools[(g, c)]) for c in shp]])
+        raw = ot.compatibility(outfits)
+        calibration["+".join(shp)] = np.quantile(raw, np.linspace(0, 1, 201)).round(5).tolist()
+        print(f"  calibration {'+'.join(shp)}: median raw CP {np.median(raw):.2f}")
+    json.dump(calibration, open(OUT / "compat_calibration.json", "w"))
     print({u: len(v) for u, v in demo.items()}, f"done in {time.time() - t0:.0f}s")
 
 
