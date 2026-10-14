@@ -1,0 +1,1 @@
+psycopg2-binary>=2.9   # only when M03_DATABASE_URL points to Postgres

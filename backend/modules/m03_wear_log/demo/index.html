@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M3 Wear Log Lab</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e4ddd2;
+    --accent: #8a5a2b; --accent-soft: #f1e4d4; --good: #3f7d4e; --warn: #b5532f; --blue: #3b6db3; --chip: #efe9df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --panel: #201e1b; --ink: #f0ebe3; --muted: #a39d93; --line: #35312b;
+      --accent: #d9a46a; --accent-soft: #3a2d20; --good: #7cc08b; --warn: #e48a66; --blue: #7ea6e0; --chip: #2b2824;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { color: var(--muted); }
+  header .right { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .badge.mock { background: #f6d9cf; color: var(--warn); }
+  select, input { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; }
+  input[type=range] { padding: 0; border: 0; background: none; accent-color: var(--accent); }
+  button { font: inherit; cursor: pointer; }
+  .btn { border: 0; background: var(--accent); color: #fff; padding: 8px 14px; border-radius: 9px; font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 7px 12px; border-radius: 9px; }
+  .ghost:hover { border-color: var(--accent); color: var(--accent); }
+  main { padding: 18px 24px; max-width: 1400px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 22px; color: var(--accent); }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .reminders { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .reminder { display: flex; gap: 12px; align-items: center; background: var(--accent-soft); border-radius: 12px; padding: 8px 12px; flex-wrap: wrap; }
+  .reminder img { width: 40px; height: 52px; object-fit: cover; border-radius: 6px; }
+  .reminder .grow { flex: 1; min-width: 160px; }
+  nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; flex-wrap: wrap; }
+  nav.tabs button { border: 0; background: none; padding: 9px 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+  nav.tabs button.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+  .toolbar { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--bg); padding: 10px 0; margin-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .toolbar .muted { margin-right: auto; }
+  .muted { color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 12px; }
+  .piece { position: relative; cursor: pointer; min-width: 0; }
+  .piece img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; background: var(--chip); display: block; }
+  .piece.sel img { outline: 3px solid var(--accent); }
+  .piece .tag { position: absolute; top: 5px; left: 5px; font-size: 10px; color: #fff; padding: 1px 6px; border-radius: 6px; }
+  .tag.laundry { background: var(--blue); } .tag.lent { background: var(--warn); } .tag.never { background: #6d6a65; } .tag.forgot { background: var(--good); }
+  .piece .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .piece .lbl b { color: var(--ink); font-weight: 600; }
+  .entry { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .entry .date { width: 110px; color: var(--muted); font-size: 13px; }
+  .entry .pics { display: flex; gap: 6px; flex: 1; min-width: 200px; }
+  .entry .pics img { width: 44px; height: 58px; object-fit: cover; border-radius: 6px; }
+  .pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+  .pill.on { background: var(--accent); color: #fff; }
+  dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--ink); padding: 18px; max-width: 360px; width: calc(100% - 32px); }
+  dialog label { display: block; color: var(--muted); font-size: 12px; margin: 10px 0 4px; }
+  dialog input { width: 100%; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+  .toast.show { opacity: 1; }
+  table { border-collapse: collapse; width: 100%; max-width: 760px; }
+  td, th { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-size: 12px; font-weight: 600; }
+  td img { width: 36px; height: 46px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-right: 8px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 820px) { main, header { padding: 14px 16px; } .row2 { grid-template-columns: 1fr; } .entry .date { width: auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>DressMe · M3 Wear log</h1>
+  <span class="sub">worn today · laundry / lent · days since worn · recap</span>
+  <span id="mode" class="badge">…</span>
+  <div class="right">
+    <select id="user"><option value="demo_f">Demo wardrobe · womenswear</option><option value="demo_m">Demo wardrobe · menswear</option></select>
+    <button class="ghost" id="reset" title="Delete this user's M3 data and import a fresh synthetic 120-day history">Reset demo history</button>
+    <a class="ghost" href="/m02/demo" style="text-decoration:none">M2 demo →</a>
+  </div>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+  <div class="reminders" id="reminders"></div>
+  <nav class="tabs">
+    <button class="on" data-tab="wardrobe">Wardrobe</button>
+    <button data-tab="laundry">Laundry basket</button>
+    <button data-tab="history">History</button>
+    <button data-tab="forgotten">Forgotten pieces</button>
+    <button data-tab="recap">Monthly recap</button>
+  </nav>
+  <section id="tab-wardrobe">
+    <div class="toolbar">
+      <span class="muted" id="selinfo">Select pieces, then log them or change their status.</span>
+      <label class="muted" style="font-size:12px">Day <input type="date" id="day"></label>
+      <label class="muted" style="font-size:12px" title="Clothes (tops, bottoms, dresses) go to the laundry after N wears; 0 = off">Auto-laundry after
+        <select id="auto"><option>0</option><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select> wears</label>
+      <label class="muted" style="font-size:12px"><input type="checkbox" id="posted"> posted</label>
+      <button class="btn" id="wornbtn" disabled>Worn</button>
+      <button class="ghost" id="laundrybtn" disabled>To laundry</button>
+      <button class="ghost" id="lendbtn" disabled>Lend…</button>
+      <button class="ghost" id="availbtn" disabled>Available</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section id="tab-laundry" style="display:none"></section>
+  <section id="tab-history" style="display:none"></section>
+  <section id="tab-forgotten" style="display:none"></section>
+  <section id="tab-recap" style="display:none"></section>
+</main>
+<dialog id="lend">
+  <b>Lend <span id="lendn"></span> piece(s)</b>
+  <label>To whom</label><input id="lendto" placeholder="Sarra">
+  <label>Expected back</label><input type="date" id="lendback">
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+    <button class="ghost" id="lendcancel">Cancel</button><button class="btn" id="lendok">Lend</button>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = { user: 'demo_f', items: [], byId: {}, stats: {}, summary: null, sel: new Set(), tab: 'wardrobe' };
+const today = () => new Date().toISOString().slice(0, 10);
+$('#day').value = today();
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200); }
+async function api(path, payload = {}) {
+  const r = await fetch('/m03/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: S.user, payload }) });
+  if (!r.ok) throw new Error(r.status + ' ' + await r.text());
+  const j = await r.json();
+  $('#mode').textContent = j.mocked ? 'MOCK DATA (set M03_USE_MOCK=false)' : 'live data (SQLite / Postgres)';
+  $('#mode').classList.toggle('mock', !!j.mocked);
+  return j.result;
+}
+const item = id => S.byId[id] || { item_id: id, name: id, image: '' };
+const img = id => `<img src="${esc(item(id).image)}" alt="${esc(item(id).name)}" loading="lazy">`;
+const ago = d => d === null || d === undefined ? 'never worn' : d === 0 ? 'worn today' : d === 1 ? 'worn yesterday' : `worn ${d}d ago`;
+
+async function loadAll() {
+  // pieces (photos, names) come from M1 later; for the demo, from the M2 demo wardrobe
+  const w = await (await fetch('/m02/demo/wardrobe/' + S.user)).json();
+  S.items = w.items; S.byId = Object.fromEntries(w.items.map(i => [i.item_id, i]));
+  const res = await api('stats', { item_ids: S.items.map(i => i.item_id) });
+  S.stats = Object.fromEntries(res.items.map(x => [x.item_id, x])); S.summary = res.summary;
+  const st = await api('states', { item_ids: S.items.map(i => i.item_id) });
+  renderCards(); renderReminders(st.reminders); render();
+}
+
+function renderCards() {
+  const s = S.summary;
+  const c = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+  $('#cards').innerHTML = c(s.pieces, 'pieces') + c(Math.round(s.utilisation_30d * 100) + '%', 'worn in the last 30 days')
+    + c(s.never_worn.length, 'never worn') + c(s.forgotten_60d.length, 'not worn for 60+ days')
+    + c(s.in_laundry.length, 'in the laundry') + c(s.lent.length, 'lent') + c(s.outfits_logged, 'outfits logged')
+    + c(s.repeated_outfits_30d, 'repeated outfits (30d)');
+}
+
+function renderReminders(rem) {
+  $('#reminders').innerHTML = rem.map(r => `<div class="reminder">${img(r.item_id)}<div class="grow"><b>${esc(item(r.item_id).name)}</b>
+    <div class="muted" style="font-size:12px">${r.reminder === 'lent_overdue' ? `lent to ${esc(r.lent_to || 'someone')}, expected back ${esc(r.expected_back)}` : `in the laundry since ${esc(r.status_since)}`}</div></div>
+    <span>${r.reminder === 'lent_overdue' ? 'Returned?' : 'Back in your closet?'}</span>
+    <button class="btn" data-back="${r.item_id}">Yes</button><button class="ghost" data-hide>Not yet</button></div>`).join('');
+  $('#reminders').querySelectorAll('[data-back]').forEach(b => b.onclick = async () => {
+    await api('status', { item_ids: [b.dataset.back], status: 'available' }); toast('Back in the closet'); loadAll(); });
+  $('#reminders').querySelectorAll('[data-hide]').forEach(b => b.onclick = () => b.parentElement.remove());
+}
+
+function tags(x) {
+  if (!x) return '';
+  if (x.status === 'laundry') return '<span class="tag laundry">laundry</span>';
+  if (x.status === 'lent') return `<span class="tag lent">lent${x.lent_to ? ' · ' + esc(x.lent_to) : ''}</span>`;
+  if (x.days_since_worn === null) return '<span class="tag never">never worn</span>';
+  if (x.days_since_worn >= 60) return '<span class="tag forgot">forgotten</span>';
+  return '';
+}
+
+function render() {
+  const n = S.sel.size;
+  $('#selinfo').textContent = n ? `${n} selected` : 'Select pieces, then log them or change their status.';
+  ['#wornbtn', '#laundrybtn', '#lendbtn', '#availbtn'].forEach(b => $(b).disabled = !n);
+  if (S.tab === 'wardrobe') renderWardrobe();
+  if (S.tab === 'laundry') renderLaundry();
+  if (S.tab === 'history') renderHistory();
+  if (S.tab === 'forgotten') renderForgotten();
+  if (S.tab === 'recap') renderRecap();
+}
+
+function renderWardrobe() {
+  const order = ['top', 'dress', 'bottom', 'outerwear', 'shoes', 'accessory'];
+  const items = [...S.items].sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category));
+  $('#grid').innerHTML = items.map(i => { const x = S.stats[i.item_id];
+    return `<div class="piece ${S.sel.has(i.item_id) ? 'sel' : ''}" data-id="${i.item_id}">${img(i.item_id)}${tags(x)}
+      <div class="lbl"><b>${esc(i.name)}</b></div><div class="lbl">${ago(x && x.days_since_worn)} · ${x ? x.wear_count : 0}×</div></div>`; }).join('');
+  $('#grid').querySelectorAll('.piece').forEach(p => p.onclick = () => {
+    const id = p.dataset.id; S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); render(); });
+}
+
+async function renderLaundry() {
+  const box = $('#tab-laundry');
+  const ids = S.summary.in_laundry;
+  box.innerHTML = `<div class="toolbar"><span class="muted">${ids.length} piece(s) in the laundry. They are never suggested by M2 until they are back.</span>
+    <button class="btn" id="alldone" ${ids.length ? '' : 'disabled'}>All clean, back in the closet</button></div>
+    <div class="grid">${ids.map(id => { const x = S.stats[id];
+      return `<div class="piece" data-id="${id}" title="Click: back in the closet">${img(id)}<span class="tag laundry">since ${esc(x.status_since || '')}</span>
+      <div class="lbl"><b>${esc(item(id).name)}</b></div><div class="lbl">click when clean</div></div>`; }).join('')}</div>
+    ${S.summary.lent.length ? `<h3 style="margin-top:24px">Lent</h3><table><tr><th>Piece</th><th>To</th><th>Expected back</th><th></th></tr>
+      ${S.summary.lent.map(id => { const x = S.stats[id]; return `<tr><td>${img(id)}${esc(item(id).name)}</td><td>${esc(x.lent_to || '')}</td>
+      <td>${esc(x.expected_back || '')}${x.reminder === 'lent_overdue' ? ' <span class="pill on">overdue</span>' : ''}</td><td><button class="ghost" data-ret="${id}">Returned</button></td></tr>`; }).join('')}</table>` : ''}`;
+  const all = $('#alldone'); if (all) all.onclick = async () => { const r = await api('laundry_done', {}); toast(r.back_in_closet.length + ' piece(s) back in the closet'); loadAll(); };
+  box.querySelectorAll('.piece').forEach(p => p.onclick = async () => { await api('laundry_done', { item_ids: [p.dataset.id] }); toast('Back in the closet'); loadAll(); });
+  box.querySelectorAll('[data-ret]').forEach(b => b.onclick = async () => { await api('status', { item_ids: [b.dataset.ret], status: 'available' }); toast('Returned'); loadAll(); });
+}
+
+async function renderHistory() {
+  const box = $('#tab-history');
+  box.innerHTML = '<div class="muted">Loading…</div>';
+  const r = await api('history', { limit: 60 });
+  box.innerHTML = `<p class="muted">Last ${r.entries.length} logged outfits. "Posted" looks are never re-suggested by M2; an exact outfit worn in the last 14 days is penalised.</p>`
+    + r.entries.map(e => `<div class="entry"><span class="date">${esc(e.date)}</span><div class="pics">${e.item_ids.map(img).join('')}</div>
+      <span class="pill">${esc(e.source)}</span><button class="ghost" data-post="${e.entry_id}" data-v="${e.posted ? 0 : 1}">${e.posted ? '★ posted' : 'Mark posted'}</button>
+      <button class="ghost" data-undo="${e.entry_id}">Undo</button></div>`).join('');
+  box.querySelectorAll('[data-post]').forEach(b => b.onclick = async () => { await api('posted', { entry_id: b.dataset.post, posted: b.dataset.v === '1' }); renderHistory(); });
+  box.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => { await api('unworn', { entry_id: b.dataset.undo }); toast('Log removed'); loadAll(); });
+}
+
+async function renderForgotten() {
+  const box = $('#tab-forgotten');
+  const days = +(box.dataset.days || 60);
+  const r = await api('forgotten', { item_ids: S.items.map(i => i.item_id), days });
+  box.innerHTML = `<div class="toolbar"><span class="muted">${r.items.length} piece(s) not worn for ${days}+ days. M2 gives one of them a bonus in the daily outfit ("forgotten gem").</span>
+    <label class="muted">Days <input type="range" id="fdays" min="14" max="120" step="1" value="${days}"> <b>${days}</b></label></div>
+    <div class="grid">${r.items.map(x => `<div class="piece">${img(x.item_id)}<span class="tag ${x.days_since_worn === null ? 'never' : 'forgot'}">${x.days_since_worn === null ? 'never worn' : x.days_since_worn + ' days'}</span>
+      <div class="lbl"><b>${esc(item(x.item_id).name)}</b></div><div class="lbl">${x.wear_count}× · ${esc(x.status)}</div></div>`).join('')}</div>`;
+  $('#fdays').onchange = e => { box.dataset.days = e.target.value; renderForgotten(); };
+}
+
+async function renderRecap() {
+  const box = $('#tab-recap');
+  const month = box.dataset.month || today().slice(0, 7);
+  const r = await api('recap', { month, item_ids: S.items.map(i => i.item_id) });
+  const c = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+  box.innerHTML = `<div class="toolbar"><span class="muted">Recap of ${esc(r.month)} (BO7 recap card, BO4 insights)</span><input type="month" id="month" value="${esc(month)}"></div>
+    <div class="cards">${c(r.days_logged, 'days logged')}${c(r.wears, 'wears')}${c(r.distinct_pieces, 'different pieces')}
+      ${c(r.utilisation === null ? '–' : Math.round(r.utilisation * 100) + '%', 'of the wardrobe worn')}${c(r.first_time_worn.length, 'worn for the first time')}${c(r.posted_looks, 'posted looks')}</div>
+    <div class="row2"><div><h3>Most worn</h3><table>${r.top_pieces.map(t => `<tr><td>${img(t.item_id)}${esc(item(t.item_id).name)}</td><td>${t.wears}×</td></tr>`).join('') || '<tr><td class="muted">nothing logged</td></tr>'}</table></div>
+    <div><h3>Repeated outfits</h3>${r.repeated_outfits.map(o => `<div class="entry"><div class="pics">${o.item_ids.map(img).join('')}</div><span class="pill on">${o.times}×</span></div>`).join('') || '<p class="muted">No outfit repeated this month.</p>'}</div></div>`;
+  $('#month').onchange = e => { box.dataset.month = e.target.value; renderRecap(); };
+}
+
+// ---- actions ----
+$('#wornbtn').onclick = async () => {
+  const ids = [...S.sel]; const cats = Object.fromEntries(ids.map(id => [id, item(id).category]));
+  const r = await api('worn', { item_ids: ids, date: $('#day').value || today(), auto_laundry_after: +$('#auto').value,
+    laundry_categories: cats, posted: $('#posted').checked });
+  S.sel.clear();
+  toast('Logged as worn' + (r.moved_to_laundry.length ? ` · moved to the laundry: ${r.moved_to_laundry.map(id => item(id).name).join(', ')}` : ''));
+  loadAll();
+};
+$('#laundrybtn').onclick = async () => { await api('status', { item_ids: [...S.sel], status: 'laundry' }); S.sel.clear(); toast('In the laundry'); loadAll(); };
+$('#availbtn').onclick = async () => { await api('status', { item_ids: [...S.sel], status: 'available' }); S.sel.clear(); toast('Available'); loadAll(); };
+$('#lendbtn').onclick = () => { $('#lendn').textContent = S.sel.size; const d = new Date(); d.setDate(d.getDate() + 7); $('#lendback').value = d.toISOString().slice(0, 10); $('#lend').showModal(); };
+$('#lendcancel').onclick = () => $('#lend').close();
+$('#lendok').onclick = async () => {
+  await api('status', { item_ids: [...S.sel], status: 'lent', lent_to: $('#lendto').value || null, expected_back: $('#lendback').value || null });
+  $('#lend').close(); S.sel.clear(); toast('Lent'); loadAll();
+};
+$('#reset').onclick = async () => {
+  if (!confirm('Delete ' + S.user + "'s M3 data and import a fresh synthetic history?")) return;
+  await fetch('/m03/demo/seed/' + S.user, { method: 'POST' }); toast('Demo history reset'); loadAll();
+};
+$('#user').onchange = () => { S.user = $('#user').value; S.sel.clear(); loadAll(); };
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  S.tab = b.dataset.tab;
+  ['wardrobe', 'laundry', 'history', 'forgotten', 'recap'].forEach(t => $('#tab-' + t).style.display = t === S.tab ? '' : 'none');
+  render();
+});
+loadAll().catch(e => { $('#cards').innerHTML = `<div style="color:var(--warn)">Could not load: ${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>
