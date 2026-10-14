@@ -42,3 +42,23 @@ def test_complete_and_swap_real_models():
     for o in sw["result"]["outfits"]:
         assert o["slots"]["shoes"] != outfit["slots"]["shoes"]
         assert o["slots"]["bottom"] == outfit["slots"]["bottom"]
+
+
+def test_m2_reads_wear_log_and_status_from_m3(tmp_path, monkeypatch):
+    from modules.m02_recommendation import service
+    from modules.m03_wear_log import service as m03
+
+    monkeypatch.setenv("M03_USE_MOCK", "false")
+    monkeypatch.setenv("M03_DATABASE_URL", f"sqlite:///{(tmp_path / 'm03.sqlite').as_posix()}")
+    req = {"user_id": "demo_f", "payload": {"context": CTX, "options": {"n": 1}}}
+    first = service.recommend(req)["result"]
+    assert first["wear_log_source"] == "m03"  # demo history imported into M3
+    best = first["outfits"][0]
+    # wear today's best outfit, and put another piece of it in the laundry
+    m03.worn({"user_id": "demo_f", "payload": {"item_ids": best["items"]}})
+    shoes = best["slots"]["shoes"]
+    m03.status({"user_id": "demo_f", "payload": {"item_ids": [shoes], "status": "laundry"}})
+    after = service.recommend({**req, "payload": {**req["payload"], "options": {"n": 3}}})["result"]
+    for o in after["outfits"]:
+        assert shoes not in o["items"]
+        assert sorted(o["items"]) != sorted(best["items"])

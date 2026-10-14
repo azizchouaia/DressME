@@ -134,7 +134,7 @@
     <label>Forgotten after: <b id="forv">60</b> days</label>
     <input type="range" id="for" min="0" max="120" step="10" value="60">
     <button class="primary" id="go">Get outfits</button>
-    <p class="muted" style="font-size:12px;margin-top:12px">Pieces you switch off in the Wardrobe tab are treated as "in the laundry" (M3 status) and excluded.</p>
+    <p class="muted" style="font-size:12px;margin-top:12px">Pieces in the laundry or lent (M3 status, Wardrobe tab) are excluded. "Wear it" logs the outfit in M3, so the next suggestions rotate.</p>
   </aside>
   <section class="content">
     <nav class="tabs">
@@ -223,7 +223,7 @@ function card(o, items, i, opts = {}) {
       <div class="lbl">${esc(items[id].name)}</div></div>`).join('')}</div>
     ${bars(o.score_breakdown)}
     <ul class="why">${o.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
-    ${opts.noActions ? '' : `<div class="actions"><button class="ghost" data-act="remix">Remix this</button>
+    ${opts.noActions ? '' : `<div class="actions"><button class="ghost" data-act="wear">Wear it (log in M3)</button><button class="ghost" data-act="remix">Remix this</button>
       <button class="ghost" data-act="builder">Open in builder</button><span class="muted" style="font-size:12px;align-self:center">Tip: click a piece to swap it</span></div>`}
     <div class="swaps" style="display:none"></div>
   </div>`;
@@ -234,6 +234,7 @@ function wire(container, outfits, items) {
     const o = outfits.find(x => x.outfit_id === el.dataset.oid); if (!o) return;
     el.querySelectorAll('.piece').forEach(p => p.onclick = () => doSwap(el, o, items[p.dataset.swap]));
     const rb = el.querySelector('[data-act=remix]'); if (rb) rb.onclick = () => doRemix(o);
+    const wb = el.querySelector('[data-act=wear]'); if (wb) wb.onclick = () => doWear(o, items, wb);
     const bb = el.querySelector('[data-act=builder]'); if (bb) bb.onclick = () => {
       S.pinned = o.items.slice(0, 1); renderBuilder(); document.querySelector('[data-tab=builder]').click(); };
   });
@@ -252,6 +253,22 @@ async function run() {
       <div class="grid">${r.outfits.map((o, i) => card(o, r.items, i, { title: i === 0 ? 'Outfit of the day' : 'Option ' + (i + 1) })).join('')}</div><div id="remixbox"></div>`;
     wire(box, r.outfits, r.items);
   } catch (e) { box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+async function doWear(o, items, btn) {
+  btn.disabled = true; btn.textContent = 'Logging…';
+  try {
+    const cats = Object.fromEntries(o.items.map(id => [id, items[id].category]));
+    const r = await fetch('/m03/worn', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: S.user, payload: { item_ids: o.items, outfit_id: o.outfit_id, source: 'suggestion',
+        auto_laundry_after: 3, laundry_categories: cats } }) });
+    const j = await r.json();
+    if (j.mocked) { btn.textContent = 'M3 is mocked (set M03_USE_MOCK=false)'; return; }
+    const moved = j.result.moved_to_laundry.map(id => items[id].name);
+    btn.textContent = 'Logged ✓' + (moved.length ? ' · to laundry: ' + moved.join(', ') : '');
+    await loadUser();
+    setTimeout(run, 900);  // rotation: the next suggestions avoid what you just wore
+  } catch (e) { btn.textContent = 'Error: ' + e.message; }
 }
 
 async function doRemix(o) {
@@ -320,13 +337,18 @@ function renderWardrobe() {
   const days = it => it.last_worn ? Math.round((new Date(S.today) - new Date(it.last_worn)) / 864e5) : null;
   const mini = (k, v) => `<span>${k}</span><span class="bar"><i style="width:${Math.round(v * 100)}%"></i></span>`;
   box.innerHTML = `<p class="note">${S.wardrobe.length} pieces (photos from the Kaggle clothing dataset). Warmth / formality / mood are read from each photo by FashionCLIP zero-shot.
-    Last-worn dates come from a synthetic 120-day wear log (stand-in for M3). Click a piece to put it in the laundry.</p>
+    Last-worn dates and statuses come from M3 (the wear log; demo users start with a synthetic 120-day history). Click a piece to put it in / take it out of the laundry (saved in M3). Full M3 page: <a href="/m03/demo" style="color:var(--accent)">/m03/demo</a>.</p>
     <div class="wgrid">${S.wardrobe.map(i => { const d = days(i);
       return `<div class="thumb ${S.off.has(i.item_id) ? 'off' : ''}" data-id="${i.item_id}">${img(i)}${S.off.has(i.item_id) ? '<span class="tag">laundry</span>' : ''}
       <div class="lbl"><b>${esc(i.name)}</b></div><div class="lbl">${d === null ? 'never worn' : 'worn ' + d + 'd ago'} · ${i.wear_count}×</div>
       <div class="mini">${mini('warmth', i.attrs.warmth)}${mini('formality', i.attrs.formality)}${mini('comfy', i.attrs.comfy)}${mini('bold', i.attrs.bold)}${mini('classy', i.attrs.classy)}</div></div>`; }).join('')}</div>`;
   box.querySelectorAll('.thumb').forEach(t => t.onclick = () => {
-    const id = t.dataset.id; S.off.has(id) ? S.off.delete(id) : S.off.add(id); renderWardrobe(); });
+    const id = t.dataset.id;
+    const status = S.off.has(id) ? 'available' : 'laundry';
+    fetch('/m03/status', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: S.user, payload: { item_ids: [id], status } }) })
+      .then(r => r.json()).then(j => { if (j.mocked) { status === 'laundry' ? S.off.add(id) : S.off.delete(id); renderWardrobe(); } else loadUser(); });
+  });
 }
 
 async function renderModel() {

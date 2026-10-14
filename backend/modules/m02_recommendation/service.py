@@ -22,6 +22,16 @@ def engine():
     return Recommender(OutfitTransformer(), AttributeScorer(), cal)
 
 
+def _m03():
+    """M3 service when it is running for real (not mocked), else None."""
+    try:
+        from modules.m03_wear_log import router as m03_router
+        from modules.m03_wear_log import service as m03
+    except ImportError:
+        return None
+    return m03 if m03_router._impl() is m03 else None
+
+
 def _setup(user_id: str | None, p):
     """payload -> (all items, filtered items, ctx, weather source)."""
     import numpy as np
@@ -39,17 +49,36 @@ def _setup(user_id: str | None, p):
         items = wardrobe.load_demo(user_id)
         demo = True
     log = [e.model_dump() for e in p.wear_log]
+    wear_source = "request" if log else None
+    m03 = _m03()
+    if not log and m03 is not None and user_id:
+        # the real wear log + statuses from M3 (demo users get their synthetic history imported once)
+        if demo and not m03.has_data(user_id):
+            m03.seed(user_id, wardrobe.demo_wear_log(user_id, items, today))
+        log = m03.wear_log_for(user_id)
+        wear_source = "m03" if log else None
+        away = m03.unavailable_for(user_id)
+        for it in items:
+            if it.item_id in away:
+                it.status = "unavailable"
     if not log and demo:
         log = wardrobe.demo_wear_log(user_id or "demo_f", items, today)
+        wear_source = "synthetic"
 
     # wear log -> last worn date per piece + pairs already worn together
     last: dict[str, dt.date] = {}
     pairs: set[tuple[str, str]] = set()
     counts: dict[str, int] = {}
+    posted_keys: set[str] = set()
+    recent_keys: dict[str, int] = {}  # outfit key -> days since last worn
     for e in log:
         if e["date"] > today:
             continue
         ids = sorted(set(e["item_ids"]))
+        key = "+".join(ids)
+        if e.get("posted"):
+            posted_keys.add(key)
+        recent_keys[key] = min(recent_keys.get(key, 10**6), (today - e["date"]).days)
         for i in ids:
             last[i] = max(last.get(i, e["date"]), e["date"])
             counts[i] = counts.get(i, 0) + 1
@@ -76,7 +105,11 @@ def _setup(user_id: str | None, p):
         style_vector=np.asarray(o.style_vector, np.float32) if o.style_vector else None,
         worn_pairs=pairs,
         has_history=bool(log),
+        posted_keys=posted_keys,
+        recent_keys=recent_keys,
+        repeat_window=o.repeat_window_days,
     )
+    ctx.wear_source = wear_source
     usable = engine().prepare(items, ctx, set(o.exclude_item_ids))
     return items, usable, ctx, source
 
@@ -95,6 +128,7 @@ def _result(user_id, ranked, ctx, source) -> dict:
                 "weather": {"temp_c": ctx.temp_c, "condition": ctx.condition},
             },
             "weather_source": source,
+            "wear_log_source": getattr(ctx, "wear_source", None),
         },
         "mocked": False,
     }

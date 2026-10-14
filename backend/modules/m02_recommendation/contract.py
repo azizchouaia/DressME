@@ -40,6 +40,7 @@ class Context(BaseModel):
 class Options(BaseModel):
     n: int = Field(default=3, ge=1, le=10)
     rotation_window_days: int = 7  # pieces worn in this window are penalised (0 = off)
+    repeat_window_days: int = 14  # the exact same outfit worn in this window is penalised (0 = off)
     forgotten_after_days: int = 60  # dormant pieces get a bonus (0 = off), max one per outfit
     allow_outerwear: bool | None = None  # None = decided by the weather
     exclude_item_ids: list[str] = []
@@ -98,6 +99,7 @@ class OutfitsResult(BaseModel):
     items: dict[str, dict] = {}  # item_id -> name, image, colours, attributes... of every piece used
     context: OutfitContext | None = None
     weather_source: str | None = None  # open-meteo / request / fallback
+    wear_log_source: str | None = None  # request / m03 / synthetic (demo users only)
 
 
 class RecommendRequest(BaseModel):

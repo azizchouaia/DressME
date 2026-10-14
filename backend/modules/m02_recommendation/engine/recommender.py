@@ -70,6 +70,8 @@ TEMPLATES = (("top", "bottom", "shoes"), ("dress", "shoes"))
 PREFILTER_K = 14  # anchors (first slot) kept per template, by context fit
 RETRIEVE_K = 6  # pieces retrieved by CIR per partial outfit and slot
 BEAM = 40  # partial outfits kept after each slot
+POSTED_PENALTY = 0.6  # exact look already posted (BO1 rotation: never re-suggest it)
+REPEAT_PENALTY = 0.3  # exact outfit worn within repeat_window days
 FORGOTTEN_BONUS = 0.04  # added when exactly one piece has not been worn for forgotten_after days
 
 
@@ -87,6 +89,10 @@ class Ctx:
     style_vector: np.ndarray | None = None
     worn_pairs: set = field(default_factory=set)
     has_history: bool = False
+    posted_keys: set = field(default_factory=set)  # looks posted on social media: never re-suggest
+    recent_keys: dict = field(default_factory=dict)  # outfit key -> days since this exact outfit was worn
+    repeat_window: int = 14
+    wear_source: str | None = None
 
     @property
     def target_warmth(self) -> float:
@@ -219,6 +225,11 @@ class Recommender:
                 d = self.days_since(i, ctx)
                 if d is not None and d < ctx.rotation_window:
                     rotation = max(rotation, 0.25 * (1 - d / ctx.rotation_window))
+        key = "+".join(sorted(i.item_id for i in outfit))
+        if key in ctx.posted_keys:
+            rotation = max(rotation, POSTED_PENALTY)
+        elif ctx.repeat_window and ctx.recent_keys.get(key, 10**6) < ctx.repeat_window:
+            rotation = max(rotation, REPEAT_PENALTY)
         forgotten = 0.0
         if ctx.forgotten_after:
             dormant = [i for i in outfit if (self.days_since(i, ctx) or 0) >= ctx.forgotten_after]
