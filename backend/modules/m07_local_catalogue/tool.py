@@ -8,7 +8,8 @@ from .contract import LocalShopInput
 
 
 async def _run(**kwargs) -> dict:
-    return await service.search(kwargs)  # same agent as the API: FashionCLIP is loaded once
+    # same agent as the API (FashionCLIP is loaded once); logged as coming from the assistant
+    return await service.search(kwargs, channel="orchestrator")
 
 
 tool = StructuredTool.from_function(

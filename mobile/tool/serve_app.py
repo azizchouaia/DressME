@@ -1,11 +1,14 @@
 """Serve the built Flutter web app and the DressMe API from ONE address, so any browser works (no CORS).
 
     http://localhost:8090/            -> mobile/build/web (flutter build web)
-    http://localhost:8090/m07/...     -> forwarded to the API on http://localhost:8010
+    http://localhost:8090/m07/...     -> forwarded to the API on http://127.0.0.1:8010
 
 usage (from mobile/):
     flutter build web --dart-define=API_URL=http://localhost:8090
-    python tool/serve_app.py [--port 8090] [--api http://localhost:8010] [--web <path to build/web>]
+    python tool/serve_app.py [--port 8090] [--api http://127.0.0.1:8010] [--web <path to build/web>]
+
+The API address is 127.0.0.1, not localhost: on Windows "localhost" tries IPv6 first and every
+forwarded call waited ~2 s before falling back to the API, which listens on IPv4 only.
 """
 
 import argparse
@@ -20,7 +23,7 @@ HOP_HEADERS = {"connection", "keep-alive", "transfer-encoding", "content-length"
 
 
 class Handler(SimpleHTTPRequestHandler):
-    api = "http://localhost:8010"
+    api = "http://127.0.0.1:8010"
 
     def _forward(self):
         length = int(self.headers.get("Content-Length") or 0)
@@ -62,7 +65,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8090)
-    ap.add_argument("--api", default="http://localhost:8010")
+    ap.add_argument("--api", default="http://127.0.0.1:8010")
     ap.add_argument("--web", default=str(Path(__file__).resolve().parents[1] / "build" / "web"))
     args = ap.parse_args()
     Handler.api = args.api.rstrip("/")

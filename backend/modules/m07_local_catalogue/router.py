@@ -10,8 +10,8 @@ from fastapi.responses import FileResponse
 
 from shared.base_agent import AgentError
 
-from . import service
-from .contract import LocalShopInput, LocalShopOutput
+from . import events, service
+from .contract import ClickEvent, LocalShopInput, LocalShopOutput
 from .paths import IMAGES_DIR
 
 _IMAGE_NAME = re.compile(r"[0-9a-f]{16}\.jpg")  # names written by scraper/images.py, nothing else
@@ -26,6 +26,12 @@ async def search(body: LocalShopInput):
         return await service.search(body.model_dump())
     except AgentError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/events", status_code=204)
+async def click(body: ClickEvent):
+    """The app reports that a result was opened or that the user went to the shop (logged for M14)."""
+    events.log_click(body.type, body.product_id, body.search_id, body.shop, body.rank, body.user_id)
 
 
 @router.get("/shops")

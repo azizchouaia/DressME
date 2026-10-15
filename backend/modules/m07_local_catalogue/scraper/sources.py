@@ -178,6 +178,10 @@ def prestashop(shop: Shop, http: Http, max_raw: int) -> list[RawProduct]:
             for p in products:
                 pid = str(p.get("id_product"))
                 if pid in found:
+                    # Listed again under a more specific category ("femme" first, then "sandales"):
+                    # keep that hint, it is the only type information for names like "Cinzia Noir Daim".
+                    if category_hint not in found[pid].category_texts:
+                        found[pid].category_texts.append(category_hint)
                     continue
                 cover = p.get("cover") or {}
                 image = (cover.get("large") or {}).get("url") or (

@@ -84,6 +84,8 @@ class ParsedQuery {
     this.maxPriceTnd,
     this.minPriceTnd,
     this.city,
+    this.gender,
+    this.translated,
     this.corrected,
   });
 
@@ -93,6 +95,12 @@ class ParsedQuery {
   final double? maxPriceTnd;
   final double? minPriceTnd;
   final String? city;
+
+  /// "women" / "men" when the request says who the piece is for.
+  final String? gender;
+
+  /// Request after darija -> French ("sabbat ahmar" -> "chaussures rouge"), null when not darija.
+  final String? translated;
 
   /// Request after typo correction ("colier" -> "collier"), null when nothing was changed.
   final String? corrected;
@@ -104,6 +112,8 @@ class ParsedQuery {
         maxPriceTnd: (j['max_price_tnd'] as num?)?.toDouble(),
         minPriceTnd: (j['min_price_tnd'] as num?)?.toDouble(),
         city: j['city'] as String?,
+        gender: j['gender'] as String?,
+        translated: j['translated'] as String?,
         corrected: j['corrected'] as String?,
       );
 }
@@ -113,12 +123,28 @@ class LocalSearchResult {
       {required this.results,
       required this.totalMatches,
       this.parsed,
-      this.note});
+      this.note,
+      this.searchId});
 
   final List<LocalProduct> results;
   final int totalMatches;
   final ParsedQuery? parsed;
   final String? note;
+
+  /// Id of this search in M7's event log, sent back with the clicks (boutique dashboard, M14).
+  final String? searchId;
+
+  /// More results can be loaded ("Voir plus" / "Tout afficher").
+  bool get hasMore => results.length < totalMatches;
+
+  /// This result followed by the next page of the same search (same id, filters and note).
+  LocalSearchResult append(LocalSearchResult next) => LocalSearchResult(
+        results: [...results, ...next.results],
+        totalMatches: totalMatches,
+        parsed: parsed,
+        note: note,
+        searchId: searchId,
+      );
 
   factory LocalSearchResult.fromJson(Map<String, dynamic> j) =>
       LocalSearchResult(
@@ -130,6 +156,7 @@ class LocalSearchResult {
             ? null
             : ParsedQuery.fromJson(j['parsed'] as Map<String, dynamic>),
         note: j['note'] as String?,
+        searchId: j['search_id'] as String?,
       );
 }
 
@@ -181,18 +208,36 @@ class LocalMarketRepository {
   String get baseUrl => _dio.options.baseUrl;
 
   /// POST /m07/search — free text ("baskets blanches à Tunis 80 TND") plus optional explicit filters.
+  /// [offset]: skip the first results — the next page is the same request with offset += k.
   Future<LocalSearchResult> search(
       {required String query,
       String? city,
       double? maxPriceTnd,
-      int k = 24}) async {
+      int k = 24,
+      int offset = 0}) async {
     final res = await _dio.post<Map<String, dynamic>>('/m07/search', data: {
       'query': query,
       'k': k,
+      if (offset > 0) 'offset': offset,
       if (city != null) 'city': city,
       if (maxPriceTnd != null) 'max_price_tnd': maxPriceTnd,
     });
     return LocalSearchResult.fromJson(res.data!);
+  }
+
+  /// POST /m07/events — "product_view" (a result was opened) or "shop_click" (the shop's link was taken).
+  /// Fire and forget: a lost click must never bother the user.
+  Future<void> logEvent(String type, LocalProduct p,
+      {String? searchId, int? rank}) async {
+    try {
+      await _dio.post<void>('/m07/events', data: {
+        'type': type,
+        'product_id': p.productId,
+        'shop': p.shop,
+        if (searchId != null) 'search_id': searchId,
+        if (rank != null) 'rank': rank,
+      });
+    } catch (_) {}
   }
 
   /// GET /m07/shops

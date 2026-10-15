@@ -118,6 +118,26 @@ def color_code_from_text(text: str) -> str | None:
     return COLORS[fr][0] if fr else None
 
 
+# Gender of a piece: code -> French label. Shops write it in the name or the URL ("Basket femme",
+# /collections/homme); pipeline/attributes.py estimates it from the photo when they do not. "" = unknown.
+GENDERS = {"women": "Femme", "men": "Homme", "unisex": "Mixte"}
+OPPOSITE_GENDER = {"women": "men", "men": "women"}
+_UNISEX_RE = re.compile(r"\b(?:unisexe?|mixte)\b")
+_WOMEN_RE = re.compile(r"\b(?:femmes?|woman|women|womens|dames?|filles?|feminine?s?|ladies|lady)\b")
+_MEN_RE = re.compile(r"\b(?:hommes?|man|men|mens|masculine?s?|monsieur)\b")
+
+
+def gender_from_text(*texts: str) -> str:
+    """'Basket femme' -> 'women'; 'unisexe' -> 'unisex'; both genders or none named -> '' (unknown)."""
+    folded = " ".join(fold(t) for t in texts if t)
+    if _UNISEX_RE.search(folded):
+        return "unisex"
+    women, men = bool(_WOMEN_RE.search(folded)), bool(_MEN_RE.search(folded))
+    if women != men:
+        return "women" if women else "men"
+    return ""
+
+
 # City -> governorate. Product cities are where the shop is; a search "à Tunis" matches the whole governorate.
 GOVERNORATES: dict[str, str] = {
     "Tunis": "Tunis",

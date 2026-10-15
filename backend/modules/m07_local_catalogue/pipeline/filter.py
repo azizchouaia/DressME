@@ -1,9 +1,13 @@
-"""Hard filters: price (TND), city, category / subcategory, stock. Colour stays a soft score (rerank)."""
+"""Hard filters: price (TND), city, category / subcategory, colour, gender, stock.
+
+A colour asked for is strict: only pieces of that colour (pieces whose colour the shop does not give are
+left out). The agent relaxes it, with a note, only when no piece of that colour exists.
+"""
 
 import numpy as np
 
 from ..contract import ParsedQuery
-from ..taxonomy import canonical_city, governorate
+from ..taxonomy import OPPOSITE_GENDER, canonical_city, governorate
 
 
 def city_mask(catalogue, city: str | None) -> np.ndarray:
@@ -25,7 +29,11 @@ def city_mask(catalogue, city: str | None) -> np.ndarray:
 
 
 def run(
-    catalogue, parsed: ParsedQuery, include_unavailable: bool = False, use_city: bool = True
+    catalogue,
+    parsed: ParsedQuery,
+    include_unavailable: bool = False,
+    use_city: bool = True,
+    use_color: bool = True,
 ) -> np.ndarray:
     mask = np.ones(len(catalogue), dtype=bool)
     if not include_unavailable:
@@ -38,6 +46,11 @@ def run(
         mask &= catalogue.subcategory == parsed.subcategory
     elif parsed.category:
         mask &= catalogue.category == parsed.category
+    if use_color and parsed.color:
+        mask &= catalogue.color == parsed.color
+    if parsed.gender in OPPOSITE_GENDER:
+        # Only pieces known to be for the other gender go: unisex and unknown ones stay (ranked lower).
+        mask &= catalogue.gender != OPPOSITE_GENDER[parsed.gender]
     if use_city and parsed.city:
         mask &= city_mask(catalogue, parsed.city)
     return mask

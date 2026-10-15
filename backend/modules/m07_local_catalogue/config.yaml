@@ -21,3 +21,12 @@ visual_image_range: [0.40, 0.85]  # photo vs photo: catalogue p50 ~0.42, p99 ~0.
 style_range: [0.20, 0.80]
 
 mmr_lambda: 0.75    # diversity of the final list (1 = pure relevance)
+
+# Gender estimated from the photo (pipeline/attributes.py) only when FashionCLIP is this sure
+# (100 x cosine gap between "women's" and "men's" prompts). Measured on the 1,828 products whose
+# name says it (43 shops): margin 0 -> 93.3 % right on all; 1.5 -> 96.7 % right on 88.5 % of them.
+gender_photo_margin: 1.5
+
+# Search / click log (events.py), read by M14's boutique dashboard. Relative to the repo root, never git.
+log_events: true
+log_dir: ml/data/logs

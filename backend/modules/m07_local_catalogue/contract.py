@@ -1,5 +1,7 @@
 """Input/output of the LocalShopAgent (M7 Local catalogue). Built from shared schemas."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 from shared.schemas import GarmentCategory
@@ -16,6 +18,9 @@ class LocalShopInput(BaseModel):
     category: GarmentCategory | None = None
     subcategory: str | None = Field(None, description="e.g. sneakers, shirt, bag (see taxonomy.py)")
     color: str | None = Field(None, description="Colour code (white, navy...) or French name (blanc)")
+    gender: Literal["women", "men"] | None = Field(
+        None, description="Pieces for women or men; unisex pieces and pieces of unknown gender stay in"
+    )
     user_id: str | None = Field(None, description="Caller's user, used to fetch their style from M5")
     style_vector: list[float] | str | None = Field(
         None,
@@ -26,7 +31,10 @@ class LocalShopInput(BaseModel):
         None, description="512-d FashionCLIP embedding of a photo (Vision agent) to find similar local pieces"
     )
     include_unavailable: bool = False
-    k: int = Field(10, ge=1, le=50)
+    k: int = Field(10, ge=1, le=100)
+    offset: int = Field(
+        0, ge=0, description="Skip the first `offset` results: next page = same request with offset += k"
+    )
 
     @model_validator(mode="after")
     def _something_to_search(self):
@@ -45,6 +53,7 @@ class ShopResult(BaseModel):
     category: str
     subcategory: str
     color: str | None = None
+    gender: str | None = None  # women / men / unisex, None when unknown
     size: str | None = None
     image_url: str
     image_path: str | None = None
@@ -61,12 +70,14 @@ class ParsedQuery(BaseModel):
     category: str | None = None
     subcategory: str | None = None
     color: str | None = None
+    gender: str | None = None
     max_price_tnd: float | None = None
     min_price_tnd: float | None = None
     city: str | None = None
     governorate: str | None = None
     terms: list[str] = []
     prompt_en: str | None = None
+    translated: str | None = None  # request after darija -> French ("sabbat ahmar" -> "chaussures rouge")
     corrected: str | None = None  # request after typo correction ("colier" -> "collier"), None if unchanged
 
 
@@ -75,3 +86,15 @@ class LocalShopOutput(BaseModel):
     parsed: ParsedQuery | None = None
     total_matches: int = 0  # products passing the filters, before keeping the top k
     note: str | None = None  # e.g. city filter relaxed because nothing matched there
+    search_id: str | None = None  # id of this search in the event log, to send back with clicks
+
+
+class ClickEvent(BaseModel):
+    """The user opened a result (product_view) or went to the shop's website (shop_click)."""
+
+    type: Literal["product_view", "shop_click"]
+    product_id: str
+    search_id: str | None = Field(None, description="search_id of the search that showed the product")
+    shop: str | None = None
+    rank: int | None = Field(None, ge=1, description="position of the product in the results, from 1")
+    user_id: str | None = None

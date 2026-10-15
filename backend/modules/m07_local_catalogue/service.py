@@ -5,9 +5,10 @@ answers with mock.py's fixed data instead of failing, so the modules that call M
 """
 
 import logging
+import time
 from collections import Counter
 
-from . import mock
+from . import events, mock
 from .agent import LocalShopAgent
 from .paths import CATALOGUE_CSV
 
@@ -29,12 +30,19 @@ async def get_agent() -> LocalShopAgent:
     return _agent
 
 
-async def search(req: dict) -> dict:
-    """LocalShopInput (dict) -> LocalShopOutput (dict). Raises AgentError / ValidationError on bad input."""
+async def search(req: dict, channel: str = "api") -> dict:
+    """LocalShopInput (dict) -> LocalShopOutput (dict). Raises AgentError / ValidationError on bad input.
+
+    Every real search is written to the event log (events.py) and gets a `search_id`, which the app sends
+    back with its clicks. Mock answers are not logged.
+    """
     if not knowledge_base_ready():
         log.warning("M7 knowledge base %s missing: serving mock.py (dvc pull or rebuild it)", CATALOGUE_CSV)
         return mock.search(req)
-    return await (await get_agent())(req)
+    started = time.perf_counter()
+    out = await (await get_agent())(req)
+    out["search_id"] = events.log_search(req, out, 1000 * (time.perf_counter() - started), channel)
+    return out
 
 
 async def shops() -> list[dict]:

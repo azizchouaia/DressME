@@ -51,7 +51,7 @@ CATEGORY_RULES: list[tuple[str, str]] = [
     (
         "Sac",
         r"sacs?|pochettes?|cabas|couffins?|tote ?bags?|bags?|sacoches?|cartables?|besaces?|bananes?|"
-        r"backpacks?|clutch",
+        r"backpacks?|clutch|handbags?|purses?|crossbody",
     ),
     ("Robe", r"robes?|dress(es)?|فستان"),
     ("Jupe", r"jupes?|skirts?"),
@@ -105,8 +105,17 @@ _CATEGORY_RES = [(name, re.compile(rf"\b(?:{pattern})\b")) for name, pattern in 
 NON_FASHION = re.compile(
     r"\b(?:tasbih|livres?|coran|hadiths?|parfums?|musc|encens|tapis|cosmetiques?|cremes?|savons?|bougies?|"
     r"decorations?|cuisine|creatine|whey|proteines?|gourde|coffret cadeau|carte cadeau|gift ?card|"
-    r"emballage|packaging|mug|serviettes?|draps?|coussins?|parure de lit|jouets?|valises?)\b"
+    r"emballage|packaging|mug|serviettes?|draps?|coussins?|parure de lit|jouets?|valises?|"
+    # home decor and stationery sold by artisan marketplaces (Iley'com, Hraier, Patrinova...)
+    r"bougeoirs?|vases?|miroirs?|tasses?|assiettes?|plateaux?|porte[- ]manteaux?|carnets?|cahiers?|"
+    r"stickers?|autocollants?|magnets?|poteries?|lampes?|lanternes?|photophores?|sous[- ]verres?|"
+    r"dessous d'?assiettes?|boites? a bijoux|figurines?|tableaux?|"
+    # food (not "chocolat", "miel", "beurre": shops use them as colour names)
+    r"cakes?|kaak|gateaux?|petits? fours|biscuits?|patisseries?|confitures?|huile d'?olive|zbib|"
+    r"makroudh?|baklawa|bsissa)\b"
 )
+# Not fashion unless the name also names a piece: "Porte clé" goes, "Ceinture et porte clé" stays.
+WEAK_NON_FASHION = re.compile(r"\b(?:porte[- ]?cles?|cadres?|tortues?)\b")
 KIDS = re.compile(
     r"\b(?:bebes?|baby|babies|enfants?|kids?|junior|fillettes?|garcons?|garconnets?|premiers? pas|layette|"
     r"naissance|nourrissons?|"
@@ -127,7 +136,11 @@ def categorize(*texts: str) -> str | None:
 
 
 def is_non_fashion(*texts: str) -> bool:
-    return any(NON_FASHION.search(fold(t)) for t in texts if t)
+    return any(
+        NON_FASHION.search(fold(t)) or (WEAK_NON_FASHION.search(fold(t)) and categorize(t) is None)
+        for t in texts
+        if t
+    )
 
 
 def is_kids(*texts: str) -> bool:
@@ -144,7 +157,7 @@ COLOR_RULES: list[tuple[str, str]] = [
     ("Beige", r"beige|sable|nude|ecru|creme|cream|ivoire|ivory|off ?white|taupe|sand|stone"),
     ("Noir", r"noire?s?|black"),
     ("Blanc", r"blanc(?:he)?s?|white|wht"),
-    ("Gris", r"grise?s?|grey|gray|anthracite|chine|charcoal|argent[e]?|silver"),
+    ("Gris", r"grise?s?|grey|gray|anthracite|chine|charcoal|argente?e?s?|silver"),
     ("Marron", r"marron|brown|chocolat|moka|mocha|brun|tabac|cafe|coffee"),
     ("Bleu", r"bleue?s?|blue|indigo|turquoise|royal|petrole|cobalt"),
     ("Rouge", r"rouges?|red|carmin|cerise"),
@@ -256,7 +269,11 @@ INTERNATIONAL_BRANDS = re.compile(
     r"all ?star|old ?skool|gel-\w+|campus 00s?|forum (?:low|mid|84)|on cloud\w*|cloudtilt|"
     # sneaker / luxury labels resold by Tunisian sneaker shops; nike/new balance also glued to the model
     r"nike\w*|new ?balance\w*|saucony|amiri|chanel|givenchy|lanvin|valentino|bape|bathing ape|moncler|"
-    r"monclr|premiata|numeris|alo (?:runner|yoga))\b"
+    r"monclr|premiata|numeris|alo (?:runner|yoga)|"
+    # watches, jewellery and eyewear labels resold by Tunisian accessory shops
+    r"bigotti|casio|rolex|fossil|tissot|swatch|cartier|tag heuer|daniel wellington|seiko|citizen|"
+    r"festina|swarovski|pandora|hublot|longines|bvlgari|bulgari|ray[ -]?ban|armani|dkny|kenzo|geox|"
+    r"clarks|kickers|ecco|simone perele|triumph|calzedonia|intimissimi|tezenis|etam)\b"
 )
 
 

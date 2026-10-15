@@ -36,6 +36,7 @@ class Catalogue:
         self.category = np.array([p["category"] for p in self.products], dtype=object)
         self.subcategory = np.array([p["subcategory"] for p in self.products], dtype=object)
         self.color = np.array([p.get("color") or "" for p in self.products], dtype=object)
+        self.gender = np.array([p.get("gender") or "" for p in self.products], dtype=object)
         self.governorates = [set(filter(None, p.get("governorate", "").split("; "))) for p in self.products]
         self.cities = [set(filter(None, p.get("city", "").split("; "))) for p in self.products]
         # Words actually used by the shops (names, labels, colours, shop names): targets for typo correction.

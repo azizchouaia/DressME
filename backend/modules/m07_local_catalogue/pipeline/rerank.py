@@ -3,7 +3,7 @@
 match = weighted mean of the parts that apply to the request, each in 0..1:
   visual      FashionCLIP query (text or photo) vs product photo, cosine mapped to 0..1
   text        BM25 relative to the best candidate
-  attributes  requested subcategory / colour present on the product (unknown colour = 0.5)
+  attributes  requested subcategory / colour / gender present on the product (unknown = 0.5)
   style       user's style vector vs product photo
 Weights come from config.yaml and are renormalised over the parts available for each product.
 """
@@ -11,7 +11,7 @@ Weights come from config.yaml and are renormalised over the parts available for 
 import numpy as np
 
 from ..contract import ParsedQuery
-from ..taxonomy import COLOR_CODES, SUBCATEGORIES, governorate
+from ..taxonomy import COLOR_CODES, GENDERS, SUBCATEGORIES, governorate
 
 
 def _scale(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
@@ -46,6 +46,9 @@ def score(
     if parsed.color:
         colors = catalogue.color[candidates]
         checks.append(np.where(colors == parsed.color, 1.0, np.where(colors == "", 0.5, 0.0)))
+    if parsed.gender in ("women", "men"):
+        genders = catalogue.gender[candidates]  # the other gender is already filtered out
+        checks.append(np.where((genders == parsed.gender) | (genders == "unisex"), 1.0, 0.5))
     if checks:
         parts["attributes"] = np.mean(checks, axis=0)
 
@@ -64,9 +67,12 @@ def score(
     return match, parts
 
 
+MMR_POOL = 2000  # fixed (not tied to k), so the first n picks are the same whatever the page size
+
+
 def mmr(catalogue, candidates: np.ndarray, match: np.ndarray, k: int, lam: float) -> list[int]:
     """Maximal marginal relevance: avoid returning k near-identical photos (same model in 5 colours)."""
-    order = np.argsort(-match)[: max(k * 10, 50)]
+    order = np.argsort(-match, kind="stable")[:MMR_POOL]
     emb = catalogue.embeddings[candidates[order]]
     chosen: list[int] = []
     max_sim = np.zeros(len(order))
@@ -98,6 +104,15 @@ def reasons(
             out.append("Couleur non précisée par la boutique : vérifier sur la photo")
         else:
             out.append(f"Autre couleur : {product.get('color_fr', '').lower()}")
+    if parsed.gender in ("women", "men"):
+        gender = product.get("gender") or ""
+        if gender in GENDERS:
+            label = f"Modèle {GENDERS[gender].lower()}"
+            out.append(
+                f"{label} (estimé d'après la photo)" if product.get("gender_source") == "photo" else label
+            )
+        else:
+            out.append("Genre non précisé par la boutique")
     if product.get("price_tnd") is not None:
         price = f"{product['price_tnd']:g} TND"
         out.append(f"{price} (budget {parsed.max_price_tnd:g} TND)" if parsed.max_price_tnd else price)

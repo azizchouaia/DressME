@@ -8,7 +8,8 @@ Steps (each one is counted in ml/data/shops/cleaning_report.md):
 1. prices: numeric, > 0, in TND (every adapter only keeps TND prices); outliers are flagged, not changed
 2. foreign labels and children's pieces that slipped through the scraper are dropped
 3. categories -> shared contract (GarmentCategory) + subcategory; colours -> code + French name + hex;
-   sizes -> one notation, sorted; cities -> canonical names + governorate
+   gender when the name or URL says it (women / men / unisex, gender_source=text; the photo fills the
+   rest later, pipeline/attributes.py); sizes -> one notation, sorted; cities -> canonical names + governorate
 4. duplicates: same photo (perceptual hash) + same name + same price, within a shop or across shops
 5. URLs: every product page and image URL is requested; dead product pages (404/410, redirect to the
    home page) are dropped, other failures are flagged
@@ -31,7 +32,7 @@ from urllib.parse import urlsplit
 from PIL import Image
 
 from ..paths import DATA_DIR as DATA
-from ..taxonomy import COLORS, canonical_city, classify, governorate
+from ..taxonomy import COLORS, canonical_city, classify, gender_from_text, governorate
 from .client import Http
 from .normalize import KIDS, categorize, fold, is_non_fashion, origin_type
 
@@ -46,6 +47,8 @@ COLUMNS = [
     "color",
     "color_fr",
     "color_hex",
+    "gender",
+    "gender_source",
     "size",
     "size_type",
     "price_tnd",
@@ -247,6 +250,7 @@ def clean(
         cities = [c for c in (canonical_city(x) or x.strip() for x in row["city"].split(",")) if c]
         govs = list(dict.fromkeys(g for g in map(governorate, cities) if g))
         image_path = row.get("image_path", "")
+        gender = gender_from_text(name, row["product_url"])
         out.append(
             {
                 "product_id": stable_id(row["product_url"]),
@@ -259,6 +263,8 @@ def clean(
                 "color": color_code,
                 "color_fr": row["color"] if color_code else "",
                 "color_hex": color_hex,
+                "gender": gender,
+                "gender_source": "text" if gender else "",
                 "size": size,
                 "size_type": size_type,
                 "price_tnd": price,
@@ -323,6 +329,7 @@ def clean(
         for f in ("color", "size", "city"):
             if not r[f]:
                 report[f"missing_{f}"] += 1
+        report[f"gender_text_{r['gender'] or 'unknown'}"] += 1
         report.update(f"flag_{f}" for f in flags)
         del r["_dhash"]
 

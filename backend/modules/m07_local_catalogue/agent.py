@@ -14,8 +14,8 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
     name = "localshop"
     description = (
         "M7 local catalogue: find pieces sold by Tunisian shops and brands (prices in TND) that match "
-        "a request, a wardrobe gap, a photo embedding or the user's style; filters by budget, city "
-        "and category."
+        "a request (FR/EN/darija), a wardrobe gap, a photo embedding or the user's style; filters by "
+        "budget, city, category and gender."
     )
     input_model = LocalShopInput
     output_model = LocalShopOutput
@@ -55,6 +55,8 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
             parsed.category, parsed.subcategory = inp.category.value, None
         if inp.color:
             parsed.color = parse.normalize_color(inp.color)
+        if inp.gender:
+            parsed.gender = inp.gender
         if inp.max_price_tnd is not None:
             parsed.max_price_tnd = inp.max_price_tnd
         if inp.min_price_tnd is not None:
@@ -76,35 +78,16 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                 return "; ".join(local)
         return "; ".join(cities) or None
 
-    def _colour_note(
-        self,
-        parsed: ParsedQuery,
-        candidates: np.ndarray,
-        city_applied: bool,
-        evidence: np.ndarray,
-        include_unavailable: bool,
-    ) -> str:
-        """Colour is a soft criterion: say it when none of the pieces shown has the requested colour."""
-        cat = self.catalogue
+    @staticmethod
+    def _colour_note(parsed: ParsedQuery, city_applied: bool) -> str:
+        """The colour asked for exists nowhere (in stock or not, in any city): say it before other colours."""
         colour = COLOR_CODES[parsed.color][0].lower()
         what = SUBCATEGORIES[parsed.subcategory][1].lower() if parsed.subcategory else "articles"
         where = f" à {parsed.city}" if city_applied else ""
-        note = (
+        return (
             f"Aucun article de couleur {colour} parmi les {what}{where} : "
             f"voici les autres {what} disponibles."
         )
-        if city_applied:
-            elsewhere = filter.run(cat, parsed, include_unavailable, use_city=False) & evidence
-            elsewhere &= cat.color == parsed.color
-            if elsewhere.any():
-                places = sorted({c for k in np.flatnonzero(elsewhere) for c in cat.cities[k]})
-                if any(not cat.cities[k] for k in np.flatnonzero(elsewhere)):
-                    places.append("boutiques en ligne")
-                note += (
-                    f" {int(elsewhere.sum())} existent ailleurs ({', '.join(places[:4])}) : retire le filtre "
-                    "de ville pour les voir."
-                )
-        return note
 
     async def run(self, inp: LocalShopInput) -> LocalShopOutput:
         if self.catalogue is None:
@@ -135,25 +118,35 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         # instead of filling the list with unrelated pieces.
         understood = parsed.subcategory or parsed.category or parsed.color or image is not None
         evidence = bm25 > 0 if (not understood and parsed.terms) else np.ones(len(cat), dtype=bool)
-        mask = filter.run(cat, parsed, inp.include_unavailable) & evidence
-        city_applied = bool(parsed.city)
-        if parsed.city and not mask.any():
-            relaxed = filter.run(cat, parsed, inp.include_unavailable, use_city=False) & evidence
-            if relaxed.any():
-                mask, city_applied = relaxed, False
+        # Strictest filters first, then relaxed one at a time when nothing matches: the city before the
+        # colour (a colour asked for means only that colour), sold-out pieces before other colours.
+        stock = inp.include_unavailable
+        steps = [
+            (True, True, stock),
+            (False, True, stock),
+            (False, True, True),
+            (True, False, stock),
+            (False, False, stock),
+            (False, False, True),
+        ]
+        for use_city, use_color, with_sold_out in steps:
+            mask = filter.run(cat, parsed, with_sold_out, use_city=use_city, use_color=use_color) & evidence
+            if mask.any():
+                break
+        candidates = np.flatnonzero(mask)
+        city_applied = use_city and bool(parsed.city)
+        if len(candidates):
+            if parsed.city and not use_city and not filter.city_mask(cat, parsed.city)[candidates].any():
                 notes.append(
                     f"Rien trouvé à {parsed.city} : résultats d'autres villes ou de boutiques en ligne."
                 )
-        candidates = np.flatnonzero(mask)
-        if not len(candidates) and not inp.include_unavailable:
-            # Nothing in stock: show the matching pieces that are sold out rather than an empty page.
-            sold_out = filter.run(cat, parsed, include_unavailable=True, use_city=False) & evidence
-            if sold_out.any():
-                candidates, city_applied = np.flatnonzero(sold_out), False
+            if with_sold_out and not stock:
                 notes.append(
                     f"Aucun article en stock pour l'instant : {len(candidates)} article(s) en rupture de "
                     "stock, à vérifier auprès de la boutique."
                 )
+            if parsed.color and not use_color:
+                notes.append(self._colour_note(parsed, city_applied))
         if not len(candidates):
             if not evidence.any():
                 asked = parsed.corrected or " ".join(t for t in (inp.query, inp.gap) if t)
@@ -164,14 +157,11 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                 notes.append("Aucun article ne correspond à ces critères.")
             return LocalShopOutput(results=[], parsed=parsed, total_matches=0, note=" ".join(notes))
 
-        if parsed.color and not (cat.color[candidates] == parsed.color).any():
-            notes.append(
-                self._colour_note(parsed, candidates, city_applied, evidence, inp.include_unavailable)
-            )
-
         match, parts = rerank.score(cat, candidates, parsed, visual, visual_kind, bm25, style, self.config)
-        picked = rerank.mmr(cat, candidates, match, inp.k, self.config["mmr_lambda"])
-        picked.sort(key=lambda j: -match[j])  # MMR chooses the set, display by score
+        # Greedy MMR: its first n picks do not depend on how many are asked, so page 2 (offset=k) is
+        # exactly what follows page 1, without repeats. Each page is shown by score.
+        picked = rerank.mmr(cat, candidates, match, inp.offset + inp.k, self.config["mmr_lambda"])
+        picked = sorted(picked[inp.offset : inp.offset + inp.k], key=lambda j: -match[j])
         results = []
         for j in picked:
             p = cat.products[candidates[j]]
@@ -186,6 +176,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                     category=p["category"],
                     subcategory=p["subcategory"],
                     color=p.get("color") or None,
+                    gender=p.get("gender") or None,
                     size=p.get("size") or None,
                     image_url=p["image_url"],
                     image_path=p.get("image_path") or None,

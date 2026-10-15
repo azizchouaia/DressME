@@ -3,6 +3,7 @@ import pytest
 from modules.m07_local_catalogue.scraper.normalize import (
     categorize,
     is_kids,
+    is_non_fashion,
     join_sizes,
     main_color,
     origin_type,
@@ -65,6 +66,27 @@ def test_kids_and_origin():
     assert not is_kids("Robe longue femme")
     assert origin_type("local_retailer", "Nike", "Air Max 90") == "international_brand"
     assert origin_type("local_brand", "", "Jebba brodée") == "local_brand"
+
+
+@pytest.mark.parametrize(
+    ("name", "dropped"),
+    [
+        ("Vase céramique fleur design 14 cm", True),  # decor sold by artisan marketplaces
+        ("Kaak warka pistache", True),  # food
+        ("Porte clé", True),
+        ("Ceinture et porte clé en cuir marron grainé", False),  # a piece + a key ring: kept
+        ("Collier a pendentif de cadre de photo doré", False),
+        ("Sandales couleur chocolat", False),  # colour names are not food
+    ],
+)
+def test_non_fashion(name, dropped):
+    assert is_non_fashion(name) is dropped
+
+
+def test_foreign_watch_and_lingerie_labels():
+    assert origin_type("local_retailer", "Montre Bigotti") == "international_brand"
+    assert origin_type("local_brand", "Soutien-gorge Simone Perele") == "international_brand"
+    assert origin_type("local_brand", "Collier maille omega") == "local_brand"
 
 
 def test_balanced_pick_spreads_categories():

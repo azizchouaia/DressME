@@ -94,6 +94,57 @@ SHOPS: list[Shop] = [
     ),
     # Custom JSON API
     Shop("ha", "HA", "https://ha.com.tn", "ha", options={"sections": ["femme", "homme"]}),
+    # --- Added 2026-10-15, found city by city (search + platform probe). Cities only when a source says
+    # where the shops are (store pages, press, L'Instant M); empty = online only or not stated.
+    # WooCommerce Store API
+    Shop("kai", "KAI Signature", "https://kaisignature.com", "woocommerce"),
+    Shop("wivine", "Wivine", "https://wivinerm.com", "woocommerce"),
+    Shop("lunar", "Lunar", "https://lunar.tn", "woocommerce", origin="local_retailer"),
+    Shop("admakeba", "AD Makeba", "https://ad-makeba.tn", "woocommerce", city="Tunis, Ariana"),
+    Shop("opierre", "Opierre", "https://opierre.tn", "woocommerce"),
+    Shop("hraier", "Hraier", "https://hraier.com", "woocommerce", origin="local_retailer"),
+    # Shopify
+    Shop("kontakt", "Kontakt", "https://kontakt.com.tn", "shopify"),
+    Shop("seaside", "SeaSide", "https://seasidecollection.store", "shopify", city="Sfax"),
+    Shop("emraa", "Emraa (ex-Iuma)", "https://www.emraabags.com", "shopify"),
+    Shop("gaya", "Gaya", "https://gaya.com.tn", "shopify", origin="local_retailer"),
+    Shop("ileycom", "Iley'com", "https://ileycom.tn", "shopify", origin="local_retailer"),
+    # PrestaShop 1.7+
+    Shop("chillandlit", "Chill&Lit", "https://chillandlit.tn", "prestashop", origin="local_retailer"),
+    Shop(
+        "ultima",
+        "Ultima Boutique",
+        "https://ultimaboutique.tn",
+        "prestashop",
+        origin="local_retailer",
+        city="Nabeul",
+    ),
+    Shop("baletto", "Baletto", "https://www.baletto.tn", "prestashop", city="Tunis, Sfax"),
+    Shop(
+        "carolie", "Carolie", "https://www.carolie-tn.com", "prestashop", origin="local_retailer", city="Sfax"
+    ),
+    Shop("cravate", "Cravate", "https://cravate.tn", "prestashop", origin="local_retailer"),
+    Shop("citymode", "CityMode", "https://citymode.tn", "prestashop", origin="local_retailer"),
+    # schema.org JSON-LD product pages listed in the sitemap
+    Shop(
+        "get",
+        "GET",
+        "https://www.get.com.tn",
+        "jsonld",
+        city="Tunis, Sfax, Sousse, Gabès",
+        options={"sitemap": "https://www.get.com.tn/sitemap.xml", "product_pattern": r"/produit/"},
+    ),
+    # Second search (swimwear, hijab, lingerie, artisans), 2026-10-15
+    Shop("hijabella", "Hijabella", "https://hijabella.tn", "prestashop", origin="local_retailer"),
+    Shop("lysea", "Lyséa", "https://lysea-lingerie.com", "prestashop", city="Tunis"),
+    Shop("msmarion", "Ms. Marion", "https://ms-marion.com", "prestashop"),
+    Shop("maisonara", "Maison ARA", "https://www.maison-ara.com", "prestashop"),
+    Shop("caprice", "Caprice Lingerie", "https://capricelingerie.com.tn", "woocommerce"),
+    Shop("exclusive", "Exclusive", "https://exclusive.tn", "woocommerce", origin="local_retailer"),
+    Shop("intimate", "Intimate", "https://intimate.tn", "woocommerce", origin="local_retailer"),
+    Shop("lingerietn", "Lingerie.tn", "https://lingerie.tn", "woocommerce", origin="local_retailer"),
+    Shop("patrinova", "Patrinova", "https://patrinova.shop", "woocommerce", origin="local_retailer"),
+    Shop("sougui", "Sougui", "https://sougui.tn", "woocommerce", origin="local_retailer"),
 ]
 
 # Shops from the source list that are not scraped, and why (kept for the README / report).
@@ -121,4 +172,23 @@ SKIPPED: dict[str, str] = {
     "GAYA accessoire": "no website found (gaya.tn answers 503)",
     "The Queen Accessories (Palmarium)": "physical shop, no website found",
     "Azar Shoes (Tunisia Mall)": "physical shop, no website found",
+    # Search of 2026-10-15
+    "ZEN (zen.com.tn)": "robots.txt disallows crawling",
+    "Souk El Kahina (soukelkahina.tn)": "robots.txt disallows crawling",
+    "Kastelo (kastelo.com.tn)": "custom site, product pages not in the sitemap; to add with an HTML parser",
+    "El Khomssa (elkhomssa.com)": "custom site, product pages not in the sitemap; to add with an HTML parser",
+    "Fedia Fashion (fediafashion.com)": "TikTak PRO pages: JSON-LD without name or photo",
+    "Barsha (barsha.com.tn)": "JavaScript-only site, no product feed or sitemap",
+    "Rosace (rosace.com.tn)": "JavaScript-only site, no product feed or sitemap",
+    "Diamelle (diamelle.tn)": "fine jewellery and second-hand luxury watches of foreign brands (Rolex...)",
+    "Modeco, Angel (Mahdia), Unill (Gafsa), Lascarfa (Sousse), Lunja": "site unreachable",
+    "Le Sportif, Super Sport, DREST, Celio, Kiabi": "foreign labels or foreign chains",
+    "Sou9 Finds": "second-hand (friperie)",
+    "New Collection (Mahdia)": "sells imported clothing",
+    "Bassamet, HK-Store (hkstoretn.com), HKEYA (hkeya.com, Ariana)": "answers 429 (too many requests) "
+    "even with 3 s between requests",
+    "Mabrouk (mabrouk.tn, Tunis / Nabeul / Sousse)": "WooCommerce feed readable, but every product photo "
+    "ends in a redirect loop, then the site stops answering; to retry later",
+    "100% Tounsi (100pour100tounsi.com)": "invalid TLS certificate",
+    "Pink and Grey, Folla Création (Nabeul)": "no product feed, product pages without structured data",
 }

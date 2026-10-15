@@ -98,9 +98,9 @@ def test_parse_example_request():
 def test_example_white_sneakers_in_tunis_under_80(agent):
     out = search(agent, query="baskets blanches à Tunis pour un budget de 80 TND")
     ids = [r["product_id"] for r in out["results"]]
-    # p3 too expensive, p4 in Sfax, p5 not sneakers, p6 out of stock, p7 shop city unknown
-    assert set(ids) == {"p1", "p2"}
-    assert ids[0] == "p1"  # white beats black
+    # p2 black (a colour asked for is strict), p3 too expensive, p4 in Sfax, p5 not sneakers,
+    # p6 out of stock, p7 colour and shop city unknown
+    assert ids == ["p1"]
     top = out["results"][0]
     assert top["shop"] == "Shop p1" and top["area"] == "Tunis" and top["price_tnd"] == 75
     assert 0 <= top["match"] <= 1
@@ -121,6 +121,26 @@ def test_city_relaxed_when_nothing_there(agent):
 def test_explicit_fields_override_text(agent):
     out = search(agent, query="baskets", max_price_tnd=58, include_unavailable=True)
     assert [r["product_id"] for r in out["results"]] == ["p7"]
+
+
+def test_colour_asked_is_strict_and_relaxed_only_when_it_exists_nowhere(agent):
+    out = search(agent, query="baskets noires")
+    assert [r["color"] for r in out["results"]] == ["black"] and out["note"] is None
+    out = search(agent, query="baskets rouges")  # no red sneakers at all: say it, show the others
+    assert out["results"] and "Aucun article de couleur rouge parmi les baskets" in out["note"]
+    out = search(agent, query="baskets noires à Sfax")  # black exists, but not in Sfax: keep the colour
+    assert [r["product_id"] for r in out["results"]] == ["p2"] and "Rien trouvé à Sfax" in out["note"]
+
+
+def test_pages_follow_each_other_without_repeats(agent):
+    everything = [r["product_id"] for r in search(agent, query="baskets", k=10)["results"]]
+    page1 = search(agent, query="baskets", k=2)
+    page2 = search(agent, query="baskets", k=2, offset=2)
+    page3 = search(agent, query="baskets", k=2, offset=4)
+    shown = [r["product_id"] for p in (page1, page2, page3) for r in p["results"]]
+    assert sorted(shown) == sorted(everything) and len(set(shown)) == len(shown)
+    assert page2["total_matches"] == page1["total_matches"] == len(everything)
+    assert search(agent, query="baskets", k=2, offset=50)["results"] == []
 
 
 def test_missing_colour_is_not_guessed(agent):
@@ -160,6 +180,13 @@ def test_typo_is_corrected_towards_known_words():
     )
     assert parsed.corrected == "collier doré"  # only the misspelt word changes
     assert parsed.subcategory == "necklace"
+
+
+def test_typo_also_written_by_a_shop_is_still_corrected():
+    # a shop writes "Colier": the catalogue vocabulary contains the typo, the keyword still wins
+    parsed = parse("colier dorée", vocabulary={"colier"})
+    assert parsed.subcategory == "necklace" and parsed.color == "gold"
+    assert parse("robes noires", vocabulary={"robe"}).corrected is None  # understood words stay
 
 
 def test_jewelry_types_are_separate():

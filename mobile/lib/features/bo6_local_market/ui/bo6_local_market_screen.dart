@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design/dressme_design.dart';
 import '../data/bo6_local_market_repository.dart';
@@ -450,6 +451,8 @@ class _Results extends ConsumerWidget {
       if (parsed?.subcategory == null && parsed?.category != null)
         parsed!.category!,
       if (parsed?.color != null) _colorFr[parsed!.color] ?? parsed.color!,
+      if (parsed?.gender == 'men') 'Homme',
+      if (parsed?.gender == 'women') 'Femme',
       if (parsed?.minPriceTnd != null) '≥ ${formatTnd(parsed!.minPriceTnd!)}',
       if (parsed?.maxPriceTnd != null) '≤ ${formatTnd(parsed!.maxPriceTnd!)}',
       if (parsed?.city != null) parsed!.city!,
@@ -465,9 +468,16 @@ class _Results extends ConsumerWidget {
               Text(
                 '${result.totalMatches} article${result.totalMatches > 1 ? 's' : ''} trouvé'
                 '${result.totalMatches > 1 ? 's' : ''}'
-                '${result.totalMatches > result.results.length ? ' · ${result.results.length} meilleurs' : ''}',
+                '${result.totalMatches > result.results.length ? ' · ${result.results.length} affichés' : ''}',
                 style: DmText.title,
               ),
+              if (parsed?.translated != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Darija comprise : « ${parsed!.translated} »',
+                  style: DmText.caption.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ],
               if (parsed?.corrected != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -512,10 +522,80 @@ class _Results extends ConsumerWidget {
                 childAspectRatio: 0.56,
               ),
               itemCount: result.results.length,
-              itemBuilder: (_, i) => _ProductCard(product: result.results[i]),
+              itemBuilder: (_, i) => _ProductCard(
+                  product: result.results[i],
+                  searchId: result.searchId,
+                  rank: i + 1),
             ),
           ),
+        if (result.hasMore)
+          SliverToBoxAdapter(
+            child: _MoreButtons(
+                remaining: result.totalMatches - result.results.length),
+          ),
       ],
+    );
+  }
+}
+
+/// "Voir plus" (next page) and "Tout afficher" (every remaining result) under the grid.
+class _MoreButtons extends ConsumerStatefulWidget {
+  const _MoreButtons({required this.remaining});
+
+  final int remaining;
+
+  @override
+  ConsumerState<_MoreButtons> createState() => _MoreButtonsState();
+}
+
+class _MoreButtonsState extends ConsumerState<_MoreButtons> {
+  bool _loading = false;
+
+  Future<void> _load({required bool all}) async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(localSearchProvider.notifier).loadMore(all: all);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(describeError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final next = widget.remaining < LocalSearchNotifier.pageSize
+        ? widget.remaining
+        : LocalSearchNotifier.pageSize;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      child: Center(
+        child: _loading
+            ? const Padding(
+                padding: EdgeInsets.all(8),
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  FilledButton.icon(
+                    icon: const Icon(Icons.expand_more, size: 18),
+                    label: Text('Voir $next de plus'),
+                    onPressed: () => _load(all: false),
+                  ),
+                  if (widget.remaining > next)
+                    OutlinedButton(
+                      onPressed: () => _load(all: true),
+                      child: Text(
+                          'Tout afficher (${widget.remaining} restants)'),
+                    ),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -552,9 +632,11 @@ class _NoteCard extends StatelessWidget {
 
 /// Product card of the prototype's "Local" tab: photo with a match badge, name, shop · city, price.
 class _ProductCard extends ConsumerWidget {
-  const _ProductCard({required this.product});
+  const _ProductCard({required this.product, this.searchId, this.rank});
 
   final LocalProduct product;
+  final String? searchId;
+  final int? rank;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -562,13 +644,21 @@ class _ProductCard extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          showDragHandle: true,
-          builder: (_) =>
-              _ProductSheet(product: product, photoUrl: repo.photoUrl(product)),
-        ),
+        onTap: () {
+          repo.logEvent('product_view', product,
+              searchId: searchId, rank: rank);
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            builder: (_) => _ProductSheet(
+              product: product,
+              photoUrl: repo.photoUrl(product),
+              onShopLink: () => repo.logEvent('shop_click', product,
+                  searchId: searchId, rank: rank),
+            ),
+          );
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -679,10 +769,14 @@ class _Photo extends StatelessWidget {
 }
 
 class _ProductSheet extends StatelessWidget {
-  const _ProductSheet({required this.product, required this.photoUrl});
+  const _ProductSheet(
+      {required this.product, required this.photoUrl, this.onShopLink});
 
   final LocalProduct product;
   final String photoUrl;
+
+  /// Called when the user takes the shop's link (logged as a shop click for M14).
+  final VoidCallback? onShopLink;
 
   @override
   Widget build(BuildContext context) {
@@ -755,8 +849,22 @@ class _ProductSheet extends StatelessWidget {
           SelectableText(product.productUrl, style: DmText.caption),
           const SizedBox(height: 16),
           FilledButton.icon(
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: const Text('Voir sur le site de la boutique'),
+            onPressed: () async {
+              onShopLink?.call();
+              final opened = await launchUrl(Uri.parse(product.productUrl),
+                  mode: LaunchMode.externalApplication);
+              if (!opened && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text("Impossible d'ouvrir le site : copie le lien")));
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             icon: const Icon(Icons.link, size: 18),
-            label: const Text('Copier le lien de la boutique'),
+            label: const Text('Copier le lien'),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: product.productUrl));
               if (context.mounted) {
