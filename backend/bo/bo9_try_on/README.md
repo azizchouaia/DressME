@@ -1,5 +1,12 @@
 # BO9 · Virtual try-on 3D
 
+The body creator for this objective is on `feat/bo9-avatar-3d`.
+
+- Viewer and Flutter shell: `avatar_studio/` (start with `avatar_studio/README.md`)
+- SMPL-X export and the local photo server: `ai/`
+
+The screen shows one Build slider (thin to heavy), body details behind one icon, and gender plus photos behind an Avatar icon. Pose work is kept in the viewer and is not opened from the screen. Official SMPL-X files and generated GLBs are not in git.
+
 **Business objective:** Differentiate & convert · **Owner:** @bo9-owner
 
 **Shared modules owned:** M9 3D avatar renderer
