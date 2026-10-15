@@ -9,6 +9,9 @@ class Body(BaseModel):
     chest_cm: float | None = None
     waist_cm: float | None = None
     hips_cm: float | None = None
+    # No tape measure? Say how pieces you own fit (M18 turns it into a size)
+    fit_refs: list[dict] = Field(default_factory=list)   # [{brand, size, category: top|bottom, fit}]
+    like_fit: Literal["tight", "normal", "loose", "oversized"] = "normal"
 
 
 class SmartBuyInput(BaseModel):

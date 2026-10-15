@@ -1,4 +1,4 @@
-"""M18 Size & fit advice: size from body measurements + brand size charts."""
+"""M18 Size & fit advice: size from body numbers OR fit words (tight/normal/oversized) + brand size charts."""
 
 from pathlib import Path
 
@@ -20,3 +20,8 @@ class AdviseRequest(BaseModel):
 @router.post("/advise")
 def advise(req: AdviseRequest):
     return {"advice": service.advise(service.load_charts(DATA), req.brand, req.category, req.body)}
+
+
+@router.get("/fit-options")
+def fit_options():
+    return {"fit": service.FIT_LABELS, "like_fit": list(service.LIKE_ROOM)}

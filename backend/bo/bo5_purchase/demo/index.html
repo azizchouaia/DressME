@@ -141,8 +141,18 @@ ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
         <div><label for="brand">Shop brand</label><select id="brand"></select></div>
       </div>
       <div class="row">
-        <div><label for="chest">Chest (cm)</label><input id="chest" type="number" value="98"></div>
-        <div><label for="waist">Waist (cm)</label><input id="waist" type="number" value="84"></div>
+        <div><label for="chest">Chest (cm, optional)</label><input id="chest" type="number" placeholder="don't know?"></div>
+        <div><label for="waist">Waist (cm, optional)</label><input id="waist" type="number" placeholder="don't know?"></div>
+      </div>
+      <p class="note" style="margin:4px 0">No tape measure? Tell us a piece you own:</p>
+      <div class="row">
+        <div><label for="refbrand">Brand</label><select id="refbrand"></select></div>
+        <div><label for="refpart">Part</label><select id="refpart"><option value="top">Top</option><option value="bottom">Bottom</option></select></div>
+        <div><label for="refsize">Your size</label><input id="refsize" placeholder="M or 40"></div>
+      </div>
+      <div class="row">
+        <div><label for="reffit">It feels</label><select id="reffit"><option value="extremely_tight">Extremely tight</option><option value="tight">Tight</option><option value="normal" selected>Normal</option><option value="loose">Loose</option><option value="oversized">Oversized</option></select></div>
+        <div><label for="likefit">I like to wear</label><select id="likefit"><option value="tight">Tight</option><option value="normal" selected>Normal</option><option value="loose">Loose</option><option value="oversized">Oversized</option></select></div>
       </div>
       <button class="btn" id="go">Should I buy it?</button>
       <div class="err" id="err" role="alert"></div>
@@ -298,7 +308,7 @@ async function go(){
   const img=MODE==="list"?$("cand").value:MODE==="photo"?`custom:${PHOTO.subcategory}:${PHOTO.colour}`:`custom:${$("type").value}:${COLOUR}`;
   const expected=MODE==="list"?(META.candidates.find(c=>c.id===img)||{}).expected:null;
   const body={user_id:$("user").value,probe_image:img,price_tnd:price,shop_brand:$("brand").value||null,
-    body:{chest_cm:parseFloat($("chest").value)||null,waist_cm:parseFloat($("waist").value)||null},
+    body:{chest_cm:parseFloat($("chest").value)||null,waist_cm:parseFloat($("waist").value)||null,like_fit:$("likefit").value,fit_refs:$("refsize").value.trim()?[{brand:$("refbrand").value,size:$("refsize").value.trim().toUpperCase(),category:$("refpart").value,fit:$("reffit").value}]:[]},
     need_for_occasion:NEED,ai_confidence:MODE==="photo"?PHOTO.confidence.type:null};
   $("go").disabled=true;
   try{render(await api("/api/verdict",body),expected)}catch(e){$("err").textContent=e.message}finally{$("go").disabled=false}
@@ -308,7 +318,7 @@ async function go(){
   META=await api("/api/meta");
   const c=META.config;$("cfg").textContent=`${c.decision==="learned"?"learned model":`buy ≥ ${c.buy_threshold} · skip < ${c.skip_threshold}`} · duplicate ≥ ${c.duplicate_threshold}${c.personalize?" · personalised":""}`;
   fillUsers();
-  $("brand").innerHTML='<option value="">— no size advice —</option>'+META.brands.map(b=>`<option>${b}</option>`).join("");
+  $("brand").innerHTML='<option value="">— no size advice —</option>'+META.brands.map(b=>`<option>${b}</option>`).join("");$("refbrand").innerHTML=META.brands.map(b=>`<option>${b}</option>`).join("");
   $("type").innerHTML=Object.keys(META.types).map(t=>`<option>${t}</option>`).join("");
   $("goals").onclick=e=>{const b=e.target.closest(".goal");if(!b)return;b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");
     $("budgetRow").hidden=!document.querySelector('#goals .goal[data-g="budget"][aria-pressed=true]')};
