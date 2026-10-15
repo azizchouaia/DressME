@@ -1,8 +1,10 @@
 // Owner: BO6 (@bo6-owner) — "Où trouver… ?" : search Tunisian shops through M7 (Local catalogue).
+// Look: DressMe design (docs/design/, "Local" tab and "Sélection locale" of the prototype).
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/dressme_design.dart';
 import '../data/bo6_local_market_repository.dart';
 import '../logic/bo6_local_market_provider.dart';
 
@@ -129,41 +131,179 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
         );
   }
 
+  void _pickCity(String? city) {
+    setState(() => _city = city);
+    if (_query.text.trim().isNotEmpty) _search();
+  }
+
   @override
   Widget build(BuildContext context) {
     final search = ref.watch(localSearchProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Boutiques locales'),
-        actions: [
-          IconButton(
-            tooltip: 'Boutiques du catalogue',
-            icon: const Icon(Icons.storefront_outlined),
-            onPressed: () => showModalBottomSheet<void>(
-              context: context,
-              showDragHandle: true,
-              builder: (_) => const _ShopsSheet(),
+    return Theme(
+      data: dressMeTheme(),
+      child: Builder(
+        builder: (context) => Scaffold(
+          body: Column(
+            children: [
+              _Hero(
+                query: _query,
+                budget: _budget,
+                onSearch: _search,
+                onShops: () => showModalBottomSheet<void>(
+                  context: context,
+                  showDragHandle: true,
+                  builder: (_) => const _ShopsSheet(),
+                ),
+              ),
+              _CityChips(city: _city, onCity: _pickCity),
+              Expanded(
+                child: search.when(
+                  loading: () => const _Loading(),
+                  error: (e, _) => _Message(
+                      icon: Icons.cloud_off_outlined, text: describeError(e)),
+                  data: (result) => result == null
+                      ? _Examples(onTap: _search)
+                      : _Results(result: result),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dark header of the prototype: eyebrow, serif title, search field and budget.
+class _Hero extends StatelessWidget {
+  const _Hero({
+    required this.query,
+    required this.budget,
+    required this.onSearch,
+    required this.onShops,
+  });
+
+  final TextEditingController query;
+  final TextEditingController budget;
+  final void Function([String?]) onSearch;
+  final VoidCallback onShops;
+
+  @override
+  Widget build(BuildContext context) {
+    final onDark = Colors.white.withValues(alpha: 0.55);
+    return Container(
+      color: DmColors.inkDeep,
+      child: Stack(
+        children: [
+          // Soft gold glow, as in the prototype's headers.
+          Positioned(
+            right: -70,
+            top: -90,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  const Color(0xFF9C7650).withValues(alpha: 0.35),
+                  const Color(0xFF9C7650).withValues(alpha: 0),
+                ]),
+              ),
             ),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _SearchBar(
-            query: _query,
-            budget: _budget,
-            city: _city,
-            onCity: (c) => setState(() => _city = c),
-            onSearch: _search,
-          ),
-          Expanded(
-            child: search.when(
-              loading: () => const _Loading(),
-              error: (e, _) =>
-                  _Message(icon: Icons.cloud_off, text: describeError(e)),
-              data: (result) => result == null
-                  ? _Examples(onTap: _search)
-                  : _Results(result: result),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('MODE TUNISIENNE',
+                                style: DmText.eyebrow
+                                    .copyWith(color: DmColors.gold)),
+                            const SizedBox(height: 4),
+                            Text('Boutiques locales',
+                                style: DmText.display
+                                    .copyWith(color: Colors.white)),
+                            const SizedBox(height: 6),
+                            Text(
+                                'Prix en dinars, disponibilité locale et affinité style.',
+                                style: DmText.body.copyWith(color: onDark)),
+                          ],
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Boutiques du catalogue',
+                        child: InkResponse(
+                          onTap: onShops,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.1),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2)),
+                            ),
+                            child: const Icon(Icons.storefront_outlined,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: const Key('bo6-query'),
+                          controller: query,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (_) => onSearch(),
+                          style: const TextStyle(
+                              fontSize: 13, color: DmColors.text),
+                          decoration: InputDecoration(
+                            hintText:
+                                'Ex. baskets blanches à Tunis pour 80 TND',
+                            prefixIcon: const Icon(Icons.search,
+                                color: DmColors.bronzeDark),
+                            suffixIcon: IconButton(
+                              tooltip: 'Chercher',
+                              icon: const Icon(Icons.arrow_forward,
+                                  color: DmColors.ink),
+                              onPressed: () => onSearch(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 112,
+                        child: TextField(
+                          controller: budget,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          onSubmitted: (_) => onSearch(),
+                          style: const TextStyle(
+                              fontSize: 13, color: DmColors.text),
+                          decoration: const InputDecoration(
+                            hintText: 'Budget',
+                            suffixText: 'TND',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -172,80 +312,42 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
   }
 }
 
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({
-    required this.query,
-    required this.budget,
-    required this.city,
-    required this.onCity,
-    required this.onSearch,
-  });
+/// City filter as the prototype's pills: selected = ink, others = white with a border.
+class _CityChips extends StatelessWidget {
+  const _CityChips({required this.city, required this.onCity});
 
-  final TextEditingController query;
-  final TextEditingController budget;
   final String? city;
   final ValueChanged<String?> onCity;
-  final void Function([String?]) onSearch;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        children: [
-          TextField(
-            key: const Key('bo6-query'),
-            controller: query,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => onSearch(),
-            decoration: InputDecoration(
-              hintText: 'Ex. baskets blanches à Tunis pour 80 TND',
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward),
-                  onPressed: () => onSearch()),
+    final options = <(String, String?)>[
+      ('Toutes', null),
+      for (final c in _cities) (c, c),
+    ];
+    return SizedBox(
+      height: 60,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        itemCount: options.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (label, value) = options[i];
+          final selected = value == city;
+          return ChoiceChip(
+            label: Text(label),
+            selected: selected,
+            labelStyle: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : DmColors.mutedDark,
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String?>(
-                  initialValue: city,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Ville',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Toutes')),
-                    for (final c in _cities)
-                      DropdownMenuItem(value: c, child: Text(c)),
-                  ],
-                  onChanged: onCity,
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 130,
-                child: TextField(
-                  controller: budget,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onSubmitted: (_) => onSearch(),
-                  decoration: const InputDecoration(
-                    labelText: 'Budget max',
-                    suffixText: 'TND',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+            side: BorderSide(
+                color: selected ? DmColors.ink : DmColors.borderStrong),
+            onSelected: (_) => onCity(value),
+          );
+        },
       ),
     );
   }
@@ -259,22 +361,28 @@ class _Examples extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
-        Text('Trouve une pièce dans les boutiques tunisiennes',
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
-        Text(
-          'Décris ce que tu cherches, ta ville et ton budget en TND. Exemples :',
-          style: Theme.of(context).textTheme.bodyMedium,
+        const DmSectionHeader(
+            eyebrow: 'Où trouver… ?', title: 'Que cherches-tu ?'),
+        const SizedBox(height: 6),
+        const Text(
+          'Décris la pièce, ta ville et ton budget en TND : '
+          'DressMe cherche dans les boutiques tunisiennes.',
+          style: DmText.body,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             for (final e in _examples)
-              ActionChip(label: Text(e), onPressed: () => onTap(e))
+              ActionChip(
+                label: Text(e),
+                labelStyle:
+                    const TextStyle(fontSize: 11, color: DmColors.mutedDark),
+                onPressed: () => onTap(e),
+              ),
           ],
         ),
       ],
@@ -291,9 +399,13 @@ class _Loading extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
           SizedBox(height: 12),
-          Text('Recherche dans les boutiques…'),
+          Text('Recherche dans les boutiques…', style: DmText.caption),
         ],
       ),
     );
@@ -314,9 +426,9 @@ class _Message extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: Theme.of(context).colorScheme.outline),
+            Icon(icon, size: 40, color: DmColors.muted),
             const SizedBox(height: 12),
-            Text(text, textAlign: TextAlign.center),
+            Text(text, textAlign: TextAlign.center, style: DmText.body),
           ],
         ),
       ),
@@ -345,47 +457,39 @@ class _Results extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           sliver: SliverList.list(
             children: [
+              const Text('SÉLECTION LOCALE', style: DmText.eyebrow),
+              const SizedBox(height: 2),
               Text(
                 '${result.totalMatches} article${result.totalMatches > 1 ? 's' : ''} trouvé'
                 '${result.totalMatches > 1 ? 's' : ''}'
                 '${result.totalMatches > result.results.length ? ' · ${result.results.length} meilleurs' : ''}',
-                style: Theme.of(context).textTheme.titleSmall,
+                style: DmText.title,
               ),
               if (parsed?.corrected != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   'Recherche corrigée : « ${parsed!.corrected} »',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(fontStyle: FontStyle.italic),
+                  style: DmText.caption.copyWith(fontStyle: FontStyle.italic),
                 ),
               ],
               if (understood.isNotEmpty) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text('Compris : '),
-                    for (final u in understood)
-                      Chip(
-                          label: Text(u), visualDensity: VisualDensity.compact),
+                    const Text('Compris :', style: DmText.caption),
+                    for (final u in understood) DmPill(u),
                   ],
                 ),
               ],
               if (result.note != null) ...[
-                const SizedBox(height: 8),
-                Card(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                  child: ListTile(
-                      leading: const Icon(Icons.info_outline),
-                      title: Text(result.note!)),
-                ),
+                const SizedBox(height: 12),
+                _NoteCard(text: result.note!),
               ],
             ],
           ),
@@ -399,13 +503,13 @@ class _Results extends ConsumerWidget {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             sliver: SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 240,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.58,
+                maxCrossAxisExtent: 230,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.56,
               ),
               itemCount: result.results.length,
               itemBuilder: (_, i) => _ProductCard(product: result.results[i]),
@@ -416,6 +520,37 @@ class _Results extends ConsumerWidget {
   }
 }
 
+/// M7's note (city relaxed, colour missing, sold out…), styled like the prototype's info blocks.
+class _NoteCard extends StatelessWidget {
+  const _NoteCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DmColors.warningBg,
+        borderRadius: BorderRadius.circular(DmRadius.card),
+        border: Border.all(color: const Color(0xFFE8D1B2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: DmColors.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: DmText.body.copyWith(color: const Color(0xFF6E5540))),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Product card of the prototype's "Local" tab: photo with a match badge, name, shop · city, price.
 class _ProductCard extends ConsumerWidget {
   const _ProductCard({required this.product});
 
@@ -424,7 +559,6 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(localMarketRepositoryProvider);
-    final theme = Theme.of(context);
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -438,16 +572,35 @@ class _ProductCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: _Photo(url: repo.photoUrl(product))),
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _Photo(url: repo.photoUrl(product)),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: DmPill('${(product.match * 100).round()} %',
+                        dark: true),
+                  ),
+                  if (!product.available)
+                    const Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: _StockBadge(),
+                    ),
+                ],
+              ),
+            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(product.item,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium),
+                      style: DmText.itemName),
                   const SizedBox(height: 2),
                   Text(
                     [
@@ -456,36 +609,21 @@ class _ProductCard extends ConsumerWidget {
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall,
+                    style: DmText.caption,
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.priceTnd == null
-                              ? 'Prix ?'
-                              : formatTnd(product.priceTnd!),
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Text('${(product.match * 100).round()} %',
-                          style: theme.textTheme.labelSmall),
-                    ],
+                  const SizedBox(height: 8),
+                  Text(
+                    product.priceTnd == null
+                        ? 'Prix ?'
+                        : formatTnd(product.priceTnd!),
+                    style: DmText.price,
                   ),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                      value: product.match,
-                      minHeight: 4,
-                      borderRadius: BorderRadius.circular(2)),
-                  if (!product.available) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Rupture de stock',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.error),
-                    ),
+                  if (product.isLocalBrand) ...[
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    const SizedBox(height: 6),
+                    const Text('Marque tunisienne',
+                        style: TextStyle(fontSize: 9, color: DmColors.muted)),
                   ],
                 ],
               ),
@@ -493,6 +631,26 @@ class _ProductCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StockBadge extends StatelessWidget {
+  const _StockBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(DmRadius.pill),
+      ),
+      child: const Text('Rupture de stock',
+          style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: DmColors.warning)),
     );
   }
 }
@@ -505,12 +663,13 @@ class _Photo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: DmColors.sand,
       child: Image.network(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
-            const Center(child: Icon(Icons.image_not_supported_outlined)),
+        errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.image_not_supported_outlined,
+                color: DmColors.muted)),
         loadingBuilder: (_, child, progress) => progress == null
             ? child
             : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -527,65 +686,76 @@ class _ProductSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.85,
       maxChildSize: 0.95,
       builder: (_, controller) => ListView(
         controller: controller,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(DmRadius.panel),
             child: AspectRatio(aspectRatio: 1, child: _Photo(url: photoUrl)),
           ),
-          const SizedBox(height: 12),
-          Text(product.item, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
           Text(
-            [product.shop, if (product.area != null) product.area!].join(' · '),
-            style: theme.textTheme.bodyMedium,
+            [product.shop, if (product.area != null) product.area!]
+                .join(' · ')
+                .toUpperCase(),
+            style: DmText.eyebrow,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Text(product.item, style: DmText.title.copyWith(fontSize: 26)),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 6,
             children: [
-              Chip(
-                  label: Text(product.priceTnd == null
-                      ? 'Prix ?'
-                      : formatTnd(product.priceTnd!))),
-              Chip(
-                  label: Text(
-                      'Correspondance ${(product.match * 100).round()} %')),
-              if (product.isLocalBrand)
-                const Chip(
-                    avatar: Icon(Icons.flag_outlined, size: 18),
-                    label: Text('Marque tunisienne')),
-              if (!product.available)
-                const Chip(label: Text('Rupture de stock')),
+              DmPill(product.priceTnd == null
+                  ? 'Prix ?'
+                  : formatTnd(product.priceTnd!)),
+              DmPill('Correspondance ${(product.match * 100).round()} %'),
+              if (product.isLocalBrand) const DmPill('Marque tunisienne'),
+              if (!product.available) const DmPill('Rupture de stock'),
             ],
           ),
           if (product.size != null) ...[
-            const SizedBox(height: 8),
-            Text('Tailles disponibles : ${product.size}'),
-          ],
-          const SizedBox(height: 12),
-          Text('Pourquoi cette pièce', style: theme.textTheme.titleSmall),
-          for (final r in product.reasons)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.check_circle_outline, size: 20),
-              title: Text(r),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: DmColors.surface,
+                borderRadius: BorderRadius.circular(DmRadius.small),
+                border: Border.all(color: DmColors.border),
+              ),
+              child: Text('Tailles disponibles : ${product.size}',
+                  style: DmText.body),
             ),
+          ],
+          const SizedBox(height: 20),
+          const Text('POURQUOI CETTE PIÈCE', style: DmText.eyebrow),
           const SizedBox(height: 8),
-          Text('Fiche produit', style: theme.textTheme.titleSmall),
-          SelectableText(product.productUrl, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
-          FilledButton.tonalIcon(
-            icon: const Icon(Icons.link),
+          for (final r in product.reasons)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('◆',
+                      style: TextStyle(fontSize: 11, color: DmColors.bar)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(r, style: DmText.body)),
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+          const Text('FICHE PRODUIT', style: DmText.eyebrow),
+          const SizedBox(height: 6),
+          SelectableText(product.productUrl, style: DmText.caption),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            icon: const Icon(Icons.link, size: 18),
             label: const Text('Copier le lien de la boutique'),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: product.productUrl));
@@ -611,23 +781,33 @@ class _ShopsSheet extends ConsumerWidget {
       loading: () => const Padding(
           padding: EdgeInsets.all(32),
           child: Center(child: CircularProgressIndicator())),
-      error: (e, _) => _Message(icon: Icons.cloud_off, text: describeError(e)),
+      error: (e, _) =>
+          _Message(icon: Icons.cloud_off_outlined, text: describeError(e)),
       data: (list) => ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text('${list.length} boutiques tunisiennes',
-                style: Theme.of(context).textTheme.titleMedium),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: DmSectionHeader(
+                eyebrow: 'Catalogue',
+                title: '${list.length} boutiques tunisiennes'),
           ),
           for (final s in list)
             ListTile(
-              leading: const Icon(Icons.storefront_outlined),
-              title: Text(s.shop),
-              subtitle:
-                  Text([s.city ?? 'Ville non précisée', s.shopUrl].join(' · ')),
-              trailing: Text('${s.products}'),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: DmColors.sandDark),
+                child: const Icon(Icons.storefront_outlined,
+                    size: 20, color: DmColors.bronzeDark),
+              ),
+              title: Text(s.shop, style: DmText.itemName),
+              subtitle: Text(
+                  [s.city ?? 'Ville non précisée', s.shopUrl].join(' · '),
+                  style: DmText.caption),
+              trailing: DmPill('${s.products}'),
             ),
         ],
       ),
