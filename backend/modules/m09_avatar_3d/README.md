@@ -5,7 +5,9 @@
 **Includes:** Faceless avatar (SMPL), garment templates, textures from item photos
 
 ## Endpoints (prefix `/m09`)
-- `POST /m09/render`
+- `POST /m09/render` — returns the avatar manifest (body, garments, viewer settings). It does not render a frame.
+
+The worn meshes and the SMPL-X body stay off this public repo. Read [ARCHITECTURE.md](ARCHITECTURE.md) before continuing the 3D work. Real `service.py` runs when `USE_MOCKS=false`.
 
 ## Rules
 1. Week 1: ship `mock.py` (fixed data in the agreed shape) so nobody is blocked.

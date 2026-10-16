@@ -9,7 +9,8 @@
 ## Own tasks
 | Task | Calls |
 |---|---|
-    | Drag-and-drop builder on the avatar | M2, M9 |
+    | Faceless SMPL-X avatar with skinned shirt, shorts, and vest | M9 (`modules/m09_avatar_3d/ARCHITECTURE.md`) |
+| Drag-and-drop builder on the avatar | M2, M9 |
 | Try a photographed piece | M1, M9 |
 | Visual explanation on the avatar | M8 |
 | Local boutique pieces on the avatar | M7 |

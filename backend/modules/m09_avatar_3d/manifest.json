@@ -1,0 +1,34 @@
+{
+  "viewer": {
+    "engine": "Three.js 0.186.1",
+    "pages": ["avatar_studio/web/viewer/index.html", "avatar_studio/web/viewer/clothes.html"],
+    "script": "avatar_studio/web/viewer/scene.mjs",
+    "cache": "scene.mjs?v=71 and garment urls ?v=71",
+    "camera": {"position": [0, 0.95, 5.4], "target": [0, 0.84, 0], "fov": 34, "near": 0.1, "far": 30},
+    "colors": {"paper": "#f6f4f0", "ink": "#141414", "skin": "#d8cfc6"},
+    "skin_material": {"roughness": 0.62, "metalness": 0.02},
+    "cloth_material": {"roughness": 0.72, "metalness": 0, "side": "DoubleSide", "skinning": true}
+  },
+  "body": {
+    "model": "SMPL-X male, official NPZ only",
+    "joints": 55,
+    "vertices": 10475,
+    "shown": "avatar_studio/web/smplx_thin.glb",
+    "thin_betas_first3": [-1.2, -2.0, 0.6],
+    "height_m": 1.7,
+    "hip_radius_m": 0.15,
+    "preserved_and_not_regenerated": "avatar_studio/web/smplx_body.glb",
+    "preserved_betas": [-1.27, -3.0, 3.0, 3.0, -0.03, 3.0, -2.07, -2.5, -0.19, 2.96]
+  },
+  "garments": [
+    {"id": "shirt", "source_layer": "00127_Inner", "file": "avatar_studio/web/garments/shirt.glb", "fallback_color": "#c5c8cc"},
+    {"id": "shorts", "source_layer": "00127_Lower", "file": "avatar_studio/web/garments/shorts.glb", "fallback_color": "#2c3140"},
+    {"id": "vest", "source_layer": "00127_Outer", "file": "avatar_studio/web/garments/vest.glb", "fallback_color": "#1a1c22"}
+  ],
+  "not_in_git": [
+    "SMPL-X npz and any body GLB exported from it",
+    "4D-Dress subject 00127 photos and reconstructed meshes",
+    "SiTH recon_model.pth and other weights",
+    "product photo used to recolor the shirt"
+  ]
+}
