@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" role="img" aria-label="Veste en cuir noire"><title>Veste en cuir noire</title><defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".65" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient><linearGradient id="vt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs><path d="M70 16 L100 30 L130 16 L170 34 L194 160 L168 166 L152 92 L154 238 Q100 246 46 238 L48 92 L32 166 L6 160 L30 34 Z" fill="#1E1C1A"/><path d="M70 16 L100 30 L130 16 L170 34 L194 160 L168 166 L152 92 L154 238 Q100 246 46 238 L48 92 L32 166 L6 160 L30 34 Z" fill="url(#sh)"/>
+<path d="M70 16 L100 30 L78 70 L58 40 Z" fill="#2C2926"/><path d="M130 16 L100 30 L118 64 L146 44 Z" fill="#2C2926"/>
+<path d="M100 30 L118 64 L108 238" fill="none" stroke="#BFC1C2" stroke-width="2.2"/>
+<rect x="46" y="226" width="108" height="14" fill="#141210"/>
+<g fill="none" stroke="#BFC1C2" stroke-width="1.6"><line x1="60" y1="140" x2="84" y2="128"/>
+<line x1="128" y1="130" x2="146" y2="142"/></g>
+<circle cx="56" cy="232" r="2.5" fill="#BFC1C2"/><circle cx="144" cy="232" r="2.5" fill="#BFC1C2"/></svg>

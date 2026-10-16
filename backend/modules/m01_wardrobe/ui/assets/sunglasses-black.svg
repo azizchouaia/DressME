@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" role="img" aria-label="Lunettes de soleil"><title>Lunettes de soleil</title><defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".65" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient><linearGradient id="vt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs><path d="M14 58 Q12 52 20 52 H86 Q94 52 92 60 L88 88 Q84 106 60 106 H44 Q22 106 18 88 Z" fill="#171512"/>
+<path d="M186 58 Q188 52 180 52 H114 Q106 52 108 60 L112 88 Q116 106 140 106 H156 Q178 106 182 88 Z" fill="#171512"/>
+<path d="M92 60 Q100 52 108 60" fill="none" stroke="#3E2A1E" stroke-width="5"/>
+<path d="M28 60 Q40 58 52 64" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="4" stroke-linecap="round"/>
+<path d="M128 60 Q140 58 152 64" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="4" stroke-linecap="round"/>
+<g fill="none" stroke="#3E2A1E" stroke-width="5" stroke-linecap="round"><path d="M14 56 L4 50"/>
+<path d="M186 56 L196 50"/></g></svg>

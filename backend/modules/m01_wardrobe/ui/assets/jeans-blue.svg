@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260" role="img" aria-label="Jean bleu"><title>Jean bleu</title><defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".65" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient><linearGradient id="vt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs><path d="M56 14 H144 L154 250 H112 L100 92 L88 250 H46 Z" fill="#4A6A8F"/><path d="M56 14 H144 L154 250 H112 L100 92 L88 250 H46 Z" fill="url(#sh)"/>
+<rect x="56" y="14" width="88" height="16" fill="#3C5A7C"/>
+<g fill="none" stroke="#D79A4E" stroke-width="1.6" stroke-opacity=".8">
+<path d="M62 30 Q74 52 92 34"/><path d="M138 30 Q126 52 108 34"/>
+<line x1="100" y1="30" x2="100" y2="84" stroke-dasharray="3 3"/>
+<line x1="70" y1="40" x2="62" y2="246" stroke-opacity=".35"/>
+<line x1="130" y1="40" x2="138" y2="246" stroke-opacity=".35"/></g>
+<g fill="#3C5A7C"><rect x="66" y="12" width="5" height="20" rx="1"/><rect x="98" y="12" width="5" height="20" rx="1"/><rect x="130" y="12" width="5" height="20" rx="1"/></g><circle cx="100" cy="22" r="3" fill="#D79A4E"/></svg>
