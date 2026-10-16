@@ -9,7 +9,7 @@
 ## Own tasks
 | Task | Calls |
 |---|---|
-    | Chat UI | M8 |
+    | Chat with the assistant (`assistant.py`) | M8 parse, recommend, explain, shops |
 | Assistant memory of preferences | M5 |
 | Send a photo in the chat | M1, M2 |
 | Add a piece to the wardrobe by chat | M1 |

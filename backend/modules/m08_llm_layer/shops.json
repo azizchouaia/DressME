@@ -1,0 +1,6 @@
+[
+  {"id": "atelier-nord", "name": "Atelier Nord", "city": "Tunis", "styles": ["office", "wool", "trousers"], "note": "tailoring for work days"},
+  {"id": "medina-linen", "name": "Medina Linen", "city": "Tunis", "styles": ["summer", "linen", "hot"], "note": "light shirts for warm weather"},
+  {"id": "rain-room", "name": "Rain Room", "city": "La Marsa", "styles": ["rain", "rainy", "autumn", "jacket"], "note": "coats and boots for wet days"},
+  {"id": "souk-sneaker", "name": "Souk Sneaker", "city": "Sfax", "styles": ["sneakers", "casual", "shoes"], "note": "everyday shoes"}
+]
