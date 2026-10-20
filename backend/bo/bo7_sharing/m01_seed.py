@@ -10,6 +10,7 @@ Nothing in modules/m01_wardrobe is changed (rule 4: only call the owner's API).
 
 import base64
 import json
+import os
 from pathlib import Path
 
 from shared.schemas import Garment
@@ -17,7 +18,9 @@ from shared.schemas import Garment
 PHOTOS = Path(__file__).resolve().parent / "demo_wardrobe"
 M15 = Path(__file__).resolve().parents[2] / "modules" / "m15_challenges"
 FIXTURE = M15 / "tests" / "fixtures" / "wardrobe.json"
-DEMO_URL = "http://bo7-demo.local/bo7/demo/photos/"  # how the demo photos are given to M1 in mock mode
+# How the demo photos are given to M1 in mock mode: a URL the browser can open, so M1's own page (/m01/ui)
+# shows them too. Set BO7_PUBLIC_URL if the API does not run on http://localhost:8000.
+DEMO_URL = os.environ.get("BO7_PUBLIC_URL", "http://localhost:8000").rstrip("/") + "/bo7/demo/photos/"
 DEMO_USERS = {"usr_042", "amen", "yasmine"}  # the demo user and two friends to play challenges with
 
 

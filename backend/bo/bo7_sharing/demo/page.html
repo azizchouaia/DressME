@@ -691,7 +691,7 @@ async function wardrobeTab() {
   const rest = WARD.filter(g => !heritage.includes(g) && (wardCat === "all" || g.category === wardCat));
   const cats = ["all", ...CATS.filter(k => WARD.some(g => g.category === k && !heritage.includes(g)))];
   el.innerHTML = `<div class="head"><div><h1>Wardrobe</h1>
-      <p>${WARD.length} pieces in the wardrobe of ${esc(user())}, read from the wardrobe module (M1). Challenges and share cards use exactly these pieces. <a href="/m01/ui" target="_blank">Open the M1 wardrobe</a></p></div></div>
+      <p>${WARD.length} pieces in the wardrobe of ${esc(user())}, read from the wardrobe module (M1). Challenges and share cards use exactly these pieces. <a href="/m01/ui?user=${encodeURIComponent(user())}" target="_blank">Open the M1 wardrobe of ${esc(user())}</a></p></div></div>
     <div class="two">
       <div class="panel"><h3>Add a piece</h3>
         <p class="muted" style="margin:4px 0 12px">Photograph it flat on a plain background. The photo goes to M1, which recognises the piece, removes the background and finds its colours; your category and name correct what it guessed.</p>

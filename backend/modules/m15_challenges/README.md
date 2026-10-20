@@ -97,7 +97,7 @@ bought in a shop of the local catalogue (M1 `store_id`, M7) or its `brand` is a 
 adds the 68 BO7 demo garments (56 photos of the free *Clothing dataset*, A. Grigorev, + 12 Tunisian pieces) through
 M1's API (`classify` with `on_duplicate=add`, then `update_item` for category, name, colours and maker). With M1 mocked
 the photos are given by URL (nothing copied on each restart); with M1 real the full M1 pipeline runs on them. Any other
-user starts with an empty wardrobe and adds clothes on `/bo7/demo` → Wardrobe or on M1's own page `/m01/ui`.
+user starts with an empty wardrobe and adds clothes on `/bo7/demo` → Wardrobe or on M1's own page `/m01/ui?user=<user_id>`.
 
 `wardrobe_source` in `config.yaml`: `m1` (default) · `http` (M1 as a separate service) · `mock` (fixture, tests).
 
