@@ -1,0 +1,3 @@
+# local image store + embedded dev database (M01_STORAGE=local, run_real_local.ps1)
+data/
+.pgdev/

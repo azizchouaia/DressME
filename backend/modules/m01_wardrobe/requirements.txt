@@ -1,0 +1,10 @@
+# M1 heavy dependencies (only needed for the real service, USE_MOCKS=false).
+# CPU-only torch wheels:
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.2
+transformers>=4.40
+rembg[cpu]>=2.0.57
+pillow>=10.0
+numpy>=1.26
+scikit-learn>=1.4
+pgvector>=0.3
