@@ -162,6 +162,93 @@ tr.me td{font-weight:700}
 .ch.whatsapp{background:#1F8F55}.ch.instagram{background:#B13A73}.ch.facebook{background:#2D5DA8}.ch.x{background:#16233F}.ch.copy{background:var(--soft);color:var(--ink)}.ch.qr{background:var(--paper);color:var(--ink);border:1px solid var(--ink)}
 
 /* wardrobe */
+/* ---------- realistic wardrobe (BO7, garments read from M1) ---------- */
+.wr-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 14px}
+.wr-stage{perspective:2200px;margin:0 auto;max-width:1204px;padding:16px 12px 18px;overflow:hidden}
+.wr-frame{position:relative;border-radius:14px 14px 6px 6px;padding:26px 18px 16px;
+  background:linear-gradient(180deg,#F4F1EA,#E9E3D7);box-shadow:0 30px 60px -28px rgba(22,35,63,.45),0 2px 0 #fff inset,0 0 0 1px #D9D1C2}
+.wr-frame::before{content:"";position:absolute;left:-10px;right:-10px;top:-14px;height:22px;border-radius:8px;
+  background:linear-gradient(180deg,#2C64AE,#1F4E8C);box-shadow:0 6px 14px -6px rgba(31,78,140,.6)}
+.wr-frame::after{content:"";position:absolute;left:24px;right:24px;bottom:-12px;height:14px;border-radius:0 0 6px 6px;
+  background:linear-gradient(180deg,#d8cfbd,#c4b9a4)}
+.wr-inside{display:grid;grid-template-columns:190px 1fr 290px;gap:12px;min-height:520px}
+.wr-col{position:relative;border-radius:8px;padding:10px 10px 14px;overflow:hidden;
+  background:radial-gradient(120% 70% at 50% -10%,#fffdf8 0%,#f3eee4 55%,#e7dfd1 100%);
+  box-shadow:inset 0 12px 18px -10px rgba(0,0,0,.18),inset 0 -8px 14px -10px rgba(0,0,0,.12),inset 0 0 0 1px #ddd3c2}
+.wr-col::before{content:"";position:absolute;left:10%;right:10%;top:0;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,transparent,#fff7da,transparent);box-shadow:0 0 18px 6px rgba(255,240,200,.55)}
+.wr-label{display:inline-flex;align-items:center;gap:6px;font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;
+  color:#6b5524;background:linear-gradient(180deg,#e9d39a,#c9a95b);padding:3px 9px;border-radius:4px;
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 1px 2px rgba(0,0,0,.25);position:relative;z-index:2}
+.wr-label small{font-weight:500;letter-spacing:0;text-transform:none;color:#7a6431}
+/* rods and hangers */
+.wr-rod{position:relative;padding-top:10px;margin-top:6px}
+.wr-rod+.wr-rod{margin-top:18px}
+.wr-bar{position:absolute;left:4px;right:4px;top:42px;height:9px;border-radius:5px;z-index:1;
+  background:linear-gradient(180deg,#fafafa,#b9bec6 45%,#868c95 60%,#d9dce1);box-shadow:0 3px 5px rgba(0,0,0,.25)}
+.wr-bar::before,.wr-bar::after{content:"";position:absolute;top:-6px;width:10px;height:20px;border-radius:3px;background:#a99e88}
+.wr-bar::before{left:-6px}.wr-bar::after{right:-6px}
+.wr-line{display:flex;overflow-x:auto;overflow-y:hidden;padding:30px 14px 18px 8px;scrollbar-width:thin;position:relative;z-index:2}
+.wr-hang{flex:0 0 118px;margin-left:-40px;position:relative;cursor:pointer;background:none;border:0;padding:0;
+  transform-origin:50% 14px;transition:transform .25s ease,filter .25s,opacity .25s}
+.wr-hang:first-child{margin-left:0}
+.wr-hang svg{display:block;width:118px;height:44px;position:relative;z-index:2;filter:drop-shadow(0 2px 1px rgba(0,0,0,.25))}
+.wr-hang img{display:block;width:112px;height:150px;object-fit:contain;object-position:top;margin:-14px auto 0;
+  filter:drop-shadow(0 10px 8px rgba(30,25,15,.28));pointer-events:none}
+.wr-rod.long .wr-hang img{height:236px}
+.wr-rod.long .wr-hang{flex-basis:124px;margin-left:-62px}
+.wr-hang:hover,.wr-hang:focus-visible{z-index:60;transform:translateY(-3px) scale(1.06);outline:none}
+.wr-hang:focus-visible img{filter:drop-shadow(0 0 0 2px var(--blue)) drop-shadow(0 10px 8px rgba(30,25,15,.28))}
+.wr-tag{position:absolute;top:30px;right:6px;z-index:3;font:600 9.5px var(--text);color:#fff;background:var(--red);
+  padding:2px 6px 2px 9px;border-radius:2px 4px 4px 2px;box-shadow:0 2px 3px rgba(0,0,0,.25);transform:rotate(8deg);white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.wr-tag::before{content:"";position:absolute;left:3px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:#fff}
+/* shelves */
+.wr-shelf{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:6px;min-height:84px;padding:14px 4px 0}
+.wr-shelf::after{content:"";position:absolute;left:-10px;right:-10px;bottom:-10px;height:10px;border-radius:2px;
+  background:linear-gradient(180deg,#efe6d4,#cbbd9f);box-shadow:0 6px 8px -3px rgba(0,0,0,.28)}
+.wr-shelf+.wr-shelf{margin-top:18px}
+.wr-obj{background:none;border:0;padding:0;cursor:pointer;transition:transform .2s;position:relative}
+.wr-obj img{width:74px;height:66px;object-fit:contain;object-position:bottom;filter:drop-shadow(0 6px 4px rgba(30,25,15,.3));display:block}
+.wr-obj:hover,.wr-obj:focus-visible{transform:translateY(-4px) scale(1.08);outline:none}
+.wr-obj .wr-tag{top:-6px;right:-8px;font-size:8.5px}
+/* shoe rack */
+.wr-shoes{grid-column:1/-1;padding:12px 12px 8px}
+.wr-rack{display:flex;gap:4px;overflow-x:auto;align-items:flex-end;padding:8px 6px 0;position:relative;scrollbar-width:thin}
+.wr-rack+.wr-rack{margin-top:16px}
+.wr-rackbar{height:8px;margin:0 -2px;border-radius:3px;background:linear-gradient(180deg,#d8cdb6,#a8997b);box-shadow:0 5px 6px -2px rgba(0,0,0,.3)}
+.wr-shoes .wr-obj img{width:86px;height:58px;transform:perspective(300px) rotateX(18deg)}
+/* doors */
+.wr-door{position:absolute;top:8px;bottom:6px;width:calc(50% - 4px);z-index:20;border-radius:10px 10px 4px 4px;
+  background:linear-gradient(90deg,#1c4a86,#2a5f9f 50%,#1c4a86);box-shadow:inset 0 0 0 6px #19427a,inset 0 0 0 7px #3a6fae,0 10px 25px rgba(0,0,0,.25);
+  transition:transform 1.1s cubic-bezier(.6,.05,.25,1),opacity .3s 1s;backface-visibility:hidden}
+.wr-door.l{left:8px;transform-origin:left center}
+.wr-door.r{right:8px;transform-origin:right center}
+.wr-door::before{content:"";position:absolute;inset:26px 22px 26px;border-radius:999px 999px 6px 6px;border:2px solid rgba(255,255,255,.35);
+  background:radial-gradient(circle,#0f2a4d 1.8px,transparent 2.4px) 0 0/30px 30px}
+.wr-door::after{content:"";position:absolute;top:50%;width:14px;height:14px;border-radius:50%;margin-top:-7px;
+  background:radial-gradient(circle at 35% 30%,#ffe9a8,#b8862b 60%,#7a5414);box-shadow:0 2px 3px rgba(0,0,0,.4)}
+.wr-door.l::after{right:16px}.wr-door.r::after{left:16px}
+.wr-stage.open .wr-door.l{transform:rotateY(-108deg);opacity:0;pointer-events:none}
+.wr-stage.open .wr-door.r{transform:rotateY(108deg);opacity:0;pointer-events:none}
+.wr-empty{grid-column:1/-1;display:grid;place-items:center;text-align:center;color:var(--muted);min-height:300px}
+.dim{opacity:.16;filter:grayscale(1)}
+/* sway on hover */
+@media (prefers-reduced-motion:no-preference){
+  .wr-hang:hover{animation:sway 1.4s ease-in-out}
+  @keyframes sway{0%{transform:translateY(-3px) scale(1.06) rotate(0)}25%{transform:translateY(-3px) scale(1.06) rotate(2.5deg)}
+    60%{transform:translateY(-3px) scale(1.06) rotate(-1.6deg)}100%{transform:translateY(-3px) scale(1.06) rotate(0)}}}
+@media (prefers-reduced-motion:reduce){.wr-door{display:none}}
+/* drawer and dialog */
+.wr-drawer{position:fixed;top:0;bottom:0;right:calc(-1 * min(380px,100%) - 50px);width:min(380px,100%);background:var(--paper);z-index:200;
+  box-shadow:-20px 0 40px rgba(22,35,63,.25);padding:22px;overflow:auto;visibility:hidden;transition:right .3s ease,visibility 0s .3s}
+.wr-drawer.on{right:0;visibility:visible;transition:right .3s ease}
+.wr-drawer .spot{height:300px;border-radius:14px;display:grid;place-items:center;margin:14px 0;
+  background:radial-gradient(70% 60% at 50% 35%,#fff,#eef1f5)}
+.wr-drawer .spot img{max-width:90%;max-height:280px;object-fit:contain;filter:drop-shadow(0 14px 12px rgba(0,0,0,.2))}
+.wr-shade{position:fixed;inset:0;background:rgba(22,35,63,.35);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s}
+.wr-shade.on{opacity:1;pointer-events:auto}
+.wr-x{position:absolute;top:14px;right:14px}
+@media (max-width:900px){.wr-inside{grid-template-columns:1fr}.wr-door{display:none}.wr-frame{padding:22px 10px 12px}}
 .drop{border:2px dashed #b9c3d3;border-radius:14px;padding:18px;text-align:center;background:var(--wall)}
 .section-title{display:flex;align-items:baseline;gap:10px;margin:28px 0 12px}
 .wtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
@@ -672,74 +759,116 @@ function readImage(file, max = 1400) {
   });
 }
 async function refreshWard() { WARD = await api(`/bo7/demo/wardrobe?user_id=${encodeURIComponent(user())}`); }
-const srcLabel = s => s.startsWith("clothing-dataset") ? "photo from the Clothing dataset" : s.startsWith("DressMe illustration") ? "illustration" : s.startsWith("Fashion Product") ? "photo from Fashion Product Images" : esc(s);
-function wtHtml(g) {
-  return `<div class="wt">
-    <div class="ph" style="${g.photo_url ? "" : `background:${g.color_hex}`}">${g.photo_url ? `<img src="${g.photo_url}" alt="">` : ""}</div>
-    <b>${esc(g.name)}</b>
-    ${g.local_tag ? `<span class="src" style="color:var(--red)">${esc(g.local_tag)}</span>` : ""}
-    ${g.description && g.description !== g.name ? `<span class="desc">${esc(g.description)}</span>` : ""}
-    <span class="src">${esc(CAT_LABEL[g.category] || g.category)}${g.source ? `, ${srcLabel(g.source)}` : ""}</span>
-    <div class="row" style="margin-top:auto;padding-top:6px">${g.source === "M1" ? "" : `<label class="btn sm">${g.photo_url ? "New photo" : "Add photo"}<input type="file" accept="image/*" data-for="${g.item_id}" hidden></label>`}
-      ${g.added || g.photo_url ? `<button class="btn sm" data-del="${g.item_id}">${g.added ? "Delete" : "No photo"}</button>` : ""}</div>
-  </div>`;
+let wardOpened = false, wardFilter = "all";
+const HANGER = `<svg viewBox="0 0 118 44" aria-hidden="true"><path d="M59 16 C59 10 54 9 54 5 C54 1.5 57 0 59.5 0 C62.5 0 64.5 2 64.5 4.5" fill="none" stroke="#8d939c" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M59 15 L6 38 Q2 40 5 42 L113 42 Q116 40 112 38 Z" fill="#C79A63" stroke="#9c7443" stroke-width="1.2"/><path d="M12 39.5 L106 39.5" stroke="#e2bf8c" stroke-width="1.2"/></svg>`;
+const CLIPS = `<svg viewBox="0 0 118 44" aria-hidden="true"><path d="M59 18 C59 10 54 9 54 5 C54 1.5 57 0 59.5 0 C62.5 0 64.5 2 64.5 4.5" fill="none" stroke="#8d939c" stroke-width="2.4" stroke-linecap="round"/>
+  <rect x="10" y="18" width="98" height="7" rx="3" fill="#C79A63" stroke="#9c7443"/><rect x="16" y="24" width="10" height="16" rx="2" fill="#9aa1ab"/><rect x="92" y="24" width="10" height="16" rx="2" fill="#9aa1ab"/></svg>`;
+const wrMatch = g => wardFilter === "all" || (wardFilter === "tn" ? !!g.local_tag : g.category === wardFilter);
+function wrImg(g) { return g.photo_url ? `<img src="${g.photo_url}" alt="${esc(g.name)}" loading="lazy">`
+  : `<span style="display:block;width:80px;height:100px;margin:0 auto;border-radius:10px;background:${g.color_hex}"></span>`; }
+const wrTag = g => g.local_tag ? `<span class="wr-tag" title="Tunisian maker">${esc(g.local_tag)}</span>` : "";
+const wrHang = (g, svg = HANGER) => `<button class="wr-hang ${wrMatch(g)?"":"dim"}" data-g="${g.item_id}" title="${esc(g.name)}">${svg}${wrTag(g)}${wrImg(g)}</button>`;
+const wrObj = g => `<button class="wr-obj ${wrMatch(g)?"":"dim"}" data-g="${g.item_id}" title="${esc(g.name)}">${wrTag(g)}${wrImg(g)}</button>`;
+const isLong = g => g.category === "dress" || (g.category === "traditional" && !/kachabia|sefsari|burnous/i.test(g.name));
+const isHat = g => /hat|cap|chechia|beanie|beret/i.test(g.name);
+
+function wardrobeHtml() {
+  if (!WARD.length) return `<div class="wr-empty"><div><h3>This wardrobe is empty</h3>
+    <p style="margin-top:6px">Add your first piece: M1 recognises it and hangs it here.</p></div></div>`;
+  const tops = WARD.filter(g => g.category === "top" || g.category === "outerwear" || (g.category === "traditional" && !isLong(g)));
+  const bottoms = WARD.filter(g => g.category === "bottom");
+  const long = WARD.filter(isLong);
+  const acc = WARD.filter(g => g.category === "accessory");
+  const hats = acc.filter(isHat), other = acc.filter(g => !isHat(g));
+  const shoes = WARD.filter(g => g.category === "shoes");
+  const shelves = (list, n) => { const out = []; for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n)); return out; };
+  const half = Math.ceil(shoes.length / 2);
+  return `
+    <div class="wr-col"><span class="wr-label">Hats <small>${hats.length}</small></span>
+      ${shelves(hats, 2).map(r => `<div class="wr-shelf">${r.map(wrObj).join("")}</div>`).join("") || `<div class="wr-shelf"></div>`}
+      <div style="margin-top:22px"><span class="wr-label">Bags &amp; accessories <small>${other.length}</small></span></div>
+      ${shelves(other, 2).map(r => `<div class="wr-shelf">${r.map(wrObj).join("")}</div>`).join("") || `<div class="wr-shelf"></div>`}</div>
+    <div class="wr-col">
+      <div class="wr-rod"><span class="wr-label">Tops &amp; jackets <small>${tops.length}</small></span><div class="wr-bar"></div>
+        <div class="wr-line">${tops.map(g => wrHang(g)).join("")}</div></div>
+      <div class="wr-rod"><span class="wr-label">Trousers, shorts &amp; skirts <small>${bottoms.length}</small></span><div class="wr-bar"></div>
+        <div class="wr-line">${bottoms.map(g => wrHang(g, CLIPS)).join("")}</div></div></div>
+    <div class="wr-col"><div class="wr-rod long"><span class="wr-label">Dresses &amp; jebbas <small>${long.length}</small></span><div class="wr-bar"></div>
+      <div class="wr-line">${long.map(g => wrHang(g)).join("")}</div></div></div>
+    <div class="wr-col wr-shoes"><span class="wr-label">Shoes <small>${shoes.length} pairs</small></span>
+      <div class="wr-rack">${shoes.slice(0, half).map(wrObj).join("")}</div><div class="wr-rackbar"></div>
+      <div class="wr-rack">${shoes.slice(half).map(wrObj).join("")}</div><div class="wr-rackbar"></div></div>`;
 }
-async function wardrobeTab() {
-  await refreshWard();
-  const el = $("#tab-wardrobe");
-  const heritage = WARD.filter(g => g.local_tag || g.category === "traditional");
-  const rest = WARD.filter(g => !heritage.includes(g) && (wardCat === "all" || g.category === wardCat));
-  const cats = ["all", ...CATS.filter(k => WARD.some(g => g.category === k && !heritage.includes(g)))];
-  el.innerHTML = `<div class="head"><div><h1>Wardrobe</h1>
-      <p>${WARD.length} pieces in the wardrobe of ${esc(user())}, read from the wardrobe module (M1). Challenges and share cards use exactly these pieces. <a href="/m01/ui?user=${encodeURIComponent(user())}" target="_blank">Open the M1 wardrobe of ${esc(user())}</a></p></div></div>
-    <div class="two">
-      <div class="panel"><h3>Add a piece</h3>
-        <p class="muted" style="margin:4px 0 12px">Photograph it flat on a plain background. The photo goes to M1, which recognises the piece, removes the background and finds its colours; your category and name correct what it guessed.</p>
-        <div class="drop"><input type="file" id="f" accept="image/*" multiple aria-label="Photos"></div>
-        <div class="row" style="margin-top:10px">
-          <select id="cat" aria-label="Category">${CATS.map(c => `<option value="${c}">${CAT_LABEL[c]}</option>`).join("")}</select>
-          <input id="nm" placeholder="Name, e.g. white shirt" style="flex:1" aria-label="Name">
-          <input id="brand" placeholder="Tunisian maker (optional)" style="flex:1" aria-label="Maker"></div>
-        <p class="muted" style="margin-top:6px">Several photos at once share the category and are named after the file.</p>
-        <p style="margin-top:12px"><button class="btn primary" id="up">Add to wardrobe</button></p>
-        <div id="upres"></div>
-      </div>
-      <div class="panel"><h3>Good photos</h3><p class="muted" style="margin-top:6px">Use a background that contrasts with the piece (a white shirt on a dark floor), daylight, photo from above.
-        A PNG with a transparent background is used as it is.</p></div>
-    </div>
 
-    <div class="section-title"><h2>Tunisian heritage</h2><span class="muted">${heritage.length} pieces</span></div>
-    <div class="heritage"><p class="muted" style="margin:0 0 14px 6px">Jebba, kachabia, sefsari, chechia, balgha, fouta, koffa: traditional and artisan pieces for the heritage and local-brand challenges. Pieces tagged with a Tunisian maker count for the local-brand challenges.</p>
-      <div class="wtiles">${heritage.map(wtHtml).join("")}</div></div>
-
-    <div class="section-title"><h2>Everyday clothes</h2><span class="muted">${rest.length} pieces</span></div>
-    <div class="filters">${cats.map(k => `<button data-wcat="${k}" class="${k===wardCat?"on":""}">${CAT_LABEL[k]}</button>`).join("")}</div>
-    <div class="wtiles">${rest.map(wtHtml).join("")}</div>`;
-
-  const send = async (file, extra) => {
-    const r = await api("/bo7/demo/wardrobe/items", {method:"POST", body:{image: await readImage(file), user_id: user(), ...extra}});
-    $("#upres").innerHTML = `<div class="result ok"><b>Added.</b> Colours found: ${r.colors.map(c =>
-      `<span class="chip" style="background:${c.hex};color:${lum(c.hex)<.5?"#fff":"#16233F"}">${c.name} ${Math.round(c.share*100)}%</span>`).join(" ")}</div>`;
-    return r;
-  };
-  const keep = async () => { const res = $("#upres").innerHTML; await wardrobeTab(); $("#upres").innerHTML = res; };
-  el.querySelectorAll("[data-wcat]").forEach(b => b.onclick = () => { wardCat = b.dataset.wcat; wardrobeTab(); });
+function openPiece(id) {
+  const g = WARD.find(x => x.item_id === id); if (!g) return;
+  $("#wrd").innerHTML = `<button class="btn sm wr-x" id="wrclose" aria-label="Close">Close</button>
+    <p class="muted" style="font-size:12px">${esc(CAT_LABEL[g.category] || g.category)} · from your M1 wardrobe</p>
+    <h2 style="margin-top:4px">${esc(g.name)}</h2>
+    <div class="spot">${g.photo_url ? `<img src="${g.photo_url}" alt="${esc(g.name)}">` : `<span style="width:140px;height:180px;border-radius:14px;background:${g.color_hex}"></span>`}</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">${g.color ? `<span class="chip" style="background:${g.color_hex};color:${lum(g.color_hex)<.5?"#fff":"#16233F"}">${esc(g.color)}</span>` : ""}
+      ${g.local_tag ? `<span class="chip" style="background:var(--red-soft);color:var(--red)">Tunisian maker · ${esc(g.local_tag)}</span>` : ""}</div>
+    <p class="muted" style="margin-top:14px;font-size:13px">Used by your challenges and share cards. Remove it if you gave it away or sold it.</p>
+    <p style="margin-top:14px"><button class="btn" data-del="${g.item_id}">Remove from my wardrobe</button></p>`;
+  $("#wrd").classList.add("on"); $("#wrshade").classList.add("on");
+  $("#wrclose").onclick = closeDrawer;
+  $("#wrd [data-del]").onclick = async () => {
+    await api(`/bo7/demo/wardrobe/items/${id}?user_id=${encodeURIComponent(user())}`, {method:"DELETE"});
+    closeDrawer(); toast("Removed from your wardrobe"); wardrobeTab(); };
+}
+function addPanel() {
+  $("#wrd").innerHTML = `<button class="btn sm wr-x" id="wrclose" aria-label="Close">Close</button>
+    <h2>Add a piece</h2>
+    <p class="muted" style="margin:6px 0 12px">Photograph it flat on a plain background. M1 recognises the piece, removes the background and finds its colours; your category and name correct what it guessed.</p>
+    <div class="drop"><input type="file" id="f" accept="image/*" multiple aria-label="Photos"></div>
+    <div class="row" style="margin-top:10px;flex-wrap:wrap">
+      <select id="cat" aria-label="Category">${CATS.map(c => `<option value="${c}">${CAT_LABEL[c]}</option>`).join("")}</select>
+      <input id="nm" placeholder="Name, e.g. white shirt" style="flex:1;min-width:150px" aria-label="Name"></div>
+    <input id="brand" placeholder="Tunisian maker (optional)" style="width:100%;margin-top:8px" aria-label="Maker">
+    <p class="muted" style="margin-top:6px;font-size:12.5px">Several photos at once share the category and are named after the file.</p>
+    <p style="margin-top:12px"><button class="btn primary" id="up">Hang it in my wardrobe</button></p><div id="upres"></div>`;
+  $("#wrd").classList.add("on"); $("#wrshade").classList.add("on");
+  $("#wrclose").onclick = closeDrawer;
   $("#up").onclick = async () => {
     const files = [...$("#f").files]; if (!files.length) return toast("Choose a photo first");
     $("#up").disabled = true; $("#up").textContent = "Adding…";
     try {
-      for (const f of files) await send(f, {category: $("#cat").value,
-        name: (files.length > 1 ? f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ") : $("#nm").value) || null,
-        local_tag: $("#brand").value || null});
-      await keep(); toast(files.length > 1 ? `${files.length} pieces added` : "Piece added");
-    } catch (e) { toast(e.message); $("#up").disabled = false; $("#up").textContent = "Add to wardrobe"; }
+      for (const f of files) await api("/bo7/demo/wardrobe/items", {method:"POST", body:{image: await readImage(f), user_id: user(),
+        category: $("#cat").value, name: (files.length > 1 ? f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ") : $("#nm").value) || null,
+        local_tag: $("#brand").value || null}});
+      closeDrawer(); toast(files.length > 1 ? `${files.length} pieces added` : "Piece added to your wardrobe"); wardrobeTab();
+    } catch (e) { toast(e.message); $("#up").disabled = false; $("#up").textContent = "Hang it in my wardrobe"; }
   };
-  el.querySelectorAll("[data-for]").forEach(inp => inp.onchange = async () => {
-    try { await send(inp.files[0], {item_id: inp.dataset.for}); await keep(); toast("Photo saved"); } catch (e) { toast(e.message); }
-  });
-  el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    await api(`/bo7/demo/wardrobe/items/${b.dataset.del}?user_id=${encodeURIComponent(user())}`, {method:"DELETE"}); toast("Removed from M1"); wardrobeTab(); });
 }
+function closeDrawer() { $("#wrd")?.classList.remove("on"); $("#wrshade")?.classList.remove("on"); }
+
+async function wardrobeTab() {
+  await refreshWard();
+  const el = $("#tab-wardrobe");
+  const n = k => k === "all" ? WARD.length : k === "tn" ? WARD.filter(g => g.local_tag).length : WARD.filter(g => g.category === k).length;
+  const filters = ["all", ...CATS.filter(k => n(k)), ...(n("tn") ? ["tn"] : [])];
+  el.innerHTML = `<div class="head"><div><h1>My wardrobe</h1>
+      <p>${WARD.length} pieces of ${esc(user())}, from the wardrobe module (M1). Challenges and share cards use exactly these pieces. Tap a piece to see it.</p></div></div>
+    <div class="wr-top"><div class="filters" style="margin:0">${filters.map(k => `<button data-wf="${k}" class="${k===wardFilter?"on":""} ${k==="tn"?"tn":""}">${k==="tn"?"Tunisian makers":CAT_LABEL[k]} · ${n(k)}</button>`).join("")}</div>
+      <div class="row" style="gap:8px"><button class="btn sm" id="wrdoors">${wardOpened ? "Close the doors" : "Open"}</button>
+        <button class="btn primary sm" id="wradd">+ Add a piece</button></div></div>
+    <div class="wr-stage ${wardOpened ? "open" : ""}" id="wrstage"><div class="wr-frame">
+      <div class="wr-inside">${wardrobeHtml()}</div>
+      <div class="wr-door l"></div><div class="wr-door r"></div></div></div>
+    <div class="wr-shade" id="wrshade"></div><aside class="wr-drawer" id="wrd" aria-label="Piece"></aside>`;
+  if (!wardOpened) setTimeout(() => { $("#wrstage")?.classList.add("open"); wardOpened = true;
+    const b = $("#wrdoors"); if (b) b.textContent = "Close the doors"; }, 350);
+  el.querySelectorAll("[data-wf]").forEach(b => b.onclick = () => { wardFilter = b.dataset.wf;
+    el.querySelectorAll("[data-wf]").forEach(x => x.classList.toggle("on", x === b));
+    el.querySelectorAll(".wr-inside [data-g]").forEach(t => t.classList.toggle("dim", !wrMatch(WARD.find(g => g.item_id === t.dataset.g)))); });
+  el.querySelectorAll(".wr-inside [data-g]").forEach(t => t.onclick = () => openPiece(t.dataset.g));
+  $("#wrdoors").onclick = () => { const st = $("#wrstage"); wardOpened = !st.classList.contains("open");
+    st.classList.toggle("open", wardOpened); $("#wrdoors").textContent = wardOpened ? "Close the doors" : "Open"; };
+  $("#wradd").onclick = addPanel;
+  $("#wrshade").onclick = closeDrawer;
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
 
 /* ---------------- boot ---------------- */
 refreshWard().then(listChallenges)
