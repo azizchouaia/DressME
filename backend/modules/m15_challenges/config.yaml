@@ -1,0 +1,57 @@
+wardrobe_source: mock          # mock (demo wardrobe) | http (M1 /wardrobe/items)
+wardrobe_url: http://localhost:8000
+leaderboard_prior_posts: 3     # m in the Bayesian like average
+recommend_weights: [0.60, 0.25, 0.15]   # fallback formula only (ML ranker: models/recommender.json)
+
+# Seed challenges (BO7 B1 + BO4 style discovery + BO6 local brands). Rolling: day 1 = the day the user joins.
+seed:
+  - challenge_id: ch_7x7
+    title: 7 days, 7 outfits
+    description: Wear a different outfit every day for a week. No piece can be worn twice.
+    duration_days: 7
+    tags: [creativity, rotation, casual]
+    rules:
+      - {type: no_repeat}
+      - {type: min_items, params: {min: 2}}
+  - challenge_id: ch_mono
+    title: Monochrome week
+    description: Five days in black, white and grey only.
+    duration_days: 5
+    tags: [minimal, style_discovery]
+    rules:
+      - {type: color_theme, params: {colors: [black, white, grey], mode: all}}
+      - {type: min_items, params: {min: 2}}
+  - challenge_id: ch_jebba
+    title: Traditional Friday
+    description: Four Fridays, one traditional piece each time (jebba, kachabia, sefsari, balgha).
+    duration_days: 4
+    tags: [tunisian, heritage, traditional]
+    rules:
+      - {type: category_required, params: {categories: [traditional], min: 1}}
+  - challenge_id: ch_10x10
+    title: 10 × 10 capsule
+    description: Pick 10 pieces and make 10 outfits from them in 10 days.
+    duration_days: 10
+    tags: [sustainability, minimal, capsule]
+    rules:
+      - {type: capsule_limit, params: {max_distinct: 10}}
+      - {type: min_items, params: {min: 3}}
+  - challenge_id: ch_local
+    title: Local brand week
+    description: One piece from a Tunisian brand in every outfit for 7 days.
+    duration_days: 7
+    tags: [local, tunisian]
+    sponsor: Atelier Medina (sample partner)
+    rules:
+      - {type: local_brand, params: {min: 1}}
+      - {type: min_items, params: {min: 2}}
+  - challenge_id: ch_heritage
+    title: Tunisian heritage week
+    description: Five days, each outfit mixes an artisan piece (jebba, chechia, balgha, fouta, koffa) with everyday clothes.
+    duration_days: 5
+    tags: [tunisian, heritage, local, creativity]
+    sponsor: Medina artisans
+    rules:
+      - {type: local_brand, params: {min: 1}}
+      - {type: no_repeat}
+      - {type: min_items, params: {min: 3}}

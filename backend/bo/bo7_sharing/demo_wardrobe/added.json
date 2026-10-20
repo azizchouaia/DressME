@@ -1,0 +1,1823 @@
+[
+ {
+  "item_id": "ds_top_bb140894",
+  "category": "top",
+  "subcategory": "grey and purple t-shirt",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#9C8B80",
+    "share": 0.544
+   },
+   {
+    "name": "purple",
+    "hex": "#84746B",
+    "share": 0.388
+   },
+   {
+    "name": "brown",
+    "hex": "#5C4D45",
+    "share": 0.069
+   }
+  ],
+  "wear_count": 8,
+  "description": "grey and purple t-shirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/bb140894-5f33-4e7c-8746-0be253a442cf.jpg",
+  "dataset": {
+   "dataset_label": "T-Shirt"
+  }
+ },
+ {
+  "item_id": "ds_top_29d44695",
+  "category": "top",
+  "subcategory": "grey t-shirt",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#B3B2B0",
+    "share": 0.913
+   },
+   {
+    "name": "purple",
+    "hex": "#737272",
+    "share": 0.051
+   }
+  ],
+  "wear_count": 3,
+  "description": "grey t-shirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/29d44695-c6b6-4b76-8ac9-12032990ba5f.jpg",
+  "dataset": {
+   "dataset_label": "T-Shirt"
+  }
+ },
+ {
+  "item_id": "ds_shoes_ecd45864",
+  "category": "shoes",
+  "subcategory": "black shoes",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1A1411",
+    "share": 0.545
+   },
+   {
+    "name": "black",
+    "hex": "#362921",
+    "share": 0.316
+   },
+   {
+    "name": "brown",
+    "hex": "#685239",
+    "share": 0.138
+   }
+  ],
+  "wear_count": 1,
+  "description": "black shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/ecd45864-ec3c-4193-90c4-2bc4b3a38eb1.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_240f72f6",
+  "category": "shoes",
+  "subcategory": "grey and brown shoes",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#86827B",
+    "share": 0.388
+   },
+   {
+    "name": "brown",
+    "hex": "#5F5B52",
+    "share": 0.326
+   },
+   {
+    "name": "black",
+    "hex": "#372E25",
+    "share": 0.285
+   }
+  ],
+  "wear_count": 11,
+  "description": "grey and brown shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/240f72f6-d5c3-4e64-9d59-179db8a37569.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_e0b088bd",
+  "category": "shoes",
+  "subcategory": "black and navy shoes",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1A1918",
+    "share": 0.51
+   },
+   {
+    "name": "navy",
+    "hex": "#484646",
+    "share": 0.274
+   },
+   {
+    "name": "grey",
+    "hex": "#919089",
+    "share": 0.216
+   }
+  ],
+  "wear_count": 9,
+  "description": "black and navy shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/e0b088bd-41de-4b38-b6e8-c2d3b2bbc53c.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_d3e084a7",
+  "category": "shoes",
+  "subcategory": "black and navy shoes",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#272828",
+    "share": 0.517
+   },
+   {
+    "name": "navy",
+    "hex": "#424448",
+    "share": 0.259
+   },
+   {
+    "name": "grey",
+    "hex": "#A17A7D",
+    "share": 0.224
+   }
+  ],
+  "wear_count": 11,
+  "description": "black and navy shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d3e084a7-7471-4a4d-8b2d-8522832839ed.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_65507fb8",
+  "category": "shoes",
+  "subcategory": "navy and grey shoes",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#3B393C",
+    "share": 0.439
+   },
+   {
+    "name": "grey",
+    "hex": "#93999C",
+    "share": 0.31
+   },
+   {
+    "name": "beige",
+    "hex": "#BFCCD8",
+    "share": 0.251
+   }
+  ],
+  "wear_count": 2,
+  "description": "navy and grey shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/65507fb8-3456-4c15-b53e-d1b03bf71a59.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_b2d00753",
+  "category": "shoes",
+  "subcategory": "black and navy shoes",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1B1A17",
+    "share": 0.683
+   },
+   {
+    "name": "navy",
+    "hex": "#3A3934",
+    "share": 0.283
+   }
+  ],
+  "wear_count": 10,
+  "description": "black and navy shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/b2d00753-c0bd-48f9-95f2-18a91ea62206.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_d3db25f4",
+  "category": "shoes",
+  "subcategory": "black shoes",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#363020",
+    "share": 0.512
+   },
+   {
+    "name": "black",
+    "hex": "#1E1A0D",
+    "share": 0.426
+   },
+   {
+    "name": "brown",
+    "hex": "#62513D",
+    "share": 0.061
+   }
+  ],
+  "wear_count": 12,
+  "description": "black shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d3db25f4-a328-487e-94e9-472bc6f02807.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_5195e000",
+  "category": "shoes",
+  "subcategory": "beige and brown shoes",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#C2C0BB",
+    "share": 0.559
+   },
+   {
+    "name": "brown",
+    "hex": "#827063",
+    "share": 0.362
+   },
+   {
+    "name": "black",
+    "hex": "#3F342D",
+    "share": 0.079
+   }
+  ],
+  "wear_count": 3,
+  "description": "beige and brown shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/5195e000-d919-4ebb-81b8-1e646224d231.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_d09be031",
+  "category": "shoes",
+  "subcategory": "beige and white shoes",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#B7B1A3",
+    "share": 0.444
+   },
+   {
+    "name": "white",
+    "hex": "#DFDCD1",
+    "share": 0.428
+   },
+   {
+    "name": "brown",
+    "hex": "#58493A",
+    "share": 0.128
+   }
+  ],
+  "wear_count": 9,
+  "description": "beige and white shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d09be031-92c0-4b14-bb7d-6d4926d3f6e2.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_fe177283",
+  "category": "shoes",
+  "subcategory": "navy and black shoes",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#233A5A",
+    "share": 0.563
+   },
+   {
+    "name": "black",
+    "hex": "#111F32",
+    "share": 0.366
+   },
+   {
+    "name": "grey",
+    "hex": "#6C7B86",
+    "share": 0.071
+   }
+  ],
+  "wear_count": 6,
+  "description": "navy and black shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/fe177283-e19e-479e-a495-fdd3a477bd4a.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_578688ef",
+  "category": "shoes",
+  "subcategory": "navy and black shoes",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#404657",
+    "share": 0.471
+   },
+   {
+    "name": "black",
+    "hex": "#1F242F",
+    "share": 0.341
+   },
+   {
+    "name": "beige",
+    "hex": "#CECECB",
+    "share": 0.188
+   }
+  ],
+  "wear_count": 9,
+  "description": "navy and black shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/578688ef-feb7-4890-a256-950e01d6d45e.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_shoes_18ff3e0e",
+  "category": "shoes",
+  "subcategory": "green and grey shoes",
+  "colors": [
+   {
+    "name": "green",
+    "hex": "#5E803E",
+    "share": 0.573
+   },
+   {
+    "name": "grey",
+    "hex": "#85A86E",
+    "share": 0.248
+   },
+   {
+    "name": "black",
+    "hex": "#3D531E",
+    "share": 0.179
+   }
+  ],
+  "wear_count": 3,
+  "description": "green and grey shoes",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/18ff3e0e-6676-4f26-8be4-a992217ac524.jpg",
+  "dataset": {
+   "dataset_label": "Shoes"
+  }
+ },
+ {
+  "item_id": "ds_bottom_18260a42",
+  "category": "bottom",
+  "subcategory": "grey shorts",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#9F897B",
+    "share": 0.74
+   },
+   {
+    "name": "grey",
+    "hex": "#8D786B",
+    "share": 0.212
+   }
+  ],
+  "wear_count": 3,
+  "description": "grey shorts",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/18260a42-3e2a-4bc6-b530-69135bf90434.jpg",
+  "dataset": {
+   "dataset_label": "Shorts"
+  }
+ },
+ {
+  "item_id": "ds_bottom_e55c3d9f",
+  "category": "bottom",
+  "subcategory": "brown shorts",
+  "colors": [
+   {
+    "name": "brown",
+    "hex": "#504443",
+    "share": 0.503
+   },
+   {
+    "name": "brown",
+    "hex": "#645756",
+    "share": 0.269
+   },
+   {
+    "name": "black",
+    "hex": "#3B2F2E",
+    "share": 0.228
+   }
+  ],
+  "wear_count": 11,
+  "description": "brown shorts",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/e55c3d9f-81f8-4e0c-9882-3a747ed4c676.jpg",
+  "dataset": {
+   "dataset_label": "Shorts"
+  }
+ },
+ {
+  "item_id": "ds_bottom_bf9ebb31",
+  "category": "bottom",
+  "subcategory": "grey shorts",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#9C999B",
+    "share": 0.582
+   },
+   {
+    "name": "grey",
+    "hex": "#8C8582",
+    "share": 0.4
+   }
+  ],
+  "wear_count": 3,
+  "description": "grey shorts",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/bf9ebb31-3120-457f-82e0-41be27999bac.jpg",
+  "dataset": {
+   "dataset_label": "Shorts"
+  }
+ },
+ {
+  "item_id": "ds_bottom_d4825958",
+  "category": "bottom",
+  "subcategory": "red shorts",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#AF1B0F",
+    "share": 0.501
+   },
+   {
+    "name": "red",
+    "hex": "#D13029",
+    "share": 0.399
+   },
+   {
+    "name": "black",
+    "hex": "#6A130B",
+    "share": 0.1
+   }
+  ],
+  "wear_count": 2,
+  "description": "red shorts",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d4825958-1013-4e12-b56c-3d88193cc5d7.jpg",
+  "dataset": {
+   "dataset_label": "Shorts"
+  }
+ },
+ {
+  "item_id": "ds_top_9b771b16",
+  "category": "top",
+  "subcategory": "grey and beige shirt",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#80929E",
+    "share": 0.396
+   },
+   {
+    "name": "beige",
+    "hex": "#AEBFCC",
+    "share": 0.342
+   },
+   {
+    "name": "green",
+    "hex": "#52626E",
+    "share": 0.261
+   }
+  ],
+  "wear_count": 2,
+  "description": "grey and beige shirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/9b771b16-2700-41ea-8b87-179324fbe107.jpg",
+  "dataset": {
+   "dataset_label": "Shirt"
+  }
+ },
+ {
+  "item_id": "ds_top_a6933111",
+  "category": "top",
+  "subcategory": "beige and grey shirt",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#C4C8C8",
+    "share": 0.454
+   },
+   {
+    "name": "grey",
+    "hex": "#989D9E",
+    "share": 0.396
+   },
+   {
+    "name": "brown",
+    "hex": "#4F4E45",
+    "share": 0.15
+   }
+  ],
+  "wear_count": 4,
+  "description": "beige and grey shirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/a6933111-83a0-42c6-868b-88df90dfcc56.jpg",
+  "dataset": {
+   "dataset_label": "Shirt"
+  }
+ },
+ {
+  "item_id": "ds_bottom_7fa97b45",
+  "category": "bottom",
+  "subcategory": "navy and purple trousers",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#313338",
+    "share": 0.478
+   },
+   {
+    "name": "purple",
+    "hex": "#636870",
+    "share": 0.373
+   },
+   {
+    "name": "grey",
+    "hex": "#B2AFA8",
+    "share": 0.149
+   }
+  ],
+  "wear_count": 8,
+  "description": "navy and purple trousers",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/7fa97b45-380a-4c9c-8de4-522976cb4972.jpg",
+  "dataset": {
+   "dataset_label": "Pants"
+  }
+ },
+ {
+  "item_id": "ds_bottom_eaa3318c",
+  "category": "bottom",
+  "subcategory": "purple trousers",
+  "colors": [
+   {
+    "name": "purple",
+    "hex": "#911E64",
+    "share": 0.465
+   },
+   {
+    "name": "purple",
+    "hex": "#A92B7A",
+    "share": 0.407
+   },
+   {
+    "name": "brown",
+    "hex": "#751B47",
+    "share": 0.128
+   }
+  ],
+  "wear_count": 12,
+  "description": "purple trousers",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/eaa3318c-3c73-419e-a952-7c9d0ac845d9.jpg",
+  "dataset": {
+   "dataset_label": "Pants"
+  }
+ },
+ {
+  "item_id": "ds_bottom_7dc9022e",
+  "category": "bottom",
+  "subcategory": "grey and beige trousers",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#839ABA",
+    "share": 0.433
+   },
+   {
+    "name": "beige",
+    "hex": "#AABED6",
+    "share": 0.422
+   },
+   {
+    "name": "blue",
+    "hex": "#576D8A",
+    "share": 0.145
+   }
+  ],
+  "wear_count": 5,
+  "description": "grey and beige trousers",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/7dc9022e-5c1b-4d8e-8b36-8790f15f4b6d.jpg",
+  "dataset": {
+   "dataset_label": "Pants"
+  }
+ },
+ {
+  "item_id": "ds_bottom_fd2d5fd1",
+  "category": "bottom",
+  "subcategory": "blue and navy trousers",
+  "colors": [
+   {
+    "name": "blue",
+    "hex": "#466588",
+    "share": 0.464
+   },
+   {
+    "name": "navy",
+    "hex": "#294159",
+    "share": 0.319
+   },
+   {
+    "name": "grey",
+    "hex": "#708FB1",
+    "share": 0.217
+   }
+  ],
+  "wear_count": 5,
+  "description": "blue and navy trousers",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/fd2d5fd1-2572-48d1-a089-f44039543b50.jpg",
+  "dataset": {
+   "dataset_label": "Pants"
+  }
+ },
+ {
+  "item_id": "ds_bottom_84b4da94",
+  "category": "bottom",
+  "subcategory": "red and brown skirt",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#A2183E",
+    "share": 0.632
+   },
+   {
+    "name": "brown",
+    "hex": "#741029",
+    "share": 0.346
+   }
+  ],
+  "wear_count": 10,
+  "description": "red and brown skirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/84b4da94-65c0-471e-a7ad-2ba6360f45bb.jpg",
+  "dataset": {
+   "dataset_label": "Skirt"
+  }
+ },
+ {
+  "item_id": "ds_bottom_86d25b2c",
+  "category": "bottom",
+  "subcategory": "black and navy skirt",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#201F21",
+    "share": 0.594
+   },
+   {
+    "name": "navy",
+    "hex": "#41373B",
+    "share": 0.381
+   }
+  ],
+  "wear_count": 9,
+  "description": "black and navy skirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/86d25b2c-d388-49f6-9616-d2ad838c7148.jpg",
+  "dataset": {
+   "dataset_label": "Skirt"
+  }
+ },
+ {
+  "item_id": "ds_bottom_ec5f9167",
+  "category": "bottom",
+  "subcategory": "black skirt",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1A1818",
+    "share": 0.483
+   },
+   {
+    "name": "black",
+    "hex": "#29282E",
+    "share": 0.373
+   },
+   {
+    "name": "navy",
+    "hex": "#3F3F45",
+    "share": 0.144
+   }
+  ],
+  "wear_count": 4,
+  "description": "black skirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/ec5f9167-6824-43cf-9f91-15c99a9318c4.jpg",
+  "dataset": {
+   "dataset_label": "Skirt"
+  }
+ },
+ {
+  "item_id": "ds_bottom_c763b1d1",
+  "category": "bottom",
+  "subcategory": "red skirt",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#C6446B",
+    "share": 0.582
+   },
+   {
+    "name": "red",
+    "hex": "#AA334F",
+    "share": 0.252
+   },
+   {
+    "name": "grey",
+    "hex": "#C96183",
+    "share": 0.166
+   }
+  ],
+  "wear_count": 10,
+  "description": "red skirt",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/c763b1d1-ed61-4545-b740-501363ca613f.jpg",
+  "dataset": {
+   "dataset_label": "Skirt"
+  }
+ },
+ {
+  "item_id": "ds_top_ab6cf197",
+  "category": "top",
+  "subcategory": "blue and navy top",
+  "colors": [
+   {
+    "name": "blue",
+    "hex": "#42A3E6",
+    "share": 0.367
+   },
+   {
+    "name": "navy",
+    "hex": "#102C57",
+    "share": 0.329
+   },
+   {
+    "name": "blue",
+    "hex": "#266AAA",
+    "share": 0.304
+   }
+  ],
+  "wear_count": 11,
+  "description": "blue and navy top",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/ab6cf197-7901-4bef-b6e3-2f1df054838d.jpg",
+  "dataset": {
+   "dataset_label": "Top"
+  }
+ },
+ {
+  "item_id": "ds_top_235161c9",
+  "category": "top",
+  "subcategory": "green and grey top",
+  "colors": [
+   {
+    "name": "green",
+    "hex": "#526A64",
+    "share": 0.379
+   },
+   {
+    "name": "grey",
+    "hex": "#7C918B",
+    "share": 0.358
+   },
+   {
+    "name": "beige",
+    "hex": "#ABBFBA",
+    "share": 0.263
+   }
+  ],
+  "wear_count": 8,
+  "description": "green and grey top",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/235161c9-4d33-4c76-8fb1-cee0355aee45.jpg",
+  "dataset": {
+   "dataset_label": "Top"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_c1a6e7af",
+  "category": "outerwear",
+  "subcategory": "grey and beige jacket",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#A1A479",
+    "share": 0.394
+   },
+   {
+    "name": "beige",
+    "hex": "#C9D1AF",
+    "share": 0.327
+   },
+   {
+    "name": "brown",
+    "hex": "#76714C",
+    "share": 0.278
+   }
+  ],
+  "wear_count": 3,
+  "description": "grey and beige jacket",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/c1a6e7af-4bad-425a-b7b7-caca5b6a35dd.jpg",
+  "dataset": {
+   "dataset_label": "Outwear"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_90716fe4",
+  "category": "outerwear",
+  "subcategory": "red and orange jacket",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#AD334F",
+    "share": 0.455
+   },
+   {
+    "name": "orange",
+    "hex": "#D45676",
+    "share": 0.424
+   },
+   {
+    "name": "brown",
+    "hex": "#6A1C2A",
+    "share": 0.121
+   }
+  ],
+  "wear_count": 6,
+  "description": "red and orange jacket",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/90716fe4-7c08-4156-9a30-629cfbfc463d.jpg",
+  "dataset": {
+   "dataset_label": "Outwear"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_0cb4fc9c",
+  "category": "outerwear",
+  "subcategory": "black jacket",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1F1D1F",
+    "share": 0.683
+   },
+   {
+    "name": "black",
+    "hex": "#100D0F",
+    "share": 0.276
+   }
+  ],
+  "wear_count": 9,
+  "description": "black jacket",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/0cb4fc9c-7d38-4f11-95ea-71b61d0ae54c.jpg",
+  "dataset": {
+   "dataset_label": "Outwear"
+  }
+ },
+ {
+  "item_id": "ds_dress_b7eef4e5",
+  "category": "dress",
+  "subcategory": "navy and black dress",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#262C43",
+    "share": 0.525
+   },
+   {
+    "name": "black",
+    "hex": "#131526",
+    "share": 0.249
+   },
+   {
+    "name": "navy",
+    "hex": "#404760",
+    "share": 0.226
+   }
+  ],
+  "wear_count": 4,
+  "description": "navy and black dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/b7eef4e5-320e-4467-bb16-6ad88e2c2fdf.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_dress_cf2783b8",
+  "category": "dress",
+  "subcategory": "brown dress",
+  "colors": [
+   {
+    "name": "brown",
+    "hex": "#70665D",
+    "share": 0.416
+   },
+   {
+    "name": "brown",
+    "hex": "#5B524A",
+    "share": 0.31
+   },
+   {
+    "name": "navy",
+    "hex": "#403831",
+    "share": 0.274
+   }
+  ],
+  "wear_count": 2,
+  "description": "brown dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/cf2783b8-0561-4475-9c1a-9a8861fa8c64.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_dress_bdfa0ad6",
+  "category": "dress",
+  "subcategory": "navy dress",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#1B645B",
+    "share": 0.442
+   },
+   {
+    "name": "navy",
+    "hex": "#124D45",
+    "share": 0.433
+   },
+   {
+    "name": "black",
+    "hex": "#0E2C28",
+    "share": 0.126
+   }
+  ],
+  "wear_count": 8,
+  "description": "navy dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/bdfa0ad6-7702-4aef-95e0-ea02fa7795c0.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_dress_5a2b4bbf",
+  "category": "dress",
+  "subcategory": "black and green dress",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1E262D",
+    "share": 0.649
+   },
+   {
+    "name": "green",
+    "hex": "#536772",
+    "share": 0.267
+   },
+   {
+    "name": "beige",
+    "hex": "#CBC1B0",
+    "share": 0.084
+   }
+  ],
+  "wear_count": 1,
+  "description": "black and green dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/5a2b4bbf-d9fe-45a2-aa0d-295a86804cb6.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_dress_5e982004",
+  "category": "dress",
+  "subcategory": "white and beige dress",
+  "colors": [
+   {
+    "name": "white",
+    "hex": "#DED8D1",
+    "share": 0.773
+   },
+   {
+    "name": "beige",
+    "hex": "#C5BCB4",
+    "share": 0.208
+   }
+  ],
+  "wear_count": 0,
+  "description": "white and beige dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/5e982004-dc73-41b7-a784-ba316570fc1e.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_dress_4b8e5d41",
+  "category": "dress",
+  "subcategory": "black and purple dress",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#26202D",
+    "share": 0.45
+   },
+   {
+    "name": "purple",
+    "hex": "#544F64",
+    "share": 0.413
+   },
+   {
+    "name": "grey",
+    "hex": "#7B7685",
+    "share": 0.137
+   }
+  ],
+  "wear_count": 0,
+  "description": "black and purple dress",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/4b8e5d41-3e12-4d2b-8634-e62e71d613ff.jpg",
+  "dataset": {
+   "dataset_label": "Dress"
+  }
+ },
+ {
+  "item_id": "ds_top_a16d135e",
+  "category": "top",
+  "subcategory": "red long-sleeve top",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#B92F3A",
+    "share": 0.766
+   },
+   {
+    "name": "red",
+    "hex": "#96252C",
+    "share": 0.204
+   }
+  ],
+  "wear_count": 2,
+  "description": "red long-sleeve top",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/a16d135e-9907-471b-9e5c-ac46a006764e.jpg",
+  "dataset": {
+   "dataset_label": "Longsleeve"
+  }
+ },
+ {
+  "item_id": "ds_top_bbb7cf34",
+  "category": "top",
+  "subcategory": "black long-sleeve top",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#27262B",
+    "share": 0.86
+   },
+   {
+    "name": "brown",
+    "hex": "#525257",
+    "share": 0.099
+   }
+  ],
+  "wear_count": 8,
+  "description": "black long-sleeve top",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/bbb7cf34-ca92-4471-a1e0-df0cea61e9dd.jpg",
+  "dataset": {
+   "dataset_label": "Longsleeve"
+  }
+ },
+ {
+  "item_id": "ds_accessory_bb1c6a76",
+  "category": "accessory",
+  "subcategory": "black hat",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#181616",
+    "share": 0.72
+   },
+   {
+    "name": "black",
+    "hex": "#272427",
+    "share": 0.207
+   },
+   {
+    "name": "navy",
+    "hex": "#41434D",
+    "share": 0.074
+   }
+  ],
+  "wear_count": 7,
+  "description": "black hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/bb1c6a76-4a1d-4734-8f07-4dfabaa40561.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_accessory_f1727c58",
+  "category": "accessory",
+  "subcategory": "beige and grey hat",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#B8B7B4",
+    "share": 0.57
+   },
+   {
+    "name": "grey",
+    "hex": "#999793",
+    "share": 0.354
+   },
+   {
+    "name": "brown",
+    "hex": "#7A514E",
+    "share": 0.076
+   }
+  ],
+  "wear_count": 10,
+  "description": "beige and grey hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/f1727c58-900c-4aca-88a8-10ac8e1bd7f0.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_accessory_70a61a27",
+  "category": "accessory",
+  "subcategory": "navy and black hat",
+  "colors": [
+   {
+    "name": "navy",
+    "hex": "#2A374C",
+    "share": 0.384
+   },
+   {
+    "name": "black",
+    "hex": "#171E28",
+    "share": 0.318
+   },
+   {
+    "name": "navy",
+    "hex": "#3D4E6A",
+    "share": 0.298
+   }
+  ],
+  "wear_count": 7,
+  "description": "navy and black hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/70a61a27-9d6b-449a-b4b0-826da05ce2a7.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_accessory_d116fe9a",
+  "category": "accessory",
+  "subcategory": "black hat",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#241E1E",
+    "share": 0.738
+   },
+   {
+    "name": "black",
+    "hex": "#312D2E",
+    "share": 0.212
+   },
+   {
+    "name": "green",
+    "hex": "#51545D",
+    "share": 0.05
+   }
+  ],
+  "wear_count": 11,
+  "description": "black hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d116fe9a-a72b-49e2-806d-e92f3a67a032.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_accessory_baf70158",
+  "category": "accessory",
+  "subcategory": "green and navy hat",
+  "colors": [
+   {
+    "name": "green",
+    "hex": "#5A5D5E",
+    "share": 0.498
+   },
+   {
+    "name": "navy",
+    "hex": "#403839",
+    "share": 0.426
+   },
+   {
+    "name": "grey",
+    "hex": "#8AA8A7",
+    "share": 0.075
+   }
+  ],
+  "wear_count": 12,
+  "description": "green and navy hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/baf70158-25de-4d08-9981-e7c160fa87ad.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_accessory_1ea1d5e8",
+  "category": "accessory",
+  "subcategory": "brown and black hat",
+  "colors": [
+   {
+    "name": "brown",
+    "hex": "#4D4A46",
+    "share": 0.535
+   },
+   {
+    "name": "black",
+    "hex": "#2C2522",
+    "share": 0.415
+   },
+   {
+    "name": "yellow",
+    "hex": "#CCB620",
+    "share": 0.05
+   }
+  ],
+  "wear_count": 2,
+  "description": "brown and black hat",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/1ea1d5e8-6613-442b-822c-f10319d14da3.jpg",
+  "dataset": {
+   "dataset_label": "Hat"
+  }
+ },
+ {
+  "item_id": "ds_top_93a4bb6a",
+  "category": "top",
+  "subcategory": "grey and brown polo",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#97877B",
+    "share": 0.513
+   },
+   {
+    "name": "brown",
+    "hex": "#827264",
+    "share": 0.382
+   },
+   {
+    "name": "brown",
+    "hex": "#6C5B4E",
+    "share": 0.105
+   }
+  ],
+  "wear_count": 1,
+  "description": "grey and brown polo",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/93a4bb6a-f025-45b5-b617-70185ab03606.jpg",
+  "dataset": {
+   "dataset_label": "Polo"
+  }
+ },
+ {
+  "item_id": "ds_top_f2368692",
+  "category": "top",
+  "subcategory": "brown and black polo",
+  "colors": [
+   {
+    "name": "brown",
+    "hex": "#535253",
+    "share": 0.45
+   },
+   {
+    "name": "black",
+    "hex": "#302E31",
+    "share": 0.445
+   },
+   {
+    "name": "grey",
+    "hex": "#A6BF7C",
+    "share": 0.105
+   }
+  ],
+  "wear_count": 12,
+  "description": "brown and black polo",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/f2368692-5695-415e-aa9c-e3d510fdd5aa.jpg",
+  "dataset": {
+   "dataset_label": "Polo"
+  }
+ },
+ {
+  "item_id": "ds_top_0527af7c",
+  "category": "top",
+  "subcategory": "beige and grey blouse",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#B4C4D4",
+    "share": 0.711
+   },
+   {
+    "name": "grey",
+    "hex": "#99A2B2",
+    "share": 0.275
+   }
+  ],
+  "wear_count": 8,
+  "description": "beige and grey blouse",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/0527af7c-3a7c-4c87-9e1c-bee2d9db0e98.jpg",
+  "dataset": {
+   "dataset_label": "Blouse"
+  }
+ },
+ {
+  "item_id": "ds_top_25757565",
+  "category": "top",
+  "subcategory": "grey and white blouse",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#A3A6B1",
+    "share": 0.446
+   },
+   {
+    "name": "white",
+    "hex": "#CDD1DC",
+    "share": 0.328
+   },
+   {
+    "name": "grey",
+    "hex": "#888891",
+    "share": 0.226
+   }
+  ],
+  "wear_count": 0,
+  "description": "grey and white blouse",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/25757565-af92-469e-817c-85cdfc13baca.jpg",
+  "dataset": {
+   "dataset_label": "Blouse"
+  }
+ },
+ {
+  "item_id": "ds_top_7c6b9570",
+  "category": "top",
+  "subcategory": "red hoodie",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#980D1A",
+    "share": 0.371
+   },
+   {
+    "name": "red",
+    "hex": "#CF1F3B",
+    "share": 0.358
+   },
+   {
+    "name": "orange",
+    "hex": "#F54877",
+    "share": 0.27
+   }
+  ],
+  "wear_count": 3,
+  "description": "red hoodie",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/7c6b9570-ad01-4bfb-a9de-530c3c9fbdf6.jpg",
+  "dataset": {
+   "dataset_label": "Hoodie"
+  }
+ },
+ {
+  "item_id": "ds_top_b78fee17",
+  "category": "top",
+  "subcategory": "black hoodie",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#1C2132",
+    "share": 0.59
+   },
+   {
+    "name": "black",
+    "hex": "#11141E",
+    "share": 0.403
+   }
+  ],
+  "wear_count": 10,
+  "description": "black hoodie",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/b78fee17-fe42-4895-a4da-7b3aac0484ae.jpg",
+  "dataset": {
+   "dataset_label": "Hoodie"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_3087f582",
+  "category": "outerwear",
+  "subcategory": "black and brown blazer",
+  "colors": [
+   {
+    "name": "black",
+    "hex": "#3B332D",
+    "share": 0.589
+   },
+   {
+    "name": "brown",
+    "hex": "#5B504D",
+    "share": 0.37
+   }
+  ],
+  "wear_count": 7,
+  "description": "black and brown blazer",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/3087f582-6895-41a2-93b5-145b1f209942.jpg",
+  "dataset": {
+   "dataset_label": "Blazer"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_67242183",
+  "category": "outerwear",
+  "subcategory": "beige blazer",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#D8D6C3",
+    "share": 0.673
+   },
+   {
+    "name": "beige",
+    "hex": "#C2BCA4",
+    "share": 0.286
+   }
+  ],
+  "wear_count": 0,
+  "description": "beige blazer",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/67242183-82be-491d-84cb-cd0ae9d00e19.jpg",
+  "dataset": {
+   "dataset_label": "Blazer"
+  }
+ },
+ {
+  "item_id": "ds_outerwear_d1df1763",
+  "category": "outerwear",
+  "subcategory": "green blazer",
+  "colors": [
+   {
+    "name": "green",
+    "hex": "#339A79",
+    "share": 0.812
+   },
+   {
+    "name": "navy",
+    "hex": "#225E47",
+    "share": 0.169
+   }
+  ],
+  "wear_count": 0,
+  "description": "green blazer",
+  "source": "clothing-dataset (A. Grigorev, CC0)",
+  "source_url": "https://raw.githubusercontent.com/alexeygrigorev/clothing-dataset/master/images/d1df1763-f51c-4701-9c6b-a76f1b6739e8.jpg",
+  "dataset": {
+   "dataset_label": "Blazer"
+  }
+ },
+ {
+  "item_id": "tn_jebba_white",
+  "category": "traditional",
+  "subcategory": "white embroidered jebba",
+  "local_tag": "Medina artisans",
+  "description": "Men's sleeveless Tunisian robe in cream cotton, gold silk embroidery on the chest (sfifa).",
+  "colors": [
+   {
+    "name": "white",
+    "hex": "#EDE9E0",
+    "share": 0.869
+   },
+   {
+    "name": "orange",
+    "hex": "#B4832C",
+    "share": 0.085
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_jebba_grey",
+  "category": "traditional",
+  "subcategory": "grey wool jebba",
+  "local_tag": "Kairouan weavers",
+  "description": "Winter jebba in light grey wool with a red-gold embroidered placket.",
+  "colors": [
+   {
+    "name": "grey",
+    "hex": "#A5A19E",
+    "share": 0.879
+   },
+   {
+    "name": "orange",
+    "hex": "#D6A53F",
+    "share": 0.076
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_kachabia",
+  "category": "traditional",
+  "subcategory": "striped hooded kachabia",
+  "local_tag": "Kairouan weavers",
+  "description": "Hooded wool cloak with brown and cream stripes, worn over clothes in winter.",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#E0D4BE",
+    "share": 0.463
+   },
+   {
+    "name": "brown",
+    "hex": "#6D4F36",
+    "share": 0.449
+   },
+   {
+    "name": "black",
+    "hex": "#4A321F",
+    "share": 0.088
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_sefsari",
+  "category": "traditional",
+  "subcategory": "white silk sefsari",
+  "local_tag": "Medina artisans",
+  "description": "Traditional women's wrap in fine striped white silk with a golden border.",
+  "colors": [
+   {
+    "name": "white",
+    "hex": "#EFECE4",
+    "share": 0.633
+   },
+   {
+    "name": "white",
+    "hex": "#DEDAD0",
+    "share": 0.353
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_blouza",
+  "category": "dress",
+  "subcategory": "embroidered red blouza",
+  "local_tag": "Mahdia ateliers",
+  "description": "Festive dress in red velvet, gold embroidered bodice and hem (Mahdia style).",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#961F2A",
+    "share": 0.538
+   },
+   {
+    "name": "red",
+    "hex": "#A13039",
+    "share": 0.291
+   },
+   {
+    "name": "yellow",
+    "hex": "#D9A942",
+    "share": 0.17
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_chechia",
+  "category": "accessory",
+  "subcategory": "red chechia",
+  "local_tag": "Souk Chaouachia",
+  "description": "Red felted wool cap with a black silk tassel, hand made in the souk of Tunis.",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#B32830",
+    "share": 0.901
+   },
+   {
+    "name": "red",
+    "hex": "#7D161A",
+    "share": 0.074
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_balgha_yellow",
+  "category": "shoes",
+  "subcategory": "yellow balgha",
+  "local_tag": "Medina artisans",
+  "description": "Backless pointed leather slippers in saffron yellow.",
+  "colors": [
+   {
+    "name": "yellow",
+    "hex": "#DCAD3E",
+    "share": 0.51
+   },
+   {
+    "name": "orange",
+    "hex": "#C69226",
+    "share": 0.463
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_balgha_red",
+  "category": "shoes",
+  "subcategory": "red embroidered balgha",
+  "local_tag": "Medina artisans",
+  "description": "Red leather balgha with gold stitching, for weddings and Eid.",
+  "colors": [
+   {
+    "name": "red",
+    "hex": "#AF2B32",
+    "share": 0.523
+   },
+   {
+    "name": "red",
+    "hex": "#901B22",
+    "share": 0.46
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_fouta",
+  "category": "accessory",
+  "subcategory": "striped fouta",
+  "local_tag": "Nabeul weavers",
+  "description": "Hand-woven cotton fouta with blue, white and red stripes and fringes; worn as a scarf or beach wrap.",
+  "colors": [
+   {
+    "name": "white",
+    "hex": "#E9E6E0",
+    "share": 0.516
+   },
+   {
+    "name": "blue",
+    "hex": "#315E9A",
+    "share": 0.428
+   },
+   {
+    "name": "red",
+    "hex": "#BB4134",
+    "share": 0.056
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_serwal",
+  "category": "bottom",
+  "subcategory": "white serwal",
+  "local_tag": "Medina artisans",
+  "description": "Loose traditional trousers in cream cotton, worn with the jebba.",
+  "colors": [
+   {
+    "name": "white",
+    "hex": "#EBE5D9",
+    "share": 0.622
+   },
+   {
+    "name": "beige",
+    "hex": "#DCD6C9",
+    "share": 0.343
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_koffa",
+  "category": "accessory",
+  "subcategory": "alfa koffa basket bag",
+  "local_tag": "Nabeul weavers",
+  "description": "Woven alfa-grass basket bag with leather handles and wool pompoms.",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#D8BA84",
+    "share": 0.51
+   },
+   {
+    "name": "orange",
+    "hex": "#B89353",
+    "share": 0.286
+   },
+   {
+    "name": "brown",
+    "hex": "#815235",
+    "share": 0.204
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ },
+ {
+  "item_id": "tn_linen_shirt",
+  "category": "top",
+  "subcategory": "embroidered linen shirt",
+  "local_tag": "Sidi Linen Co.",
+  "description": "Modern linen shirt with blue Tunisian embroidery along the collar.",
+  "colors": [
+   {
+    "name": "beige",
+    "hex": "#E6D9C1",
+    "share": 0.824
+   },
+   {
+    "name": "beige",
+    "hex": "#D4C7AB",
+    "share": 0.165
+   }
+  ],
+  "wear_count": 2,
+  "source": "DressMe illustration (Tunisian heritage)"
+ }
+]

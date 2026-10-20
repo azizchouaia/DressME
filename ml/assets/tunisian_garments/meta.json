@@ -1,0 +1,86 @@
+[
+ {
+  "item_id": "tn_jebba_white",
+  "category": "traditional",
+  "subcategory": "white embroidered jebba",
+  "local_tag": "Medina artisans",
+  "description": "Men's sleeveless Tunisian robe in cream cotton, gold silk embroidery on the chest (sfifa)."
+ },
+ {
+  "item_id": "tn_jebba_grey",
+  "category": "traditional",
+  "subcategory": "grey wool jebba",
+  "local_tag": "Kairouan weavers",
+  "description": "Winter jebba in light grey wool with a red-gold embroidered placket."
+ },
+ {
+  "item_id": "tn_kachabia",
+  "category": "traditional",
+  "subcategory": "striped hooded kachabia",
+  "local_tag": "Kairouan weavers",
+  "description": "Hooded wool cloak with brown and cream stripes, worn over clothes in winter."
+ },
+ {
+  "item_id": "tn_sefsari",
+  "category": "traditional",
+  "subcategory": "white silk sefsari",
+  "local_tag": "Medina artisans",
+  "description": "Traditional women's wrap in fine striped white silk with a golden border."
+ },
+ {
+  "item_id": "tn_blouza",
+  "category": "dress",
+  "subcategory": "embroidered red blouza",
+  "local_tag": "Mahdia ateliers",
+  "description": "Festive dress in red velvet, gold embroidered bodice and hem (Mahdia style)."
+ },
+ {
+  "item_id": "tn_chechia",
+  "category": "accessory",
+  "subcategory": "red chechia",
+  "local_tag": "Souk Chaouachia",
+  "description": "Red felted wool cap with a black silk tassel, hand made in the souk of Tunis."
+ },
+ {
+  "item_id": "tn_balgha_yellow",
+  "category": "shoes",
+  "subcategory": "yellow balgha",
+  "local_tag": "Medina artisans",
+  "description": "Backless pointed leather slippers in saffron yellow."
+ },
+ {
+  "item_id": "tn_balgha_red",
+  "category": "shoes",
+  "subcategory": "red embroidered balgha",
+  "local_tag": "Medina artisans",
+  "description": "Red leather balgha with gold stitching, for weddings and Eid."
+ },
+ {
+  "item_id": "tn_fouta",
+  "category": "accessory",
+  "subcategory": "striped fouta",
+  "local_tag": "Nabeul weavers",
+  "description": "Hand-woven cotton fouta with blue, white and red stripes and fringes; worn as a scarf or beach wrap."
+ },
+ {
+  "item_id": "tn_serwal",
+  "category": "bottom",
+  "subcategory": "white serwal",
+  "local_tag": "Medina artisans",
+  "description": "Loose traditional trousers in cream cotton, worn with the jebba."
+ },
+ {
+  "item_id": "tn_koffa",
+  "category": "accessory",
+  "subcategory": "alfa koffa basket bag",
+  "local_tag": "Nabeul weavers",
+  "description": "Woven alfa-grass basket bag with leather handles and wool pompoms."
+ },
+ {
+  "item_id": "tn_linen_shirt",
+  "category": "top",
+  "subcategory": "embroidered linen shirt",
+  "local_tag": "Sidi Linen Co.",
+  "description": "Modern linen shirt with blue Tunisian embroidery along the collar."
+ }
+]

@@ -1,0 +1,4 @@
+# BO7 own tasks + demo page (/bo7/demo)
+-r ../../modules/m15_challenges/requirements.txt
+scipy>=1.11          # background removal fallback (flood fill) in demo/cutout.py
+# rembg[cpu]         # optional: deep-learning background removal (U²-Net), downloads ~170 MB once

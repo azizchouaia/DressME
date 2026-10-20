@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DressMe · BO7 demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Sidi Bou Said: lime-washed walls, blue doors, chechia red, ochre brass */
+:root{
+  --wall:#F6F7F9;--paper:#fff;--ink:#16233F;--muted:#5D6880;--line:#DDE2EA;--soft:#EEF1F5;
+  --blue:#1F4E8C;--blue-2:#2C64AE;--blue-soft:#E6EEF8;
+  --red:#B3262D;--red-soft:#F8E4E4;--ochre:#A9791E;--ochre-soft:#F6EEDC;--ok:#2E7D5B;--ok-soft:#E3F1EA;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;--text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--wall);color:var(--ink);font:15px/1.55 var(--text)}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;margin:0}
+h1{font-size:34px;font-weight:800;line-height:1.1}
+h2{font-size:24px;font-weight:700;line-height:1.2}
+h3{font-size:17px;font-weight:700;line-height:1.3}
+p{margin:0}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue-2);outline-offset:2px}
+.muted{color:var(--muted);font-size:13.5px}
+.hidden{display:none !important}
+
+/* header */
+header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar-in{max-width:1180px;margin:0 auto;padding:12px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px}
+.brand{display:flex;align-items:center;gap:10px;padding-bottom:12px}
+.brand i{width:22px;height:28px;background:var(--blue);border-radius:11px 11px 3px 3px;position:relative}
+.brand i::after{content:"";position:absolute;inset:5px 5px 0;background:var(--paper);border-radius:7px 7px 0 0}
+.brand b{font:800 24px/1 var(--display)}
+.brand span{color:var(--muted);font-size:13px;margin-left:2px}
+nav{display:flex;gap:4px;margin-right:auto;overflow-x:auto}
+nav button{border:0;background:none;font:600 14.5px var(--text);color:var(--muted);padding:10px 12px 12px;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button.on{color:var(--ink);border-bottom-color:var(--blue)}
+.viewer{display:flex;align-items:center;gap:8px;padding-bottom:10px;font-size:13px;color:var(--muted)}
+.viewer input{width:110px}
+.viewer a{font-size:13px}
+
+/* controls */
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 11px;background:var(--paper)}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-2);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
+.btn{border:1px solid var(--line);border-radius:999px;padding:9px 16px;font:600 14px var(--text);cursor:pointer;background:var(--paper);color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:var(--blue-2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.ghost{border-color:transparent;background:none;padding-left:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--soft);border-radius:999px;padding:3px 10px;font-size:12.5px;white-space:nowrap}
+.chip.blue{background:var(--blue-soft);color:var(--blue)}
+.chip.ochre{background:var(--ochre-soft);color:var(--ochre)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.red{background:var(--red-soft);color:var(--red)}
+label.chip{cursor:pointer}
+
+main{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+.head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end;margin-bottom:22px}
+.head p{color:var(--muted);max-width:60ch;margin-top:6px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px}
+.two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.stack{display:grid;gap:20px}
+
+/* the arch: challenge cards shaped like a Sidi Bou Said door */
+.arches{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:28px 22px}
+.arch-card{cursor:pointer;background:none;border:0;padding:0;text-align:left;font:inherit;color:inherit}
+.door{position:relative;aspect-ratio:4/4.3;border-radius:999px 999px 14px 14px;padding:12px;
+  background:var(--blue) radial-gradient(circle,#ffffff2e 1.6px,transparent 2px) 0 0/16px 16px}
+.niche{height:100%;border-radius:999px 999px 6px 6px;background:var(--paper);display:flex;align-items:flex-end;justify-content:center;padding:18px 10px 12px;gap:2px;overflow:hidden}
+.niche img{flex:1;min-width:0;max-height:78%;object-fit:contain;filter:drop-shadow(0 6px 6px #16233f22)}
+.niche .empty{align-self:center;color:var(--muted);font-size:13px;text-align:center}
+.arch-card:hover .door{background-color:var(--blue-2)}
+.door .tag{position:absolute;left:50%;transform:translateX(-50%);bottom:-12px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.door .joined{position:absolute;top:14%;right:8px;background:var(--ok);color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.arch-card h3{margin-top:22px}
+.arch-card .desc{color:var(--muted);font-size:13.5px;margin:4px 0 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.create .door{background:var(--wall);border:2px dashed #b9c3d3}
+.create .niche{background:none;align-items:center;flex-direction:column;justify-content:center;gap:6px;text-align:center}
+.create .niche b{font:700 40px/1 var(--display);color:var(--blue)}
+
+/* fit meter */
+.fit{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;margin:10px 0 4px}
+.fit .track{grid-column:1/-1;height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.fit .track i{display:block;height:100%}
+
+/* challenge detail */
+.rules{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.days{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.day{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);font-weight:600;background:var(--paper)}
+.day.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.day.bad{background:var(--red);color:#fff;border-color:var(--red)}
+.day.next{border:2.5px solid var(--blue);color:var(--blue)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--soft);border-radius:12px;padding:8px 14px;font-size:13px;color:var(--muted)}
+.stat b{display:block;font:700 22px/1.2 var(--display);color:var(--ink)}
+
+/* outfit picker */
+.picker{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.filters button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;font:500 13px var(--text);cursor:pointer;color:var(--ink)}
+.filters button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.filters button.tn.on{background:var(--red);border-color:var(--red)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.tile{position:relative;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);padding:6px 6px 8px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tile:hover{border-color:#9aa6ba}
+.tile .ph{height:96px;border-radius:8px;display:grid;place-items:center;overflow:hidden}
+.tile .ph img{max-width:100%;max-height:96px;object-fit:contain}
+.tile b{display:block;font-size:12.5px;font-weight:600;line-height:1.25;margin-top:5px}
+.tile small{display:block;font-size:11.5px;color:var(--muted)}
+.tile small.maker{color:var(--red)}
+.tile.sel{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue) inset}
+.tile.sel::after{content:"✓";position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.submitbar{position:sticky;bottom:0;margin:14px -20px 0;padding:12px 20px;background:#ffffffee;backdrop-filter:blur(6px);border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.submitbar input{flex:1;min-width:160px}
+
+/* results */
+.result{border-radius:14px;padding:16px;margin-top:16px}
+.result.ok{background:var(--ok-soft)}
+.result.bad{background:var(--red-soft)}
+.result h3{font-size:19px}
+.coach{background:var(--paper);border-radius:12px;padding:12px;margin:10px 0}
+.cardimg{width:100%;border-radius:14px;border:1px solid var(--line);display:block;background:var(--soft)}
+.finisher{max-width:340px}
+
+/* tables, feed */
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-weight:600;color:var(--muted);font-size:13px}
+tr.me td{font-weight:700}
+.posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.post{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.post .who{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:none}
+.post .who small{display:block;color:var(--muted);font-size:12px}
+.post img{display:block;width:100%;background:var(--soft)}
+.post .cap{padding:10px 14px 0;font-size:13.5px}
+.post .act{padding:10px 14px 14px}
+.like{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 12px;font:600 13px var(--text);cursor:pointer;color:var(--ink)}
+.like.on{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+
+/* share studio */
+.kinds{display:flex;gap:6px;flex-wrap:wrap}
+.kinds button{border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:10px 14px;font:600 14px var(--text);cursor:pointer;text-align:left;color:var(--ink)}
+.kinds button small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.kinds button.on{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue) inset}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin:12px 0}
+.kpi{background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.kpi b{display:block;font:700 24px/1.2 var(--display);color:var(--ink)}
+.kpi.k{background:var(--blue);color:#dbe6f5}.kpi.k b{color:#fff}
+.channels{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ch{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 14px;font:600 13.5px var(--text);text-decoration:none;color:#fff}
+.ch.whatsapp{background:#1F8F55}.ch.instagram{background:#B13A73}.ch.facebook{background:#2D5DA8}.ch.x{background:#16233F}.ch.copy{background:var(--soft);color:var(--ink)}.ch.qr{background:var(--paper);color:var(--ink);border:1px solid var(--ink)}
+
+/* wardrobe */
+.drop{border:2px dashed #b9c3d3;border-radius:14px;padding:18px;text-align:center;background:var(--wall)}
+.section-title{display:flex;align-items:baseline;gap:10px;margin:28px 0 12px}
+.wtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.wt{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.wt .ph{height:140px;border-radius:10px;display:grid;place-items:center;overflow:hidden;background:var(--wall)}
+.wt .ph img{max-width:100%;max-height:132px;object-fit:contain}
+.wt b{font-size:13.5px;line-height:1.25}
+.wt .src{font-size:11.5px;color:var(--muted)}
+.wt .desc{font-size:12px;color:var(--muted)}
+.heritage{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px;
+  background-image:linear-gradient(90deg,var(--red) 0 8px,transparent 8px)}
+.heritage .wt{border-color:#ecd9d9}
+
+.comments{border-top:1px solid var(--line);padding:10px 14px 14px;display:grid;gap:8px;font-size:13.5px}
+.comments .c b{margin-right:6px}
+.comments form{display:flex;gap:6px}.comments input{flex:1;min-width:0;padding:6px 10px}
+.nudge{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.nudge:last-child{border-bottom:0}
+.risk{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px}
+.risk.high_risk{background:var(--red-soft);color:var(--red)}.risk.at_risk{background:var(--ochre-soft);color:var(--ochre)}.risk.on_track{background:var(--ok-soft);color:var(--ok)}
+.opts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:14px}
+.tier{font-size:12px;font-weight:600;color:var(--ochre)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:12px;z-index:9;font-weight:500}
+.err{background:var(--red-soft);color:var(--red);border-radius:12px;padding:12px;margin-top:10px}
+@media (prefers-reduced-motion:no-preference){.door,.tile{transition:background-color .15s,border-color .15s}}
+@media (max-width:600px){.door{aspect-ratio:4/3.2}h1{font-size:28px}main{padding:20px 16px 80px}.bar-in{padding:10px 16px 0}.viewer{width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar-in">
+    <div class="brand"><i aria-hidden="true"></i><b>DressMe</b><span>Outfit sharing, BO7</span></div>
+    <nav aria-label="Sections">
+      <button data-tab="challenges" class="on">Challenges</button>
+      <button data-tab="community">Community</button>
+      <button data-tab="share">Share studio</button>
+      <button data-tab="wardrobe">Wardrobe</button>
+    </nav>
+    <label class="viewer">Viewing as <input id="user" value="usr_042" title="Switch user to simulate friends (e.g. sarra, omar)"> <a href="/docs" target="_blank">API</a></label>
+  </div>
+</header>
+<main>
+  <section id="tab-challenges"></section>
+  <section id="tab-community" class="hidden"></section>
+  <section id="tab-share" class="hidden"></section>
+  <section id="tab-wardrobe" class="hidden"></section>
+</main>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const user = () => $("#user").value.trim() || "usr_042";
+const enc = encodeURIComponent;
+let WARD = [], current = null, selected = new Set(), lastResult = null;
+let pickCat = "all", pickTN = false, wardCat = "all";
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {headers: {"content-type": "application/json"}, ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined});
+  if (r.status === 204) return null;
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(Array.isArray(data.detail) ? data.detail.map(d => `${d.loc.slice(-1)[0]}: ${d.msg}`).join("; ") : (data.detail || r.statusText));
+  return data;
+}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.remove("hidden");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add("hidden"),Math.max(2600,m.length*60))}
+const lum = hex => {const n=parseInt((hex||"#cccccc").slice(1),16);return (0.299*(n>>16)+0.587*(n>>8&255)+0.114*(n&255))/255};
+const fitColor = v => v>=1?"var(--ok)":v>=.6?"var(--ochre)":"var(--red)";
+const hash = s => [...s].reduce((h,c) => (h*31 + c.charCodeAt(0)) >>> 0, 7);
+const AV = ["#1F4E8C","#B3262D","#2E7D5B","#A9791E","#6B4A8F","#2C7A8C"];
+const avatar = u => `<span class="avatar" style="background:${AV[hash(u)%AV.length]}">${esc(u.replace(/^usr_/,"").slice(0,2).toUpperCase())}</span>`;
+const CAT_LABEL = {all:"All",top:"Tops",bottom:"Bottoms",dress:"Dresses",outerwear:"Outerwear",traditional:"Traditional",shoes:"Shoes",accessory:"Accessories"};
+const CATS = ["top","bottom","dress","outerwear","traditional","shoes","accessory"];
+const ruleText = r => ({
+  no_repeat:"No piece worn twice",
+  color_theme:`${r.params.mode==="any"?"At least one piece in":"Only"} ${(r.params.colors||[]).join(", ")}`,
+  category_required:`Include a ${(r.params.categories||[]).join(" or ")} piece`,
+  capsule_limit:`At most ${r.params.max_distinct} different pieces`,
+  local_brand:"A piece from a Tunisian maker every day",
+  min_items:`At least ${r.params.min} pieces per outfit`}[r.type] || r.type);
+const fitHtml = c => `<div class="fit"><span class="muted">Fits your wardrobe</span><b style="color:${fitColor(c.feasibility)}">${Math.round(c.feasibility*100)}%</b>
+  <span class="track"><i style="width:${c.feasibility*100}%;background:${fitColor(c.feasibility)}"></i></span></div>`;
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  ["challenges","community","share","wardrobe"].forEach(t => $("#tab-"+t).classList.toggle("hidden", t !== b.dataset.tab));
+  ({challenges: current ? () => openChallenge(current) : listChallenges, community, share: shareStudio, wardrobe: wardrobeTab})[b.dataset.tab]();
+});
+$("#user").onchange = () => { current = null; selected.clear(); lastResult = null; listChallenges(); };
+
+/* ---------------- challenges ---------------- */
+function piecesFor(c) {
+  // Garments of this wardrobe that fit the challenge, shown inside the door
+  const pool = WARD.filter(g => g.photo_url);
+  let fit = pool;
+  for (const r of c.rules) {
+    if (r.type === "color_theme") fit = fit.filter(g => (r.params.colors || []).includes(g.color));
+    if (r.type === "category_required") fit = fit.filter(g => (r.params.categories || []).includes(g.category));
+    if (r.type === "local_brand") fit = fit.filter(g => g.local_tag);
+  }
+  if (!fit.length) fit = pool;
+  const h = hash(c.challenge_id);
+  const zone = cats => { const z = fit.filter(g => cats.includes(g.category)); return z.length ? z[h % z.length] : null; };
+  let out = [zone(["top","dress","traditional","outerwear"]), zone(["bottom"]), zone(["shoes","accessory"])].filter(Boolean);
+  if (out.length < 3) out = [...new Set([...out, ...fit.slice(h % Math.max(1, fit.length - 3), (h % Math.max(1, fit.length - 3)) + 3)])].slice(0, 3);
+  return out;
+}
+
+async function listChallenges() {
+  current = null;
+  const el = $("#tab-challenges");
+  el.innerHTML = `<p class="muted">Loading challenges…</p>`;
+  try {
+    const list = await api(`/m15/challenges?user_id=${enc(user())}`);
+    el.innerHTML = `<div class="head"><div><h1>Challenges</h1>
+        <p>Join a challenge, log what you wore each day and share the card. Sorted by how well each one suits ${esc(user())}: wardrobe fit, popularity and style.</p></div></div>
+      <div class="arches">
+      ${list.map(c => `
+        <button class="arch-card" data-id="${c.challenge_id}">
+          <div class="door">
+            <div class="niche">${piecesFor(c).map(g => `<img src="${g.photo_url}" alt="${esc(g.name)}">`).join("") || `<span class="empty">Add photos in Wardrobe</span>`}</div>
+            ${c.joined ? `<span class="joined">Joined</span>` : ""}
+            <span class="tag">${c.duration_days} days</span>
+          </div>
+          <h3>${esc(c.title)}</h3>
+          <p class="desc">${esc(c.description)}</p>
+          <div class="chips">${c.sponsor ? `<span class="chip red">${esc(c.sponsor)}</span>` : ""}
+            <span class="chip">${c.participants} joined</span>${c.created_by !== "dressme" ? `<span class="chip">by ${esc(c.created_by)}</span>` : ""}</div>
+          ${fitHtml(c)}
+        </button>`).join("")}
+        <button class="arch-card create" id="newch"><div class="door"><div class="niche"><b>+</b><span>Create a challenge</span>
+          <span class="muted">for friends, as a stylist or as a sponsoring brand</span></div></div></button>
+      </div>`;
+    el.querySelectorAll("[data-id]").forEach(d => d.onclick = () => openChallenge(d.dataset.id));
+    $("#newch").onclick = createForm;
+  } catch (e) { el.innerHTML = `<div class="err">The API is not reachable: ${esc(e.message)}. Start it with <code>uvicorn api.main:app --reload</code>.</div>`; }
+}
+
+const COLORS = ["black","white","grey","beige","brown","red","pink","orange","yellow","green","blue","navy","purple"];
+function createForm() {
+  const el = $("#tab-challenges");
+  el.innerHTML = `<button class="btn ghost" id="back">← All challenges</button>
+  <div class="two" style="margin-top:8px">
+  <div class="panel">
+    <h2>Create a challenge</h2>
+    <p class="muted" style="margin:6px 0 16px">The rules are checked before publishing. Everyone then sees how well it fits their own wardrobe.</p>
+    <div style="display:grid;gap:10px">
+      <input id="c_title" placeholder="Name, e.g. Blue week" aria-label="Name">
+      <textarea id="c_desc" rows="2" placeholder="What participants have to do" aria-label="Description"></textarea>
+      <div class="row"><label class="muted">Days <input id="c_days" type="number" min="3" max="31" value="5" style="width:76px"></label>
+        <input id="c_sponsor" placeholder="Sponsoring brand (optional)" style="flex:1" aria-label="Sponsor"></div>
+      <h3 style="margin-top:8px">Rules</h3>
+      <label><input type="checkbox" id="r_norep"> No piece worn twice</label>
+      <div><label><input type="checkbox" id="r_color"> Colour theme:</label>
+        <select id="r_mode"><option value="any">at least one piece in</option><option value="all">only</option></select>
+        <div class="chips" id="r_cols" style="margin-top:6px">${COLORS.map(c => `<label class="chip"><input type="checkbox" value="${c}"> ${c}</label>`).join("")}</div></div>
+      <label><input type="checkbox" id="r_cat"> Include a piece from <select id="r_catv">${CATS.map(c => `<option value="${c}">${CAT_LABEL[c].toLowerCase()}</option>`).join("")}</select></label>
+      <label><input type="checkbox" id="r_caps"> Capsule: at most <input id="r_capsv" type="number" value="10" min="3" style="width:64px"> different pieces</label>
+      <label><input type="checkbox" id="r_local"> A piece from a Tunisian maker every day</label>
+      <label><input type="checkbox" id="r_min" checked> At least <input id="r_minv" type="number" value="2" min="1" max="6" style="width:56px"> pieces per outfit</label>
+      <div><button class="btn primary" id="c_go">Publish challenge</button></div><div id="c_res"></div>
+    </div></div>
+  <div class="panel"><h3>Ideas</h3><p class="muted" style="margin-top:6px">Tunisian heritage Friday: include a traditional piece.
+    Ramadan nights: at least one piece in white or beige. Souk week: a piece from a Tunisian maker every day.
+    Rules that contradict each other, like “no piece worn twice” with a capsule, are refused with the reason.</p></div></div>`;
+  $("#back").onclick = listChallenges;
+  $("#c_go").onclick = async () => {
+    const rules = [];
+    if ($("#r_norep").checked) rules.push({type:"no_repeat"});
+    if ($("#r_color").checked) rules.push({type:"color_theme", params:{mode:$("#r_mode").value,
+      colors:[...document.querySelectorAll("#r_cols input:checked")].map(i => i.value)}});
+    if ($("#r_cat").checked) rules.push({type:"category_required", params:{categories:[$("#r_catv").value], min:1}});
+    if ($("#r_caps").checked) rules.push({type:"capsule_limit", params:{max_distinct:+$("#r_capsv").value}});
+    if ($("#r_local").checked) rules.push({type:"local_brand", params:{min:1}});
+    if ($("#r_min").checked) rules.push({type:"min_items", params:{min:+$("#r_minv").value}});
+    try {
+      const c = await api("/m15/challenges/create", {method:"POST", body:{user_id:user(), title:$("#c_title").value, description:$("#c_desc").value,
+        duration_days:+$("#c_days").value, sponsor:$("#c_sponsor").value || null, rules}});
+      toast("Challenge published"); openChallenge(c.challenge_id);
+    } catch (e) { $("#c_res").innerHTML = `<div class="err">Not published: ${esc(e.message)}</div>`; }
+  };
+}
+
+function tileHtml(g) {
+  return `<button class="tile ${selected.has(g.item_id)?"sel":""}" data-g="${g.item_id}" aria-pressed="${selected.has(g.item_id)}">
+    <span class="ph" style="${g.photo_url ? "" : `background:${g.color_hex}`}">${g.photo_url ? `<img src="${g.photo_url}" alt="">` : ""}</span>
+    <b>${esc(g.name)}</b>${g.local_tag ? `<small class="maker">${esc(g.local_tag)}</small>` : `<small>${esc(g.color || "")}</small>`}</button>`;
+}
+function renderPicker() {
+  const box = $("#tiles"); if (!box) return;
+  const list = WARD.filter(g => (pickCat === "all" || g.category === pickCat) && (!pickTN || g.local_tag));
+  box.innerHTML = list.length ? list.map(tileHtml).join("") : `<p class="muted">Nothing here. Try another filter.</p>`;
+  document.querySelectorAll(".filters [data-cat]").forEach(b => b.classList.toggle("on", b.dataset.cat === pickCat));
+  $("#tnf")?.classList.toggle("on", pickTN);
+  box.querySelectorAll("[data-g]").forEach(t => t.onclick = () => {
+    if (selected.has(t.dataset.g)) selected.delete(t.dataset.g);
+    else {
+      const out = pick(t.dataset.g);
+      if (out.length) toast(`Replaced ${out.map(i => WARD.find(g => g.item_id === i)?.name || i).join(", ")}`);
+    }
+    renderPicker(); updateSubmit();
+  });
+}
+
+/* one piece per body slot (same rules as pipeline/outfit.py on the server) */
+const SLOT_MAX = {one_piece:1, top:1, bottom:1, layer:1, shoes:1, hat:1, bag:1, scarf:1, accessory:2};
+function slotOf(g) {
+  const c = g.category, s = (g.name || "").toLowerCase(), has = ws => ws.some(w => s.includes(w));
+  if (c === "dress") return "one_piece";
+  if (c === "traditional") return has(["kachabia","sefsari","burnous","jacket","coat","blazer","cardigan"]) ? "layer" : "one_piece";
+  if (c === "outerwear") return "layer";
+  if (["top","bottom","shoes"].includes(c)) return c;
+  if (has(["hat","cap","chechia","beanie","beret"])) return "hat";
+  if (has(["bag","koffa","purse","backpack","tote"])) return "bag";
+  if (has(["scarf","fouta","shawl","foulard"])) return "scarf";
+  return "accessory";
+}
+function pick(id, set = selected) {  // adds id to set, removes the pieces it replaces, returns their ids
+  const g = WARD.find(x => x.item_id === id), slot = g ? slotOf(g) : "accessory";
+  const clash = s => s === slot || (slot === "one_piece" && (s === "top" || s === "bottom"))
+    || ((slot === "top" || slot === "bottom") && s === "one_piece");
+  const same = [...set].filter(i => { const x = WARD.find(w => w.item_id === i); return x && clash(slotOf(x)); });
+  const keep = slotOf(g) === slot && SLOT_MAX[slot] > 1 ? same.filter(i => slotOf(WARD.find(w => w.item_id === i)) === slot).slice(-(SLOT_MAX[slot] - 1)) : [];
+  const out = same.filter(i => !keep.includes(i));
+  out.forEach(i => set.delete(i)); set.add(id);
+  return out;
+}
+function updateSubmit() {
+  const s = $("#submit"); if (!s) return;
+  s.disabled = !selected.size;
+  s.textContent = selected.size ? `Check my outfit (${selected.size} pieces)` : "Pick what you wore";
+  $("#selnames").textContent = [...selected].map(i => WARD.find(g => g.item_id === i)?.name || i).join(", ");
+}
+
+async function openChallenge(id) {
+  current = id;
+  const el = $("#tab-challenges");
+  const [c, prog, board, posts, nudges] = await Promise.all([
+    api(`/m15/challenges/${id}?user_id=${enc(user())}`),
+    api(`/m15/challenges/${id}/progress?user_id=${enc(user())}`),
+    api(`/m15/challenges/${id}/leaderboard`),
+    api(`/m15/challenges/${id}/posts`),
+    api(`/m15/challenges/${id}/nudges?all=true`)]);
+  const days = Array.from({length: c.duration_days}, (_, i) => i + 1).map(d => {
+    const e = prog.entries.find(x => x.day === d);
+    const cls = e ? (e.valid ? "ok" : "bad") : (prog.next_day === d ? "next" : "");
+    return `<div class="day ${cls}" title="Day ${d}${e ? (e.valid ? ": counted" : ": not counted") : ""}">${e ? (e.valid ? "✓" : "✕") : d}</div>`;
+  }).join("");
+  const cats = ["all", ...CATS.filter(k => WARD.some(g => g.category === k))];
+
+  el.innerHTML = `
+    <button class="btn ghost" id="back">← All challenges</button>
+    <div class="two" style="margin-top:8px">
+      <div class="panel">
+        <div class="row between"><h2>${esc(c.title)}</h2>${c.sponsor ? `<span class="chip red">Sponsored by ${esc(c.sponsor)}</span>` : ""}</div>
+        <p class="muted" style="margin-top:4px">${esc(c.description)}</p>
+        <div class="rules">${c.rules.map(r => `<span class="chip blue">${esc(ruleText(r))}</span>`).join("")}</div>
+        ${fitHtml(c)}<p class="muted">${esc(c.reason)}</p>
+        ${!c.joined ? `<p style="margin-top:16px"><button class="btn primary" id="join">Join for ${c.duration_days} days</button></p>` : `
+          <div class="days">${days}</div>
+          <div class="stats"><div class="stat"><b>${prog.valid_days}/${c.duration_days}</b>days counted</div>
+            <div class="stat"><b>${prog.streak}</b>day streak</div><div class="stat"><b>${prog.points}</b>points</div>
+            ${prog.completion_probability != null ? `<div class="stat"><b>${Math.round(prog.completion_probability*100)}%</b>chance to finish</div>` : ""}</div>
+          ${prog.badges.length ? `<div class="chips" style="margin-top:10px">${prog.badges.map(b => `<span class="chip ochre">${esc(b)}</span>`).join("")}</div>` : ""}
+          ${prog.next_day ? `
+          <div class="picker">
+            <h3>Day ${prog.next_day}: what did you wear?</h3>
+            <p class="muted">${lastResult?.suggestion?.length ? "The suggested outfit for today is already selected. Change it if you wore something else." : "Tap the pieces you wore today."}</p>
+            <div class="filters">${cats.map(k => `<button data-cat="${k}">${CAT_LABEL[k]}</button>`).join("")}
+              <button class="tn" id="tnf" title="Only pieces from Tunisian makers">Tunisian makers</button></div>
+            <div class="tiles" id="tiles"></div>
+            <div class="submitbar"><input id="caption" placeholder="Add a caption (optional)" aria-label="Caption">
+              <button class="btn primary" id="submit" disabled>Pick what you wore</button>
+              <span class="muted" id="selnames" style="width:100%"></span></div>
+          </div>` : `<p class="chip ok" style="margin-top:12px;display:inline-block">Challenge complete</p>`}`}
+        <div id="result"></div>
+      </div>
+      <div class="stack">
+        <div class="panel"><h3>Leaderboard</h3>
+          ${board.length ? `<table><tr><th>#</th><th>Who</th><th>Days</th><th>Likes</th><th>Score</th></tr>
+            ${board.map(r => `<tr class="${r.user_id===user()?"me":""}"><td>${r.rank}</td><td>${esc(r.user_id)}</td><td>${r.valid_days}</td><td>${r.likes}</td><td>${r.score}</td></tr>`).join("")}</table>`
+            : `<p class="muted" style="margin-top:6px">Nobody has joined yet. Join, then change “Viewing as” at the top to play as a friend.</p>`}
+        </div>
+        <div class="panel"><h3>Who needs a nudge</h3>
+          <p class="muted" style="margin-top:4px">Participants least likely to finish come first, with a ready outfit to send as a reminder.</p>
+          ${nudges.length ? nudges.map(n => `<div class="nudge">${avatar(n.user_id)}
+            <div><b>${esc(n.user_id)}</b> <span class="risk ${n.risk}">${Math.round(n.completion_probability*100)}% · ${n.risk.replace("_"," ")}</span>
+              <div class="muted">${esc(n.message)}</div></div>
+            <button class="btn sm" data-nudge="${esc(n.user_id)}">Send</button></div>`).join("")
+            : `<p class="muted" style="margin-top:8px">No participant to remind yet.</p>`}
+        </div>
+        <div class="panel"><h3>Posts</h3><div style="margin-top:12px">${posts.length ? postsHtml(posts) : `<p class="muted">Every counted day becomes a post with its card.</p>`}</div></div>
+      </div>
+    </div>`;
+
+  $("#back").onclick = () => { selected.clear(); lastResult = null; listChallenges(); };
+  if ($("#join")) $("#join").onclick = async () => { await api(`/m15/challenges/${id}/join`, {method:"POST", body:{user_id:user()}}); toast("Joined"); openChallenge(id); };
+  document.querySelectorAll(".filters [data-cat]").forEach(b => b.onclick = () => { pickCat = b.dataset.cat; renderPicker(); });
+  if ($("#tnf")) $("#tnf").onclick = () => { pickTN = !pickTN; renderPicker(); };
+  renderPicker(); updateSubmit();
+  if ($("#submit")) $("#submit").onclick = submit;
+  bindLikes(el);
+  el.querySelectorAll("[data-nudge]").forEach(b => b.onclick = () => { b.textContent = "Sent"; b.disabled = true; toast(`Reminder sent to ${b.dataset.nudge}`); });
+  if (lastResult) showResult(lastResult);
+}
+
+async function submit() {
+  const s = $("#submit"); s.disabled = true; s.textContent = "Checking…";
+  try {
+    const r = await api(`/m15/challenges/${current}/entries`, {method:"POST",
+      body:{user_id:user(), item_ids:[...selected], caption:$("#caption").value || null}});
+    lastResult = r;
+    selected = new Set(r.suggestion || []);
+    await openChallenge(current);
+    $("#result").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+  } catch (e) { toast(e.message); updateSubmit(); }
+}
+
+function showResult(r) {
+  const p = r.post;
+  $("#result").innerHTML = `<div class="result ${r.valid?"ok":"bad"}">
+    <h3>${r.valid ? `Day ${r.day} counts` : `Day ${r.day} does not count`}</h3>
+    ${r.violations.map(v => `<div>${esc(v)}</div>`).join("")}
+    ${r.coach_message ? `<div class="coach"><b>Coach</b><br>${esc(r.coach_message)}</div>` : ""}
+    ${p?.card_image_url ? `<img class="cardimg" src="${p.card_image_url}" alt="Card of day ${r.day}">
+      <div class="row" style="margin-top:10px"><button class="btn sm" data-copy="${esc(p.share_url)}">Copy share link</button><span class="muted">${esc(p.share_url)}</span></div>` : ""}
+    ${r.completion_card_url ? `<h3 style="margin-top:18px">Challenge finished: your recap card</h3>
+      <img class="cardimg finisher" style="margin-top:10px" src="${r.completion_card_url}" alt="Challenge recap card">
+      <div class="row" style="margin-top:10px"><button class="btn sm" data-copy="${esc(r.completion_share_url)}">Copy share link</button></div>` : ""}
+    ${r.suggestion?.length ? `<p class="muted" style="margin-top:10px">Suggested for tomorrow: ${r.suggestion.map(i => esc(WARD.find(g=>g.item_id===i)?.name || i)).join(", ")}</p>` : ""}
+  </div>`;
+  $("#result").querySelectorAll("[data-copy]").forEach(b => b.onclick = () => navigator.clipboard?.writeText(b.dataset.copy).then(() => toast("Link copied")));
+}
+
+function postsHtml(posts) {
+  return `<div class="posts">${posts.map(p => `<article class="post">
+    <div class="who">${avatar(p.user_id)}<div><b>${esc(p.user_id)}</b><small>day ${p.day} of ${esc(p.challenge_id.replace(/^ch_/,"").replace(/_[0-9a-f]{4}$/,"").replace(/_+/g," "))}</small></div></div>
+    ${p.card_image_url ? `<img src="${p.card_image_url}" alt="Outfit card">` : ""}
+    <p class="cap">${esc(p.caption)}</p>
+    <div class="act row"><button class="like" data-like="${p.post_id}">♥ ${p.likes}</button>
+      <button class="like" data-cm="${p.post_id}">Comments ${p.comments || 0}</button></div>
+    <div class="comments hidden" id="cm_${p.post_id}"></div>
+  </article>`).join("")}</div>`;
+}
+async function openComments(pid, box) {
+  const list = await api(`/m15/challenges/posts/${pid}/comments`);
+  box.innerHTML = `${list.map(c => `<div class="c"><b>${esc(c.user_id)}</b>${esc(c.text)}</div>`).join("") || `<span class="muted">No comments yet. Be the first.</span>`}
+    <form><input placeholder="Comment as ${esc(user())}" aria-label="Comment" maxlength="280"><button class="btn sm">Post</button></form>
+    <span class="muted err-line"></span>`;
+  box.querySelector("form").onsubmit = async ev => {
+    ev.preventDefault();
+    const inp = box.querySelector("input");
+    try {
+      await api(`/m15/challenges/posts/${pid}/comments`, {method:"POST", body:{user_id:user(), text:inp.value}});
+      const b = document.querySelector(`[data-cm="${pid}"]`); b.textContent = `Comments ${list.length + 1}`;
+      openComments(pid, box);
+    } catch (e) { box.querySelector(".err-line").textContent = e.message; box.querySelector(".err-line").style.color = "var(--red)"; }
+  };
+}
+function bindLikes(root) {
+  root.querySelectorAll("[data-cm]").forEach(b => b.onclick = () => {
+    const box = root.querySelector(`#cm_${b.dataset.cm}`); box.classList.toggle("hidden");
+    if (!box.classList.contains("hidden")) openComments(b.dataset.cm, box);
+  });
+  root.querySelectorAll("[data-like]").forEach(b => b.onclick = async () => {
+    const r = await api(`/m15/challenges/posts/${b.dataset.like}/like`, {method:"POST", body:{user_id:user()}});
+    b.textContent = `♥ ${r.likes}`; b.classList.toggle("on");
+  });
+}
+
+/* ---------------- community ---------------- */
+async function community() {
+  const el = $("#tab-community");
+  const posts = await api("/m15/challenges/posts/all");
+  el.innerHTML = `<div class="head"><div><h1>Community</h1><p>Every counted challenge day, from everyone. You are liking as ${esc(user())}.</p></div></div>
+    ${posts.length ? postsHtml(posts) : `<div class="panel"><h3>No posts yet</h3><p class="muted" style="margin-top:6px">Open a challenge, join it and log a day that counts: it appears here with its card.</p></div>`}`;
+  bindLikes(el);
+}
+
+/* ---------------- share studio ---------------- */
+const asItem = g => ({item_id:g.item_id, category:g.category, label:g.name, image:g.image, color_hex:g.color_hex, brand:g.local_tag || undefined});
+let shareSel = new Set(), shareCat = "all", shareTN = false;
+const covered = gs => gs.some(g => slotOf(g) === "one_piece") || (gs.some(g => slotOf(g) === "top") && gs.some(g => slotOf(g) === "bottom"));
+/* [label, hint, need, build(pieces)] · need: "outfit" = a wearable outfit, "some" = at least one piece,
+   "one" = exactly one piece. Only BO7 cards here; cards fed by other modules (try-on, trip, recap…)
+   are created by those screens when the modules are live. */
+const KINDS = {
+  outfit: ["Outfit of the day", "the pieces you wore today · story 1080×1920", "outfit", g => ({kind:"outfit", title:"My outfit today", subtitle:"Tunis", items:g.map(asItem)})],
+  board: ["My look", "a look you put together · square for Instagram", "some", g => ({kind:"board", title:"My look", format:"square", items:g.map(asItem)})],
+  giveaway: ["Give-away", "one piece you no longer wear · post", "one", g => ({kind:"giveaway", format:"post", title:"I'm giving this away", subtitle:"Good condition, Tunis", items:g.map(asItem)})],
+};
+function cardBody(kind) {  // if/else: the card needs the right pieces, picked by the user
+  const [label, , need, build] = KINDS[kind];
+  const g = [...shareSel].map(i => WARD.find(w => w.item_id === i)).filter(Boolean);
+  if (need === "outfit" && !covered(g)) throw new Error(`${label}: pick a top and a bottom, or a one-piece (dress, jebba)`);
+  if (need === "some" && !g.length) throw new Error(`${label}: pick at least one piece from your wardrobe first`);
+  if (need === "one" && g.length !== 1) throw new Error(`${label}: pick exactly one piece (you picked ${g.length})`);
+  return build(g);
+}
+function renderSharePicker() {
+  const box = $("#stiles"); if (!box) return;
+  const list = WARD.filter(g => g.image && (shareCat === "all" || g.category === shareCat) && (!shareTN || g.local_tag));
+  box.innerHTML = list.map(g => `<button class="tile ${shareSel.has(g.item_id)?"sel":""}" data-sg="${g.item_id}" aria-pressed="${shareSel.has(g.item_id)}">
+    <span class="ph">${g.photo_url ? `<img src="${g.photo_url}" alt="">` : ""}</span>
+    <b>${esc(g.name)}</b>${g.local_tag ? `<small class="maker">${esc(g.local_tag)}</small>` : `<small>${esc(g.color || "")}</small>`}</button>`).join("")
+    || `<p class="muted">Nothing here. Try another filter.</p>`;
+  document.querySelectorAll("[data-scat]").forEach(b => b.classList.toggle("on", b.dataset.scat === shareCat));
+  $("#stn")?.classList.toggle("on", shareTN);
+  const names = [...shareSel].map(i => WARD.find(g => g.item_id === i)?.name || i);
+  $("#ssel").textContent = names.length ? `Your pieces: ${names.join(", ")}` : "No piece picked yet.";
+  box.querySelectorAll("[data-sg]").forEach(t => t.onclick = () => {
+    if (shareSel.has(t.dataset.sg)) shareSel.delete(t.dataset.sg);
+    else { const out = pick(t.dataset.sg, shareSel); if (out.length) toast(`Replaced ${out.map(i => WARD.find(g => g.item_id === i)?.name || i).join(", ")}`); }
+    renderSharePicker();
+  });
+}
+const CHANNELS = [["whatsapp","WhatsApp"],["instagram","Instagram"],["facebook","Facebook"],["x","X"],["copy","Copied link"],["qr","QR scan"]];
+let lastCard = null;
+
+async function shareStudio() {
+  const el = $("#tab-share");
+  el.innerHTML = `<div class="head"><div><h1>Share studio</h1>
+      <p>Share your own outfits: pick your pieces, choose a card, share it on a channel, then watch which channel brings new users. The card never invents an outfit.</p></div></div>
+    <div class="panel"><h3>1. Pick your pieces</h3>
+      <p class="muted" style="margin-top:4px">The card shows your own clothes: tap the pieces you want to share. One piece per slot, like a real outfit.</p>
+      <div class="filters" style="margin-top:10px">${["all","top","bottom","dress","outerwear","traditional","shoes","accessory"].map(k => `<button data-scat="${k}">${CAT_LABEL[k]}</button>`).join("")}
+        <button class="tn" id="stn" title="Only pieces from Tunisian makers">Tunisian makers</button>
+        <button id="sclear">Clear</button></div>
+      <div class="tiles" id="stiles" style="max-height:330px;overflow:auto;padding:2px"></div>
+      <p class="muted" id="ssel" style="margin-top:8px"></p></div>
+    <h3 style="margin:18px 0 8px">2. Choose the card</h3>
+    <div class="kinds">${Object.entries(KINDS).map(([k,[l,h]]) => `<button data-kind="${k}">${l}<small>${h}</small></button>`).join("")}</div>
+    <div class="opts"><label>Caption language <select id="lang"><option value="en">English</option><option value="fr">Français</option><option value="tn">Derja (tounsi)</option></select></label>
+      <label><input type="checkbox" id="qr"> QR code on the card</label>
+      <span class="muted">Change your pieces or an option, then pick the card again.</span></div>
+    <div class="two" style="margin-top:20px">
+      <div class="panel" id="preview"><h3>No card yet</h3><p class="muted" style="margin-top:6px">Pick your pieces, then a card type: the card is drawn with exactly those pieces.</p></div>
+      <div class="panel"><div class="row between"><h3>New users from sharing</h3>
+          <label class="muted"><input type="checkbox" id="mine"> only ${esc(user())}</label></div>
+        <div class="kpis" id="kpis"></div>
+        <p class="muted">K-factor is cards per sharer times opens per card times sign-ups per open. Above 1, each user brings in more than one new user.</p>
+        <p class="muted" style="margin-top:8px">To test it like a friend: press a channel button under your card, then “Join DressMe” on the page that opens, and press Refresh.</p>
+        <div class="row" style="margin-top:12px"><button class="btn sm" id="refresh">Refresh</button></div>
+        <h3 style="margin-top:20px">By channel</h3><div id="chans" class="muted" style="margin-top:6px">No link opened yet.</div>
+        <h3 style="margin-top:20px">Ambassadors</h3>
+        <p class="muted" style="margin-top:4px">Who brings the most new users. 50 points per sign-up; titles at 1, 5 and 20 sign-ups.</p>
+        <div id="amb" class="muted" style="margin-top:6px">Nobody yet.</div>
+      </div>
+    </div>`;
+  el.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => {
+    el.querySelectorAll("[data-kind]").forEach(x => x.classList.toggle("on", x === b)); makeCard(b.dataset.kind); });
+  el.querySelectorAll("[data-scat]").forEach(b => b.onclick = () => { shareCat = b.dataset.scat; renderSharePicker(); });
+  $("#stn").onclick = () => { shareTN = !shareTN; renderSharePicker(); };
+  $("#sclear").onclick = () => { shareSel.clear(); renderSharePicker(); };
+  if (!WARD.length) await refreshWard();
+  renderSharePicker();
+  $("#mine").onchange = kpis; $("#refresh").onclick = kpis;
+  kpis();
+}
+
+async function makeCard(kind) {
+  let body;
+  try { body = cardBody(kind); } catch (e) {
+    toast(e.message);
+    $("#preview").innerHTML = `<h3>Pick your pieces first</h3><p class="muted" style="margin-top:6px">${esc(e.message)}</p>`;
+    return;
+  }
+  $("#preview").innerHTML = `<p class="muted">Drawing the card…</p>`;
+  try {
+    lastCard = await api("/m10/cards", {method:"POST", body:{user_id:user(), ...body,
+      language: $("#lang").value, qr: $("#qr").checked}});
+    $("#preview").innerHTML = `<img class="cardimg" src="${lastCard.image_url}" alt="${esc(lastCard.alt_text)}">
+      <p style="margin-top:12px">${esc(lastCard.caption)}</p>
+      <h3 style="margin-top:18px">Share it</h3>
+      <p class="muted" style="margin-top:4px">Each button opens the page your friend sees, tagged with the channel. Press “Join DressMe” there to count a sign-up.</p>
+      <div class="channels">${CHANNELS.map(([k,l]) => `<a class="ch ${k}" target="_blank" href="/m10/s/${lastCard.short_code}/page?ch=${k}">${l}</a>`).join("")}</div>
+      <div class="row" style="margin-top:12px"><button class="btn sm" id="copy">Copy link</button>
+        <a class="btn sm" href="${lastCard.image_url}" download>Download PNG</a>
+        <a class="btn sm" target="_blank" href="${esc(lastCard.channel_links?.whatsapp || "#")}">Open in WhatsApp</a></div>`;
+    $("#copy").onclick = () => navigator.clipboard?.writeText(lastCard.share_url).then(() => toast("Link copied"));
+    kpis();
+  } catch (e) { $("#preview").innerHTML = `<div class="err">The card could not be drawn: ${esc(e.message)}</div>`; }
+}
+
+async function kpis() {
+  const [m, amb] = await Promise.all([api(`/m10/metrics${$("#mine")?.checked ? `?user_id=${enc(user())}` : ""}`), api("/m10/ambassadors")]);
+  $("#amb").innerHTML = amb.length ? `<table><tr><th>#</th><th>Who</th><th>Cards</th><th>Opens</th><th>Sign-ups</th><th>Points</th></tr>
+    ${amb.map(r => `<tr class="${r.user_id===user()?"me":""}"><td>${r.rank}</td><td>${esc(r.user_id)}${r.tier ? ` <span class="tier">${esc(r.tier)}</span>` : ""}</td><td>${r.cards}</td><td>${r.opens}</td><td>${r.signups}</td><td>${r.points}</td></tr>`).join("")}</table>` : "Nobody yet.";
+  const pct = v => `${Math.round(v*100)}%`;
+  $("#kpis").innerHTML = [["Cards shared",m.cards],["Link opens",m.opens],["Sign-ups",m.signups],
+    ["Opens per card",m.ctr],["Sign-ups per open",pct(m.conversion)]]
+    .map(([l,v]) => `<div class="kpi"><b>${v}</b>${l}</div>`).join("") + `<div class="kpi k"><b>${m.k_factor}</b>K-factor</div>`;
+  $("#chans").innerHTML = m.channels?.length ? `<table><tr><th>Channel</th><th>Opens</th><th>Sign-ups</th><th>Conversion</th></tr>
+    ${m.channels.map(r => `<tr class="${r.channel===m.best_channel?"me":""}"><td>${esc(r.channel)}${r.channel===m.best_channel?" ★":""}</td><td>${r.opens}</td><td>${r.signups}</td><td>${pct(r.conversion)}</td></tr>`).join("")}</table>
+    <p class="muted" style="margin-top:8px">${m.best_channel ? `Best channel: ${esc(m.best_channel)}, the highest conversion with at least 3 opens. The app shows its share button first.` : "The best channel appears once a channel has 3 opens."}</p>` : "No link opened yet.";
+}
+
+/* ---------------- wardrobe ---------------- */
+function readImage(file, max = 1400) {
+  return new Promise((ok, ko) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = img.width * k; c.height = img.height * k;
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      ok(c.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.9)); };
+    img.onerror = () => ko(new Error("this file is not an image")); img.src = url;
+  });
+}
+async function refreshWard() { WARD = await api(`/bo7/demo/wardrobe?user_id=usr_042`); }
+const srcLabel = s => s.startsWith("clothing-dataset") ? "photo from the Clothing dataset" : s.startsWith("DressMe illustration") ? "illustration" : s.startsWith("Fashion Product") ? "photo from Fashion Product Images" : esc(s);
+function wtHtml(g) {
+  return `<div class="wt">
+    <div class="ph" style="${g.photo_url ? "" : `background:${g.color_hex}`}">${g.photo_url ? `<img src="${g.photo_url}" alt="">` : ""}</div>
+    <b>${esc(g.name)}</b>
+    ${g.local_tag ? `<span class="src" style="color:var(--red)">${esc(g.local_tag)}</span>` : ""}
+    ${g.description && g.description !== g.name ? `<span class="desc">${esc(g.description)}</span>` : ""}
+    <span class="src">${esc(CAT_LABEL[g.category] || g.category)}${g.source ? `, ${srcLabel(g.source)}` : ""}</span>
+    <div class="row" style="margin-top:auto;padding-top:6px"><label class="btn sm">${g.photo_url ? "New photo" : "Add photo"}<input type="file" accept="image/*" data-for="${g.item_id}" hidden></label>
+      ${g.added || g.photo_url ? `<button class="btn sm" data-del="${g.item_id}">${g.added ? "Delete" : "No photo"}</button>` : ""}</div>
+  </div>`;
+}
+async function wardrobeTab() {
+  await refreshWard();
+  const el = $("#tab-wardrobe");
+  const heritage = WARD.filter(g => g.item_id.startsWith("tn_") || g.category === "traditional");
+  const rest = WARD.filter(g => !heritage.includes(g) && (wardCat === "all" || g.category === wardCat));
+  const cats = ["all", ...CATS.filter(k => WARD.some(g => g.category === k && !heritage.includes(g)))];
+  el.innerHTML = `<div class="head"><div><h1>Wardrobe</h1>
+      <p>${WARD.length} pieces. Challenges and share cards use these photos. Until the wardrobe module (M1) is live, this page plays its role.</p></div></div>
+    <div class="two">
+      <div class="panel"><h3>Add a piece</h3>
+        <p class="muted" style="margin:4px 0 12px">Photograph it flat on a plain background. The server removes the background, crops it and finds its colours.</p>
+        <div class="drop"><input type="file" id="f" accept="image/*" multiple aria-label="Photos"></div>
+        <div class="row" style="margin-top:10px">
+          <select id="cat" aria-label="Category">${CATS.map(c => `<option value="${c}">${CAT_LABEL[c]}</option>`).join("")}</select>
+          <input id="nm" placeholder="Name, e.g. white shirt" style="flex:1" aria-label="Name">
+          <input id="brand" placeholder="Tunisian maker (optional)" style="flex:1" aria-label="Maker"></div>
+        <p class="muted" style="margin-top:6px">Several photos at once share the category and are named after the file.</p>
+        <p style="margin-top:12px"><button class="btn primary" id="up">Add to wardrobe</button></p>
+        <div id="upres"></div>
+      </div>
+      <div class="panel"><h3>Good photos</h3><p class="muted" style="margin-top:6px">Use a background that contrasts with the piece (a white shirt on a dark floor), daylight, photo from above.
+        A PNG with a transparent background is used as it is.</p></div>
+    </div>
+
+    <div class="section-title"><h2>Tunisian heritage</h2><span class="muted">${heritage.length} pieces</span></div>
+    <div class="heritage"><p class="muted" style="margin:0 0 14px 6px">Jebba, kachabia, sefsari, chechia, balgha, fouta, koffa: traditional and artisan pieces for the heritage and local-brand challenges. Illustrations drawn for the demo; replace them with your own photos.</p>
+      <div class="wtiles">${heritage.map(wtHtml).join("")}</div></div>
+
+    <div class="section-title"><h2>Everyday clothes</h2><span class="muted">${rest.length} pieces</span></div>
+    <div class="filters">${cats.map(k => `<button data-wcat="${k}" class="${k===wardCat?"on":""}">${CAT_LABEL[k]}</button>`).join("")}</div>
+    <div class="wtiles">${rest.map(wtHtml).join("")}</div>`;
+
+  const send = async (file, extra) => {
+    const r = await api("/bo7/demo/wardrobe/items", {method:"POST", body:{image: await readImage(file), ...extra}});
+    $("#upres").innerHTML = `<div class="result ok"><b>Added.</b> Colours found: ${r.colors.map(c =>
+      `<span class="chip" style="background:${c.hex};color:${lum(c.hex)<.5?"#fff":"#16233F"}">${c.name} ${Math.round(c.share*100)}%</span>`).join(" ")}</div>`;
+    return r;
+  };
+  const keep = async () => { const res = $("#upres").innerHTML; await wardrobeTab(); $("#upres").innerHTML = res; };
+  el.querySelectorAll("[data-wcat]").forEach(b => b.onclick = () => { wardCat = b.dataset.wcat; wardrobeTab(); });
+  $("#up").onclick = async () => {
+    const files = [...$("#f").files]; if (!files.length) return toast("Choose a photo first");
+    $("#up").disabled = true; $("#up").textContent = "Adding…";
+    try {
+      for (const f of files) await send(f, {category: $("#cat").value,
+        name: (files.length > 1 ? f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ") : $("#nm").value) || null,
+        local_tag: $("#brand").value || null});
+      await keep(); toast(files.length > 1 ? `${files.length} pieces added` : "Piece added");
+    } catch (e) { toast(e.message); $("#up").disabled = false; $("#up").textContent = "Add to wardrobe"; }
+  };
+  el.querySelectorAll("[data-for]").forEach(inp => inp.onchange = async () => {
+    try { await send(inp.files[0], {item_id: inp.dataset.for}); await keep(); toast("Photo saved"); } catch (e) { toast(e.message); }
+  });
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    await api(`/bo7/demo/wardrobe/items/${b.dataset.del}`, {method:"DELETE"}); toast("Removed"); wardrobeTab(); });
+}
+
+/* ---------------- boot ---------------- */
+refreshWard().then(listChallenges)
+  .catch(e => $("#tab-challenges").innerHTML = `<div class="err">The API is not reachable: ${esc(e.message)}</div>`);
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+[
+  {"item_id": "itm_t1", "category": "top", "subcategory": "white t-shirt", "colors": [{"name": "white", "hex": "#F1EFE9", "share": 0.9}], "wear_count": 14},
+  {"item_id": "itm_t2", "category": "top", "subcategory": "black t-shirt", "colors": [{"name": "black", "hex": "#2B2830", "share": 0.9}], "wear_count": 9},
+  {"item_id": "itm_t3", "category": "top", "subcategory": "linen shirt", "colors": [{"name": "beige", "hex": "#E3CFAE", "share": 0.85}], "wear_count": 6, "local_tag": "Sidi Linen Co."},
+  {"item_id": "itm_t4", "category": "top", "subcategory": "navy shirt", "colors": [{"name": "navy", "hex": "#3D4C6E", "share": 0.9}], "wear_count": 3},
+  {"item_id": "itm_t5", "category": "top", "subcategory": "grey sweater", "colors": [{"name": "grey", "hex": "#9C99A0", "share": 0.9}], "wear_count": 2},
+  {"item_id": "itm_t6", "category": "top", "subcategory": "sage sweater", "colors": [{"name": "green", "hex": "#A8C3A0", "share": 0.9}], "wear_count": 0},
+  {"item_id": "itm_b1", "category": "bottom", "subcategory": "straight jeans", "colors": [{"name": "blue", "hex": "#8FA7C4", "share": 0.9}], "wear_count": 20},
+  {"item_id": "itm_b2", "category": "bottom", "subcategory": "black trousers", "colors": [{"name": "black", "hex": "#2B2830", "share": 0.9}], "wear_count": 7},
+  {"item_id": "itm_b3", "category": "bottom", "subcategory": "beige chinos", "colors": [{"name": "beige", "hex": "#D9C3A0", "share": 0.9}], "wear_count": 5},
+  {"item_id": "itm_b4", "category": "bottom", "subcategory": "white jeans", "colors": [{"name": "white", "hex": "#F4F2EE", "share": 0.9}], "wear_count": 1},
+  {"item_id": "itm_d1", "category": "dress", "subcategory": "black dress", "colors": [{"name": "black", "hex": "#26232B", "share": 0.95}], "wear_count": 2},
+  {"item_id": "itm_tr1", "category": "traditional", "subcategory": "jebba", "colors": [{"name": "white", "hex": "#F3EFE6", "share": 0.8}], "wear_count": 1, "local_tag": "Medina artisans"},
+  {"item_id": "itm_s1", "category": "shoes", "subcategory": "white sneakers", "colors": [{"name": "white", "hex": "#F1EFE9", "share": 0.9}], "wear_count": 25},
+  {"item_id": "itm_s2", "category": "shoes", "subcategory": "black boots", "colors": [{"name": "black", "hex": "#2B2830", "share": 0.9}], "wear_count": 8},
+  {"item_id": "itm_s3", "category": "shoes", "subcategory": "brown loafers", "colors": [{"name": "brown", "hex": "#8A6446", "share": 0.9}], "wear_count": 6},
+  {"item_id": "itm_s4", "category": "shoes", "subcategory": "balgha slippers", "colors": [{"name": "beige", "hex": "#E6D3B0", "share": 0.9}], "wear_count": 1, "local_tag": "Medina artisans"},
+  {"item_id": "itm_s5", "category": "shoes", "subcategory": "grey trainers", "colors": [{"name": "grey", "hex": "#B5B2B8", "share": 0.9}], "wear_count": 3},
+  {"item_id": "itm_a1", "category": "accessory", "subcategory": "sage tote", "colors": [{"name": "green", "hex": "#A8C3A0", "share": 0.9}], "wear_count": 4, "local_tag": "Atelier Medina"},
+  {"item_id": "itm_o1", "category": "outerwear", "subcategory": "denim jacket", "colors": [{"name": "blue", "hex": "#7F98B8", "share": 0.9}], "wear_count": 5}
+]

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="400" height="520"><defs>
+<filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="0.6"/></filter>
+<linearGradient id="shade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".10"/>
+<stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#fff" stop-opacity=".10"/>
+<stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>
+<pattern id="gold" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#b8862b"/>
+<path d="M8 1 L15 8 L8 15 L1 8Z" fill="#e7c46a"/><circle cx="8" cy="8" r="2" fill="#7a4b12"/></pattern>
+<pattern id="goldred" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9a93f"/>
+<path d="M7 1 L13 7 L7 13 L1 7Z" fill="#8f1d24"/></pattern>
+<pattern id="kstripe" width="44" height="10" patternUnits="userSpaceOnUse"><rect width="44" height="10" fill="#e8dcc4"/>
+<rect width="18" height="10" fill="#6b4a2f"/><rect x="22" width="4" height="10" fill="#6b4a2f"/></pattern>
+<pattern id="weave" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9b779"/>
+<path d="M0 3.5h14M0 10.5h14" stroke="#b8924f" stroke-width="3"/><path d="M3.5 0v7M10.5 7v7" stroke="#e8cf9c" stroke-width="3"/></pattern>
+<pattern id="fouta" width="60" height="10" patternUnits="userSpaceOnUse"><rect width="60" height="10" fill="#f4f1ea"/>
+<rect width="14" height="10" fill="#2c5d9e"/><rect x="18" width="3" height="10" fill="#c23a2c"/><rect x="25" width="6" height="10" fill="#2c5d9e"/>
+<rect x="35" width="3" height="10" fill="#2c5d9e"/></pattern>
+<pattern id="silk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#f5f2ea"/>
+<rect width="1.2" height="8" fill="#e2dccd"/></pattern>
+</defs>
+<path d="M150,40 Q200,72 250,40 L302,58 L340,150 L300,168 L296,478 Q200,494 104,478 L100,168 L60,150 L98,58 Z" fill="#f3efe5" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<path d="M150,40 Q200,72 250,40 L302,58 L340,150 L300,168 L296,478 Q200,494 104,478 L100,168 L60,150 L98,58 Z" fill="url(#shade)"/>
+<path d="M150,40 Q200,72 250,40 Q236,62 200,80 Q164,62 150,40Z" fill="#00000022"/>
+<path d="M188,78 L212,78 L210,260 L190,260 Z" fill="url(#gold)" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<path d="M104,452 Q200,468 296,452 L296,478 Q200,494 104,478Z" fill="url(#gold)"/>
+<path d="M60,150 L100,168 L104,150 L68,134Z" fill="url(#gold)"/><path d="M340,150 L300,168 L296,150 L332,134Z" fill="url(#gold)"/>
+<path d="M200,262 v190" stroke="#00000014" stroke-width="2"/></svg>
