@@ -1,7 +1,9 @@
 """Owner: BO7 · browser demo of M10 + M15 (dev only). Open http://localhost:8000/bo7/demo
 
 Served by the API itself (same origin), so it works without Flutter and without CORS settings.
-"My wardrobe" adds real garment photos, stored in bo/bo7_sharing/demo_wardrobe/ (stand-in for M1).
+The wardrobe is M1's (wardrobe digitiser, BO3): this page lists it and adds pieces through M1's API
+(`items`, `classify`, `update_item`, `delete_item`). The BO7 demo photos (bo/bo7_sharing/demo_wardrobe/) are
+served on /bo7/demo/photos; they are put in M1 for the demo users by bo/bo7_sharing/m01_seed.py.
 """
 
 import base64
@@ -14,8 +16,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
+from bo.bo7_sharing import m01_seed
 from bo.bo7_sharing.demo import cutout
 from modules.m15_challenges.singleton import challenges_agent
+from modules.m15_challenges.wardrobe import M1Wardrobe
 
 router = APIRouter(prefix="/bo7/demo", tags=["BO7 demo"])
 PAGE = Path(__file__).parent / "page.html"
@@ -34,15 +38,24 @@ async def demo_page():
     return PAGE.read_text(encoding="utf-8")
 
 
+def _m1() -> M1Wardrobe | None:
+    w = challenges_agent.wardrobe
+    return w if isinstance(w, M1Wardrobe) else None
+
+
 @router.get("/wardrobe")
 async def demo_wardrobe(user_id: str = "usr_042"):
-    """Garments of the demo wardrobe (stands in for M1 until it is live)."""
+    """The user's wardrobe, read from M1 (or from the fixture wardrobe in the tests)."""
     w = challenges_agent.wardrobe
     out = []
     extra = {r["item_id"]: r for r in (w._added() if hasattr(w, "_added") else [])}
     for g in w.items(user_id):
         main = max(g.colors, key=lambda c: c.share) if g.colors else None
-        photo = w.photo_path(g.item_id) if hasattr(w, "photo_path") else None
+        if _m1():
+            url = g.image_raw if g.image_raw and g.image_raw.startswith("/") else None
+        else:
+            photo = w.photo_path(g.item_id) if hasattr(w, "photo_path") else None
+            url = f"/bo7/demo/photos/{g.item_id}.png?v={int(photo.stat().st_mtime)}" if photo else None
         out.append(
             {
                 "item_id": g.item_id,
@@ -51,13 +64,11 @@ async def demo_wardrobe(user_id: str = "usr_042"):
                 "color_hex": main.hex if main else "#C9C6CC",
                 "color": main.name if main else None,
                 "local_tag": g.local_tag,
-                "photo_url": f"/bo7/demo/photos/{g.item_id}.png?v={int(photo.stat().st_mtime)}"
-                if photo
-                else None,
-                "image": g.image_cutout,  # local path, passed back to /share/cards by the demo page
-                "added": g.item_id in extra,
+                "photo_url": url,
+                "image": g.image_cutout,  # file path, passed back to /m10/cards by the demo page
+                "added": g.item_id in extra or bool(_m1()),
                 "description": extra.get(g.item_id, {}).get("description"),
-                "source": extra.get(g.item_id, {}).get("source"),
+                "source": "M1" if _m1() else extra.get(g.item_id, {}).get("source"),
             }
         )
     return out
@@ -65,15 +76,62 @@ async def demo_wardrobe(user_id: str = "usr_042"):
 
 class PhotoIn(BaseModel):
     image: str = Field(description="data URI of the photo (jpg, png, webp)")
-    item_id: str | None = Field(None, description="existing item to give a photo to; empty = new garment")
+    user_id: str = "usr_042"
+    item_id: str | None = Field(None, description="mock wardrobe only: existing item to give a photo to")
     category: Category | None = None
     name: str | None = Field(None, max_length=40)
     local_tag: str | None = Field(None, max_length=40)
 
 
+async def _add_to_m1(w: M1Wardrobe, body: PhotoIn) -> dict:
+    """Photo → M1 classify (add to the wardrobe) → M1 update_item with what the user typed."""
+    from modules.m01_wardrobe.contract import ClassifyMode, ClassifyRequest, ItemUpdate, OnDuplicate
+
+    if body.item_id:
+        raise HTTPException(400, "M1 keeps the photo of a piece: delete it and add it again")
+    impl = w.impl()
+    mocked = getattr(impl, "__name__", "").endswith(".mock")
+    image, steps = body.image, []
+    if mocked:  # M1 mock does not remove backgrounds: the BO7 dev cutout does it so the card looks right
+        try:
+            res = cutout.run(base64.b64decode(body.image.split(",", 1)[-1]))
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(400, f"cannot read this image: {e}") from e
+        image = "data:image/png;base64," + base64.b64encode(res["png"]).decode()
+        steps = [{"stage": "code", "method": m, "name": n, "detail": d} for m, n, d in res["steps"]]
+    try:
+        out = await impl.classify(
+            ClassifyRequest(user_id=body.user_id, image=image, mode=ClassifyMode.add_to_wardrobe,
+                            on_duplicate=OnDuplicate.add)
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(400, f"M1 could not read this image: {e}") from e
+    g = out.garment
+    upd = {"category": body.category, "subcategory": body.name, "brand": body.local_tag}
+    if mocked and res["colors"]:
+        upd["colors"] = res["colors"]
+    upd = {k: v for k, v in upd.items() if v}
+    if upd:
+        g = await impl.update_item(body.user_id, g.item_id, ItemUpdate(**upd))
+    if body.local_tag:
+        w.local_brands.add(body.local_tag)  # a Tunisian maker typed by the user counts for local challenges
+    steps = [
+        {"stage": "input", "method": "data", "name": "Photo", "detail": f"{len(body.image) * 3 // 4096} KB"},
+        *steps,
+        {"stage": "code", "method": "M1", "name": "M1 classify",
+         "detail": f"{g.category.value} · {g.subcategory}"},
+        {"stage": "output", "method": "data", "name": "Wardrobe item", "detail": f"{g.item_id} saved in M1"},
+    ]
+    colors = [c.model_dump() for c in g.colors]
+    return {"item_id": g.item_id, "colors": colors, "method": "m1", "pipeline": steps}
+
+
 @router.post("/wardrobe/items")
 async def add_photo(body: PhotoIn):
-    """Photo → background removal → crop → K-means colours → saved cutout (demo stand-in for M1)."""
+    """Adds a garment to the user's M1 wardrobe (mock wardrobe: saves the cutout in demo_wardrobe/)."""
+    m1 = _m1()
+    if m1:
+        return await _add_to_m1(m1, body)
     w = _ward()
     try:
         data = base64.b64decode(body.image.split(",", 1)[-1])
@@ -112,15 +170,25 @@ async def add_photo(body: PhotoIn):
 
 
 @router.delete("/wardrobe/items/{item_id}", status_code=204)
-async def delete_photo(item_id: str):
+async def delete_photo(item_id: str, user_id: str = "usr_042"):
+    m1 = _m1()
+    if m1:
+        from modules.m01_wardrobe.contract import ItemNotFoundError
+
+        try:
+            await m1.impl().delete_item(user_id, item_id)
+        except ItemNotFoundError as e:
+            raise HTTPException(404, "nothing to delete") from e
+        return
     if not _ward().delete(item_id):
         raise HTTPException(404, "nothing to delete")
 
 
 @router.get("/photos/{name}", include_in_schema=False)
 async def photo(name: str):
-    w = _ward()
-    p = w.photos_dir / name
+    w = challenges_agent.wardrobe
+    folder = w.photos_dir if getattr(w, "photos_dir", None) else m01_seed.PHOTOS
+    p = folder / name
     if not re.fullmatch(r"[A-Za-z0-9_\-]+\.png", name) or not p.exists():
         raise HTTPException(404)
     return FileResponse(p, media_type="image/png")

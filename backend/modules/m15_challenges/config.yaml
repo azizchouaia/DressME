@@ -1,4 +1,4 @@
-wardrobe_source: mock          # mock (demo wardrobe) | http (M1 /wardrobe/items)
+wardrobe_source: m1            # m1 (real wardrobe, in-process) | http (M1 as a service) | mock (tests)
 wardrobe_url: http://localhost:8000
 leaderboard_prior_posts: 3     # m in the Bayesian like average
 recommend_weights: [0.60, 0.25, 0.15]   # fallback formula only (ML ranker: models/recommender.json)

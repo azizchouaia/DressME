@@ -12,7 +12,7 @@
 | `router.py` | `/m15/...` endpoints, included automatically by `api/main.py` |
 | `tool.py` | the orchestrator (BO8) picks it up automatically |
 | `agent.py` + `pipeline/` | the logic, one file per step |
-| `wardrobe.py` | reads garments from M1 (`POST /m01/items`), demo wardrobe until M1 is live |
+| `wardrobe.py` | reads the user's garments from M1 (`M1Wardrobe`, in-process through M1's API); `MockWardrobe` for the tests |
 | `requirements.txt` | extra packages (shared with M10) |
 
 Style challenges such as **“7 days, 7 outfits”**: users join, log the outfit they wore each day, the rule engine
@@ -23,7 +23,7 @@ Used by BO7 (B1 challenges), BO4 (style discovery challenges) and BO6 (local bra
 ## Contract
 `contract.py`: one `ChallengesInput` with an `action` (`list`, `recommend`, `join`, `submit`, `progress`,
 `leaderboard`, `feed`) → `ChallengesOutput`. Example: `tests/fixtures/input.json`.
-Entries only send **item ids**; category, colours and local tag come from M1 (`wardrobe.py`, mock until M1 is live).
+Entries only send **item ids**; category, colours and local tag come from M1 (`wardrobe.py`, M1 mock or real depending on `M01_USE_MOCKS` / `USE_MOCKS`).
 
 ## Seed challenges (`config.yaml`)
 | id | Challenge | Rules |
@@ -87,17 +87,19 @@ affinity, duration, user's past completion rate; split by user, selection by NDC
 
 Both files also store the full comparison and the feature importance.
 
-## Real clothes in the demo (stand-in for M1)
-On `/bo7/demo` → **My wardrobe 📷**, upload a photo of a garment (flat on a plain background) or give a photo to a demo item.
-`cutout.py` removes the background (`rembg` U²-Net if installed, else border-colour flood fill), crops it and runs K-means for
-the colours. Files go to `backend/bo/bo7_sharing/demo_wardrobe/` (`<item_id>.png` + `added.json`). Challenge cards and the share studio then
-use the real cutouts.
+## The wardrobe comes from M1
+M15 never stores garments: `M1Wardrobe` calls M1's public functions (`items`, then `classify` / `update_item` /
+`delete_item` from the demo page), so a challenge only accepts pieces that are **active** in the user's M1 wardrobe
+(pending duplicates, archived, sold or donated pieces are left out). A piece counts as a **Tunisian maker** when it was
+bought in a shop of the local catalogue (M1 `store_id`, M7) or its `brand` is a known Tunisian maker.
 
-**Public dataset:** `python ml/scripts/import_clothing_dataset.py --source clothing --per-class 6 --hide-mock` imports
-~56 real photos from the free *Clothing dataset* (A. Grigorev, GitHub) with a description built from the class + K-means
-colours. `--source products` uses *Fashion Product Images* (Hugging Face, with product names). `--clear` removes them.
+**Demo users** (`usr_042`, `amen`, `yasmine`): the first time their M1 wardrobe is empty, `bo/bo7_sharing/m01_seed.py`
+adds the 68 BO7 demo garments (56 photos of the free *Clothing dataset*, A. Grigorev, + 12 Tunisian pieces) through
+M1's API (`classify` with `on_duplicate=add`, then `update_item` for category, name, colours and maker). With M1 mocked
+the photos are given by URL (nothing copied on each restart); with M1 real the full M1 pipeline runs on them. Any other
+user starts with an empty wardrobe and adds clothes on `/bo7/demo` → Wardrobe or on M1's own page `/m01/ui`.
 
-When M1 is live, its `/wardrobe/items` replaces all of this.
+`wardrobe_source` in `config.yaml`: `m1` (default) · `http` (M1 as a separate service) · `mock` (fixture, tests).
 
 ## Created challenges and finisher card
 - `POST /challenges` (or action `create`): a user, a stylist (M14) or a sponsoring brand (BO6) publishes a challenge.
@@ -137,4 +139,5 @@ cd backend && pip install -r modules/m15_challenges/requirements.txt && pytest m
 ## Status
 - [x] baseline working end-to-end with mocks (demo wardrobe, memory store)
 - [x] rule engine, feasibility, recommendation, leaderboard, M10 cards on posts
-- [ ] Postgres store, real M1 wardrobe (`wardrobe_source: http`), M5 style tags, `worn` events to M3
+- [x] real M1 wardrobe (`M1Wardrobe`, demo garments added through M1's API)
+- [ ] Postgres store, M5 style tags, `worn` events to M3

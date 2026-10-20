@@ -28,7 +28,8 @@
 | `backend/modules/m10_share_cards/` | M10 (owned by BO7): cards, referral links, channels, QR, KPIs, ambassadors |
 | `backend/modules/m15_challenges/` | M15 (owned by BO7): challenges, rules, 2 trained ML models (completion, recommender), coach, posts, comments, nudges |
 | `demo/` | browser demo of M10 + M15 at **http://localhost:8000/bo7/demo** (attached by `m10_share_cards/router.py`) |
-| `demo/cutout.py` | photo → cutout + K-means colours, stand-in for M1 in the demo |
+| `m01_seed.py` | puts the 68 demo garments in the M1 wardrobe of the demo users (through M1's API) |
+| `demo/cutout.py` | dev cutout used only while M1 is mocked (M1 mock does not remove backgrounds) |
 | `demo_wardrobe/` | 56 real photos (Clothing dataset, A. Grigorev, free licence) + 12 Tunisian pieces (illustrations) |
 | `mobile/lib/features/bo7_sharing/` | Flutter screens: hub, challenges, challenge detail, outfit picker, share studio |
 | `ml/scripts/` | `train_challenge_completion.py`, `train_challenge_recommender.py`, `bo7_ml_export.py`, `bo7_viral_simulation.py`, `import_clothing_dataset.py` |
