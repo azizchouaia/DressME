@@ -11,7 +11,8 @@ from fastapi.responses import FileResponse
 from shared.base_agent import AgentError
 
 from . import events, service
-from .contract import ClickEvent, LocalShopInput, LocalShopOutput
+from .contract import ClickEvent, Feedback, LocalShopInput, LocalShopOutput
+from .identity import CARD
 from .paths import IMAGES_DIR
 
 _IMAGE_NAME = re.compile(r"[0-9a-f]{16}\.jpg")  # names written by scraper/images.py, nothing else
@@ -26,6 +27,39 @@ async def search(body: LocalShopInput):
         return await service.search(body.model_dump())
     except AgentError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/card")
+async def card():
+    """Agent card: identity, skills, when to use, contract. Read by the orchestrator / other agents."""
+    return CARD
+
+
+@router.get("/identity")
+async def identity_card():
+    """Same card, at the path the orchestrator branch (BO8) reads."""
+    return CARD
+
+
+@router.post("/feedback")
+async def feedback(body: Feedback):
+    """Were the results of a search useful / did the user buy one? (decision_id from the search output)"""
+    try:
+        return service.feedback(body.user_id, body.decision_id, body.useful, body.bought_product_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/history/{user_id}")
+async def history(user_id: str, n: int = 10):
+    """Past searches of this user (long-term memory)."""
+    return {"history": service.memory().history(user_id, n)}
+
+
+@router.delete("/memory/{user_id}", status_code=204)
+async def forget(user_id: str):
+    """Forget everything localshop remembers about this user (privacy)."""
+    service.memory().forget(user_id)
 
 
 @router.post("/events", status_code=204)

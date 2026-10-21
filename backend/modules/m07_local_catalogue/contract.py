@@ -7,6 +7,15 @@ from pydantic import BaseModel, Field, model_validator
 from shared.schemas import GarmentCategory
 
 
+class Answer(BaseModel):
+    """The user's answer to the agent's last question (same session_id, the request is not repeated)."""
+
+    question_key: str | None = Field(
+        None, description="question_key of the previous output (gender, max_price_tnd, query)"
+    )
+    value: str = Field(description="What the user said, e.g. 'femme', '150 dinars', 'une robe'")
+
+
 class LocalShopInput(BaseModel):
     query: str = Field(
         "", description="Free text in FR/EN/Tunisian, e.g. 'baskets blanches à Tunis max 80 TND'"
@@ -35,9 +44,20 @@ class LocalShopInput(BaseModel):
     offset: int = Field(
         0, ge=0, description="Skip the first `offset` results: next page = same request with offset += k"
     )
+    # --- agent memory (BO8 orchestrator): the same session_id continues the same search
+    session_id: str = Field("default", description="Chat thread id from the orchestrator: memory key")
+    language: Literal["en", "fr", "ar"] = Field("fr", description="Language of the question and labels")
+    answer: Answer | None = Field(
+        None, description="Answer to the last question of this session; the last request is reused"
+    )
+    next_page: bool = Field(
+        False, description="Next results of the last search of this session (no need to repeat it)"
+    )
 
     @model_validator(mode="after")
     def _something_to_search(self):
+        if self.answer or self.next_page:
+            return self  # the request comes from the session memory
         if not (self.query.strip() or self.gap or self.image_embedding or self.category or self.subcategory):
             raise ValueError("give a query, a gap, a category/subcategory or an image_embedding")
         return self
@@ -81,12 +101,43 @@ class ParsedQuery(BaseModel):
     corrected: str | None = None  # request after typo correction ("colier" -> "collier"), None if unchanged
 
 
+class NextAction(BaseModel):
+    """What the orchestrator can do next (same shape as Smart Buy's): chain an agent or ask the user."""
+
+    action: str  # ask_user / open_shop / judge / show_outfits / more_results / feedback
+    label: str  # text for a button or for the orchestrator LLM, in the request's language
+    tool: str | None = None  # agent to call next: localshop, smartbuy, stylist; None = the app does it
+    args: dict = {}
+
+
+class AgentInfo(BaseModel):
+    name: str
+    version: str
+
+
 class LocalShopOutput(BaseModel):
     results: list[ShopResult]
     parsed: ParsedQuery | None = None
     total_matches: int = 0  # products passing the filters, before keeping the top k
     note: str | None = None  # e.g. city filter relaxed because nothing matched there
     search_id: str | None = None  # id of this search in the event log, to send back with clicks
+    # --- agent identity + memory
+    agent: AgentInfo | None = None
+    session_id: str = "default"
+    decision_id: str | None = None  # id of this answer in the user's memory, to send back with feedback
+    question: str | None = None  # ONE question the user can answer; the orchestrator stops and asks it
+    question_key: str | None = None  # gender / max_price_tnd / query: send it back in `answer`
+    memory_notes: list[str] = []  # what the agent took from memory for this answer
+    next_actions: list[NextAction] = []
+
+
+class Feedback(BaseModel):
+    """Were the results useful? Did the user buy one of them? (long-term memory)"""
+
+    user_id: str
+    decision_id: str
+    useful: bool | None = None
+    bought_product_id: str | None = None
 
 
 class ClickEvent(BaseModel):

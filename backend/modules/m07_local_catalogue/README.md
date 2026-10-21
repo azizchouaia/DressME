@@ -51,8 +51,42 @@ as in the architecture doc, plus ids, links, photo, size, `gender`, `reasons`), 
 `translated` darija request),
 `total_matches`, `note` (e.g. city filter relaxed because nothing matched there).
 
+Agent fields (all optional, added for the orchestrator): input `session_id`, `language` (`fr` / `en` / `ar`),
+`answer` (`{question_key, value}`: answer to the last question) and `next_page`; output `agent`,
+`session_id`, `decision_id`, `question` + `question_key`, `memory_notes`, `next_actions`.
+
+## Agent (DressMe Agent Guide)
+One agent per BO: **`localshop`** is the BO6 agent; M7 (search) and M14 (boutique mode) are its skills.
+| Guide file | Here |
+|---|---|
+| `contract.py` | `LocalShopInput` / `LocalShopOutput` + `Answer`, `NextAction`, `AgentInfo`, `Feedback` |
+| `identity.py` | `CARD` (role, rules, when to use / not, skills); served at `GET /m07/card`; the tool description is built from it (`shared.agent_card.describe` when the BO8 branch is merged) |
+| `agent.py` | `run()` = memory in (answer / next page / remembered gender) → search → memory out → question + `next_actions` |
+| `memory.py` | one JSON per user in `ml/data/bo6/memory/` (never git); anonymous callers stay in RAM |
+| `tool.py` | found by `orchestrator/registry.py` |
+
+**Question** (one, only when the answer changes the results; asked on the first page only):
+- `gender` — results for both women and men and the user said neither → *"Pour femme ou pour homme ?"*
+- `max_price_tnd` — nothing under the budget → *"Rien à moins de 15 TND (le moins cher : 49 TND)…"*
+- `query` — no piece, colour or photo understood and nothing found → *"Quel type de pièce cherches-tu ?"*
+
+The orchestrator asks it, then calls `localshop` again with `answer` and the same `session_id`; the request
+is not repeated. Answers are read in FR / EN / darija / Arabic ("femme", "rajel", "للنساء", "les deux").
+
+**Memory.** Short term: the last request + open question of each session (answer, `next_page`). Long term:
+history of searches, feedback (useful / bought) and the gender answered, reused in later chats (said in
+`memory_notes`) unless the text says otherwise ("pour mon mari") or the type is not worn by that gender
+here (`memory_gender_min_share`: no men's filter on dresses). `DELETE /m07/memory/{user_id}` forgets all.
+
+**`next_actions`**: `ask_user` (the question) · `open_shop` (product page, app logs the click) · `judge` →
+`smartbuy` (photo + price + shop of the top result) · `show_outfits` → `stylist` · `more_results` →
+`localshop` with `next_page` · `feedback` → `POST /m07/feedback`. Labels follow `language`.
+
 ## Endpoints (prefix `/m07`, `router.py`, included automatically by `api/main.py`)
 - `POST /m07/search` — body = `LocalShopInput`, answer = `LocalShopOutput` (with a `search_id`)
+- `GET /m07/card` (and `/m07/identity`) — agent card
+- `POST /m07/feedback` — `{user_id, decision_id, useful, bought_product_id}` → long-term memory
+- `GET /m07/history/{user_id}` — past searches · `DELETE /m07/memory/{user_id}` — forget the user
 - `POST /m07/events` — body = `ClickEvent`: `product_view` (a result was opened) or `shop_click` (the
   user went to the shop's website), with the `search_id` and the rank; answers 204
 - `GET /m07/shops` — shops in the catalogue (city, product count, website)
@@ -175,4 +209,6 @@ unbiased figure.
 - [x] darija requests (Latin letters and Arabic script) + gender (text, then photo zero-shot, evaluated)
 - [x] evaluated on 72 hand-written requests, with ablation (`evaluation/RESULTS.md`)
 - [x] search and click log for M14 (`events.py`, `POST /m07/events`)
+- [x] agent shape of the DressMe Agent Guide: card, memory (session + long term + forget), question /
+  answer, next page, `next_actions`, FR / EN / AR labels (`tests/test_agent_memory.py`)
 - [ ] human grades (`judgments.csv`) and a second, unseen set of requests

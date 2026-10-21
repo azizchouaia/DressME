@@ -1,31 +1,152 @@
+"""BO6 agent `localshop`: memory in, search (M7), memory out, question + next_actions for the orchestrator."""
+
+import re
+
 import numpy as np
 
 from shared.base_agent import AgentError, BaseAgent
 
 from . import clients
-from .contract import LocalShopInput, LocalShopOutput, ParsedQuery, ShopResult
+from .contract import AgentInfo, LocalShopInput, LocalShopOutput, NextAction, ParsedQuery, ShopResult
+from .identity import CARD, VERSION, tool_description
+from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV, CONFIG, INDEX_DIR, model_source
 from .pipeline import filter, parse, rerank, retrieve
 from .pipeline.catalogue import Catalogue
+from .scraper.normalize import fold
 from .taxonomy import COLOR_CODES, SUBCATEGORIES, canonical_city, governorate
+
+# Questions, labels and memory notes in the request's language. Facts (shops, prices, notes) stay as found.
+TEXTS = {
+    "fr": {
+        "gender": "Pour femme ou pour homme ?",
+        "budget": "Rien à moins de {max:g} TND (le moins cher : {cheapest:g} TND). "
+        "Quel budget maximum en TND ?",
+        "query": "Quel type de pièce cherches-tu ? (robe, baskets, sac...)",
+        "open_shop": "Voir chez {shop}",
+        "judge": "Est-ce un bon achat pour moi ?",
+        "outfits": "Des tenues avec cette pièce",
+        "more": "Voir plus de résultats",
+        "feedback": "Ces résultats t'ont été utiles ?",
+        "gender_memory": "Pièces pour {gender} : ta réponse précédente est gardée en mémoire.",
+        "answer": "Ta réponse « {answer} » est appliquée à ta recherche précédente.",
+        "more_memory": "Suite de ta recherche précédente.",
+        "women": "femme",
+        "men": "homme",
+    },
+    "en": {
+        "gender": "For women or for men?",
+        "budget": "Nothing under {max:g} TND (cheapest: {cheapest:g} TND). "
+        "What is your maximum budget in TND?",
+        "query": "What kind of piece are you looking for? (dress, sneakers, bag...)",
+        "open_shop": "See it at {shop}",
+        "judge": "Is it a good buy for me?",
+        "outfits": "Outfits with this piece",
+        "more": "Show more results",
+        "feedback": "Were these results useful?",
+        "gender_memory": "Pieces for {gender}: your previous answer is remembered.",
+        "answer": "Your answer “{answer}” is applied to your previous search.",
+        "more_memory": "More results of your previous search.",
+        "women": "women",
+        "men": "men",
+    },
+    "ar": {
+        "gender": "للنساء أم للرجال؟",
+        "budget": "لا شيء بأقل من {max:g} دينار (الأرخص: {cheapest:g} دينار). "
+        "ما هي ميزانيتك القصوى بالدينار؟",
+        "query": "ما نوع القطعة التي تبحث عنها؟ (فستان، حذاء رياضي، حقيبة...)",
+        "open_shop": "عرض في {shop}",
+        "judge": "هل هي شراء جيد لي؟",
+        "outfits": "إطلالات مع هذه القطعة",
+        "more": "عرض نتائج أخرى",
+        "feedback": "هل كانت هذه النتائج مفيدة؟",
+        "gender_memory": "قطع {gender}: تم تذكر إجابتك السابقة.",
+        "answer": "تم تطبيق إجابتك «{answer}» على بحثك السابق.",
+        "more_memory": "تتمة بحثك السابق.",
+        "women": "للنساء",
+        "men": "للرجال",
+    },
+}
+
+# Answers to "for women or for men?" (FR / EN / darija / Arabic), compared after fold().
+_WOMEN = {
+    "femme",
+    "femmes",
+    "f",
+    "women",
+    "woman",
+    "w",
+    "fille",
+    "filles",
+    "dame",
+    "dames",
+    "mra",
+    "nsa",
+    "bnet",
+    "امراة",
+    "نساء",
+    "النساء",
+    "للنساء",
+    "بنات",
+}
+_MEN = {
+    "homme",
+    "hommes",
+    "h",
+    "men",
+    "man",
+    "m",
+    "garcon",
+    "garcons",
+    "rajel",
+    "rjel",
+    "rjal",
+    "رجل",
+    "رجال",
+    "الرجال",
+    "للرجال",
+}
+_ANY = {"les deux", "both", "unisex", "unisexe", "mixte", "peu importe", "any", "zouz", "الاثنين", "كلاهما"}
+_FOR = re.compile(r"^(?:pour|for|lel)\s+")  # "pour femme" -> "femme" ("les deux" keeps its "l")
+
+# Fields of one conversation turn, not of the search itself (never stored as the request).
+_TURN_FIELDS = {"session_id", "language", "answer", "next_page"}
+
+
+def gender_answer(value: str) -> str | None:
+    """'femme' / 'pour homme' / 'rajel' / 'les deux' -> women / men / any; None when not understood."""
+    text = _FOR.sub("", fold(value).strip(" .!?"))
+    if text in _ANY:
+        return "any"
+    if text in _WOMEN:
+        return "women"
+    if text in _MEN:
+        return "men"
+    return parse.gender_from_query(fold(value))
 
 
 class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
-    name = "localshop"
-    description = (
-        "M7 local catalogue: find pieces sold by Tunisian shops and brands (prices in TND) that match "
-        "a request (FR/EN/darija), a wardrobe gap, a photo embedding or the user's style; filters by "
-        "budget, city, category and gender."
-    )
+    name = CARD["name"]
+    description = tool_description()
     input_model = LocalShopInput
     output_model = LocalShopOutput
     is_async_job = False
 
-    def __init__(self, config: dict | None = None, catalogue: Catalogue | None = None, encoder=None):
+    def __init__(
+        self,
+        config: dict | None = None,
+        catalogue: Catalogue | None = None,
+        encoder=None,
+        memory: AgentMemory | None = None,
+    ):
         super().__init__(config or CONFIG)
         # Heavy objects are created in setup() (or injected by tests), never at import time.
         self.catalogue = catalogue
         self.encoder = encoder
+        self.memory = memory or AgentMemory()
+
+    def card(self) -> dict:
+        return CARD
 
     async def setup(self) -> None:
         if self.catalogue is None:
@@ -43,7 +164,8 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
             raise AgentError(f"{what} must have {self.config['embedding_dim']} values (FashionCLIP space)")
         return vec / max(float(np.linalg.norm(vec)), 1e-12)
 
-    def _parsed(self, inp: LocalShopInput) -> ParsedQuery:
+    def _parsed(self, inp: LocalShopInput, remembered_gender: str | None = None) -> tuple[ParsedQuery, bool]:
+        """How the request is understood; True when the gender comes from the user's memory."""
         vocabulary = parse.KEYWORDS | (self.catalogue.vocabulary if self.catalogue is not None else set())
         parsed = parse.parse(inp.query, inp.gap, vocabulary)
         # Explicit fields from the caller win over what was read in the text.
@@ -64,9 +186,21 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         if inp.city:
             parsed.city = canonical_city(inp.city) or inp.city.strip()
             parsed.governorate = governorate(parsed.city)
+        # Nothing said about gender (text or field): the user's earlier answer, kept in memory.
+        from_memory = parsed.gender is None and remembered_gender is not None
+        if from_memory:
+            # Only for a type of piece this gender really wears here (a man looking at dresses: a gift).
+            cat = self.catalogue
+            kind = filter.run(cat, parsed, include_unavailable=True, use_city=False, use_color=False)
+            known = kind & np.isin(cat.gender, ["women", "men", "unisex"])
+            share = (known & (cat.gender == remembered_gender)).sum() / max(int(known.sum()), 1)
+            if share >= self.config["memory_gender_min_share"]:
+                parsed.gender = remembered_gender
+            else:
+                from_memory = False
         # The prompt follows the final slots, so calls with explicit fields only also use FashionCLIP.
         parsed.prompt_en = parse.build_prompt(parsed, " ".join(t for t in (inp.query, inp.gap) if t))
-        return parsed
+        return parsed, from_memory
 
     @staticmethod
     def _area(product: dict, parsed: ParsedQuery, city_applied: bool) -> str | None:
@@ -89,11 +223,179 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
             f"voici les autres {what} disponibles."
         )
 
+    # ------------------------------------------------------------------ agent loop with memory
     async def run(self, inp: LocalShopInput) -> LocalShopOutput:
+        """search, answer (to the last question) or next page: memory in, search, memory out, next actions."""
         if self.catalogue is None:
             await self.setup()
+        uid = inp.user_id or ANONYMOUS
+        texts = TEXTS[inp.language]
+        memory_notes: list[str] = []
+        if inp.answer or inp.next_page:
+            request = self._restore(inp, uid, memory_notes)
+        else:
+            request = inp.model_dump(mode="json", exclude=_TURN_FIELDS)
+        search = LocalShopInput.model_validate({**request, "language": inp.language})
+
+        remembered = self.memory.preferences(uid).get("gender")  # women / men / any (= do not ask again)
+        out = await self._search(search, remembered if remembered in ("women", "men") else None, memory_notes)
+        if search.offset == 0:
+            out.question, out.question_key = self._question(search, out, ask_gender=remembered is None)
+
+        out.agent = AgentInfo(name=self.name, version=VERSION)
+        out.session_id = inp.session_id
+        out.decision_id = self.memory.remember(uid, inp.session_id, request, out.model_dump(mode="json"))
+        out.memory_notes = memory_notes
+        out.next_actions = self._next_actions(out, search, texts)
+        return out
+
+    def _restore(self, inp: LocalShopInput, uid: str, memory_notes: list[str]) -> dict:
+        """The last search of this session, with the user's answer applied or moved to the next page."""
+        session = self.memory.session(uid, inp.session_id)
+        if not session.get("request"):
+            raise AgentError("nothing to continue: no earlier localshop search in this session")
+        request = dict(session["request"])
+        texts = TEXTS[inp.language]
+        if inp.answer:
+            key = inp.answer.question_key or session.get("question_key")
+            if not key:
+                raise AgentError("nothing to answer: no open localshop question in this session")
+            self._apply_answer(request, key, inp.answer.value, uid)
+            request["offset"] = 0
+            memory_notes.append(texts["answer"].format(answer=inp.answer.value))
+        else:
+            request["offset"] = request.get("offset", 0) + request.get("k", self.config["top_k"])
+            memory_notes.append(texts["more_memory"])
+        return request
+
+    def _apply_answer(self, request: dict, key: str, value: str, uid: str) -> None:
+        if key == "gender":
+            gender = gender_answer(value)
+            if gender is None:
+                raise AgentError(f"answer {value!r} not understood: say 'femme', 'homme' or 'les deux'")
+            request["gender"] = None if gender == "any" else gender
+            self.memory.set_preferences(uid, gender=gender)  # not asked again; forgotten with DELETE /memory
+        elif key == "max_price_tnd":
+            folded = fold(value)
+            _, high = parse.parse_price(folded)
+            if high is None and (number := re.search(r"\d+(?:[.,]\d+)?", folded)):
+                high = float(number.group().replace(",", "."))
+            if not high:
+                raise AgentError(f"answer {value!r} not understood: give a budget in TND, e.g. '150'")
+            request["max_price_tnd"] = high
+        elif key == "query":
+            request["query"] = " ".join(t for t in (request.get("query"), value.strip()) if t)
+        else:
+            raise AgentError(f"unknown question_key {key!r}")
+
+    def _question(
+        self, inp: LocalShopInput, out: LocalShopOutput, ask_gender: bool
+    ) -> tuple[str | None, str | None]:
+        """ONE question the user can answer, only when the answer changes the results."""
+        texts, parsed = TEXTS[inp.language], out.parsed
+        if not out.results:
+            understood = parsed.subcategory or parsed.category or parsed.color or inp.image_embedding
+            if not understood:
+                return texts["query"], "query"
+            if parsed.max_price_tnd is not None:
+                cheapest = self._cheapest_without_budget(parsed)
+                if cheapest is not None and cheapest > parsed.max_price_tnd:
+                    question = texts["budget"].format(max=parsed.max_price_tnd, cheapest=cheapest)
+                    return question, "max_price_tnd"
+            return None, None
+        # Results for both women and men while the user said neither: worth one question.
+        if ask_gender and parsed.gender is None and parsed.category != "accessory":
+            if {"women", "men"} <= {r.gender for r in out.results}:
+                return texts["gender"], "gender"
+        return None, None
+
+    def _cheapest_without_budget(self, parsed: ParsedQuery) -> float | None:
+        relaxed = parsed.model_copy(update={"max_price_tnd": None, "min_price_tnd": None})
+        prices = self.catalogue.price[filter.run(self.catalogue, relaxed, use_city=False)]
+        prices = prices[~np.isnan(prices)]
+        return float(prices.min()) if len(prices) else None
+
+    def _next_actions(self, out: LocalShopOutput, inp: LocalShopInput, texts: dict) -> list[NextAction]:
+        acts = []
+        if out.question:
+            acts.append(
+                NextAction(
+                    action="ask_user",
+                    label=out.question,
+                    tool=self.name,
+                    args={"session_id": out.session_id, "answer": {"question_key": out.question_key}},
+                )
+            )
+        if out.results:
+            top = out.results[0]
+            acts.append(
+                NextAction(
+                    action="open_shop",
+                    label=texts["open_shop"].format(shop=top.shop),
+                    args={
+                        "url": top.product_url,
+                        "product_id": top.product_id,
+                        "rank": 1,
+                        "events_endpoint": "/m07/events",
+                    },
+                )
+            )
+            if top.price_tnd is not None:
+                acts.append(
+                    NextAction(
+                        action="judge",
+                        label=texts["judge"],
+                        tool="smartbuy",
+                        args={
+                            "probe_image": top.image_url,
+                            "price_tnd": top.price_tnd,
+                            "shop_brand": top.shop,
+                        },
+                    )
+                )
+            acts.append(
+                NextAction(
+                    action="show_outfits",
+                    label=texts["outfits"],
+                    tool="stylist",
+                    args={
+                        "product_id": top.product_id,
+                        "image_url": top.image_url,
+                        "category": top.category,
+                        "subcategory": top.subcategory,
+                        "color": top.color,
+                    },
+                )
+            )
+        if out.total_matches > inp.offset + len(out.results):
+            acts.append(
+                NextAction(
+                    action="more_results",
+                    label=texts["more"],
+                    tool=self.name,
+                    args={"session_id": out.session_id, "next_page": True},
+                )
+            )
+        if out.results:
+            acts.append(
+                NextAction(
+                    action="feedback",
+                    label=texts["feedback"],
+                    tool=self.name,
+                    args={"endpoint": "/m07/feedback", "decision_id": out.decision_id},
+                )
+            )
+        return acts
+
+    # ------------------------------------------------------------------ the search itself (M7)
+    async def _search(
+        self, inp: LocalShopInput, remembered_gender: str | None = None, memory_notes: list[str] | None = None
+    ) -> LocalShopOutput:
         cat = self.catalogue
-        parsed = self._parsed(inp)
+        parsed, from_memory = self._parsed(inp, remembered_gender)
+        if from_memory and memory_notes is not None:
+            texts = TEXTS[inp.language]
+            memory_notes.append(texts["gender_memory"].format(gender=texts[parsed.gender]))
         notes = []
         style_values = inp.style_vector
         if isinstance(style_values, str):  # an id, as in the architecture doc: ask M5 for the vector

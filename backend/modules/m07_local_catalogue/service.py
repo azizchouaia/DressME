@@ -10,21 +10,31 @@ from collections import Counter
 
 from . import events, mock
 from .agent import LocalShopAgent
+from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV
 
 log = logging.getLogger("m07.service")
 _agent: LocalShopAgent | None = None
+_memory: AgentMemory | None = None
 
 
 def knowledge_base_ready() -> bool:
     return CATALOGUE_CSV.is_file()
 
 
+def memory() -> AgentMemory:
+    """The agent's memory; history / feedback / forget use it without loading the catalogue."""
+    global _memory
+    if _memory is None:
+        _memory = AgentMemory()
+    return _memory
+
+
 async def get_agent() -> LocalShopAgent:
     """The agent used by the API and the orchestrator tool; loads the knowledge base on first use."""
     global _agent
     if _agent is None:
-        _agent = LocalShopAgent()
+        _agent = LocalShopAgent(memory=memory())
     if _agent.catalogue is None:
         await _agent.setup()
     return _agent
@@ -40,9 +50,22 @@ async def search(req: dict, channel: str = "api") -> dict:
         log.warning("M7 knowledge base %s missing: serving mock.py (dvc pull or rebuild it)", CATALOGUE_CSV)
         return mock.search(req)
     started = time.perf_counter()
-    out = await (await get_agent())(req)
-    out["search_id"] = events.log_search(req, out, 1000 * (time.perf_counter() - started), channel)
+    agent = await get_agent()
+    out = await agent(req)
+    logged = req
+    if req.get("answer") or req.get("next_page"):  # log the search actually run, restored from memory
+        session = agent.memory.session(req.get("user_id") or ANONYMOUS, out["session_id"])
+        logged = session.get("request") or req
+    out["search_id"] = events.log_search(logged, out, 1000 * (time.perf_counter() - started), channel)
     return out
+
+
+def feedback(user_id: str, decision_id: str, useful: bool | None, bought_product_id: str | None) -> dict:
+    """Were the results useful / was one bought? -> long-term memory. Unknown decision -> ValueError."""
+    found = memory().feedback(user_id, decision_id, useful, bought_product_id)
+    if found is None:
+        raise ValueError(f"unknown decision {decision_id}")
+    return found
 
 
 async def shops() -> list[dict]:

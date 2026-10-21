@@ -15,6 +15,7 @@ RAW_CSV = DATA_DIR / "local_catalogue.csv"  # scraper output
 CATALOGUE_CSV = DATA_DIR / CONFIG["catalogue_csv"]  # cleaned knowledge base
 INDEX_DIR = DATA_DIR / CONFIG["index_dir"]  # FashionCLIP embeddings
 IMAGES_DIR = DATA_DIR / "images"
+MEMORY_DIR = REPO_ROOT / CONFIG["memory_dir"]  # agent memory, one JSON per user
 
 
 def model_source() -> str:
