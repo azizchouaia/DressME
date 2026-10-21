@@ -91,3 +91,16 @@ in `config.yaml` when M1/M2/M7/M8 are ready — nothing else changes.
 ## Tuning
 All thresholds and weights are in `config.yaml`. `python -m bo.bo5_purchase.evaluate` computes
 accuracy against `labels.csv`.
+
+## Smart Buy as an agent (identity + memory)
+
+- **Identity** – `identity.py`: agent card (role, rules, when to use, skills, contract). `GET /m06/card`.
+  The orchestrator tool description is built from it.
+- **Memory** – `memory.py`, one file per user in `ml/data/bo5/memory/`:
+  - short term (per `session_id`): last request + open question → the user can just answer (`answer`), no new photo;
+  - long term: past verdicts, feedback (bought / liked), saved body / fit info for sizes.
+- **Skills**: judge (photo) · answer (`answer` + same `session_id`) · feedback (`POST /m06/feedback`) ·
+  history (`GET /m06/history/{user}`) · forget (`DELETE /m06/memory/{user}`).
+- **Output for the orchestrator**: `decision_id`, `agent`, `memory_notes`, `next_actions`
+  (ask_user → smartbuy, show_outfits → m02, find_cheaper → m07, open_shop → m13, feedback → smartbuy).
+- **Real modules**: `config.yaml` → `real: [m1, m2, m7]`, each with the mock as fallback; output `sources` says who answered.

@@ -1,5 +1,16 @@
 use_mocks: true
 
+# teammates' modules called for real (each falls back to its mock if it fails). M5 has no branch yet.
+#   m1 = wardrobe + photo (BO3)  m2 = outfits (BO1/BO2)  m7 = local catalogue (BO6)
+real: [m1, m2, m7]
+
+# who writes the explanation: own (local LLM via Ollama, template if off) | m8 (BO8) | template
+explainer: own
+explainer_timeout: 20          # seconds; slower -> template text
+
+# where M13 takes its shops: auto (M7 real catalogue if present, else fictional) | m7 | fictional
+shops_source: auto
+
 # which data the mocks use: 'synthetic' (generated) or 'real' (yours) -> ml/data/bo5/<dataset>/
 dataset: synthetic
 

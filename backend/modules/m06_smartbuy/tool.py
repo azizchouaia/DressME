@@ -1,16 +1,25 @@
-"""Exposes the agent to the orchestrator (M8 / BO8) as a tool."""
+"""Exposes Smart Buy to the orchestrator (BO8) as a tool. The card (identity.py) is the description."""
 
 from langchain_core.tools import StructuredTool
 
-from .agent import SmartBuyAgent
 from .contract import SmartBuyInput
+from .identity import CARD, tool_description
 
-_agent = SmartBuyAgent()
+_agent = None
+
+
+def agent():
+    global _agent
+    if _agent is None:
+        from .agent import SmartBuyAgent
+
+        _agent = SmartBuyAgent()
+    return _agent
 
 
 async def _run(**kwargs) -> dict:
-    return await _agent(kwargs)
+    return await agent()(kwargs)
 
 
-tool = StructuredTool.from_function(coroutine=_run, name=_agent.name,
-                                    description=_agent.description, args_schema=SmartBuyInput)
+tool = StructuredTool.from_function(coroutine=_run, name=CARD["name"], description=tool_description(),
+                                    args_schema=SmartBuyInput)

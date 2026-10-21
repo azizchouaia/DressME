@@ -50,7 +50,7 @@ def shopping_list(agent, user_id: str, k: int = 8) -> list[dict]:
             "why": f"{g['goal_name']}: {g['have']} of {g['target']}" if g["goal"] else "listed in your wardrobe gaps",
             "goal": g["goal"], "new_outfits": n, "typical_price_tnd": price,
             "within_budget": None if left is None or price is None else price <= left,
-            "links": partners.links(agent.shops, sub, best, left, 2),
+            "links": partners.links(agent.shops, sub, best, left, 2, one_per_shop=True),
         })
     rows.sort(key=lambda r: (r["within_budget"] is False, -r["new_outfits"]))
     return rows[:k]

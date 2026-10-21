@@ -102,7 +102,7 @@ class MockClients:
 
     # ---------------- M5 · style profile
     def gaps(self, user_id):
-        return self.wardrobes[user_id].get("gaps", [])
+        return self.wardrobes.get(user_id, {}).get("gaps", [])
 
     def goals(self, user_id):
         return self._goals.get(user_id, {"templates": [], "budget": {}})

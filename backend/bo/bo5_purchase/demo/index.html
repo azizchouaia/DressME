@@ -144,6 +144,8 @@ ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
         <div><label for="chest">Chest (cm, optional)</label><input id="chest" type="number" placeholder="don't know?"></div>
         <div><label for="waist">Waist (cm, optional)</label><input id="waist" type="number" placeholder="don't know?"></div>
       </div>
+      <label for="fittext">Or just tell us how your clothes fit</label>
+      <textarea id="fittext" rows="2" style="width:100%" placeholder="e.g. I wear M at Medina Atelier, tight on the shoulders. I like loose clothes."></textarea>
       <p class="note" style="margin:4px 0">No tape measure? Tell us a piece you own:</p>
       <div class="row">
         <div><label for="refbrand">Brand</label><select id="refbrand"></select></div>
@@ -154,6 +156,7 @@ ul{margin:6px 0 0;padding-left:18px;line-height:1.6}
         <div><label for="reffit">It feels</label><select id="reffit"><option value="extremely_tight">Extremely tight</option><option value="tight">Tight</option><option value="normal" selected>Normal</option><option value="loose">Loose</option><option value="oversized">Oversized</option></select></div>
         <div><label for="likefit">I like to wear</label><select id="likefit"><option value="tight">Tight</option><option value="normal" selected>Normal</option><option value="loose">Loose</option><option value="oversized">Oversized</option></select></div>
       </div>
+      <div class="row"><div><label for="lang">Answer in</label><select id="lang"><option value="en">English</option><option value="fr">Français</option><option value="ar">Tounsi</option></select></div></div>
       <button class="btn" id="go">Should I buy it?</button>
       <div class="err" id="err" role="alert"></div>
     </section>
@@ -184,6 +187,7 @@ const tile=(it,hit)=>`<div class="tile${hit?" hit":""}${it.ai&&!it.checked?" ai"
 const opts=(arr,sel)=>arr.map(x=>`<option${x===sel?" selected":""}>${x}</option>`).join("");
 let PHOTO=null,LAST=null,NEED=null,GOALS={templates:[],budget:{}};
 
+function track(c){if(c.product_id)fetch("/api/click",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...c,user_id:$("user").value})}).catch(()=>{})}
 async function api(p,body){const r=await fetch(p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
   if(!r.ok){const t=await r.json().catch(()=>({}));throw new Error(t.detail?JSON.stringify(t.detail):r.statusText)}return r.json()}
 
@@ -265,7 +269,7 @@ async function showList(){
   if(!r.items.length)h+=`<p class="expl">Nothing missing for these goals.</p>`;
   r.items.forEach((it,i)=>{h+=`<div class="shop"><span class="rank">${i+1}</span>${garment(it.subcategory,it.colour,56)}<div style="flex:1;min-width:0"><b>${it.piece}</b>
     <div class="note">${it.why} · creates ${it.new_outfits} outfits${it.typical_price_tnd?` · usually ~${it.typical_price_tnd} TND`:""}${it.within_budget===false?" · over your budget left":""}</div>
-    ${it.links.map(l=>`<a class="link" style="margin-top:6px" href="${l.url}" target="_blank" rel="noopener"><div><b>${l.item}</b><div class="note">${l.shop} · ${l.price_tnd} TND</div></div><span class="code">${l.promo_code||""}</span></a>`).join("")}</div></div>`});
+    ${it.links.map(l=>`<a class="link" style="margin-top:6px" href="${l.url}" target="_blank" rel="noopener"><div><b>${l.item}</b><div class="note">${l.shop} · ${l.price_tnd} TND</div></div>${l.promo_code?`<span class="code">${l.promo_code}</span>`:""}</a>`).join("")}</div></div>`});
   $("result").innerHTML=h+`<p class="note">Goals are a mock of M5 (style profile, BO4).</p></div>`;
 }
 function render(o,expected){
@@ -276,7 +280,7 @@ function render(o,expected){
   let h=`<div class="card"><div class="vhead">${ring(o.score,o.verdict)}<div><div class="verdict" style="color:${COL[o.verdict]}">${o.verdict.toUpperCase()}</div>
    <div class="probs">${o.decision_mode==="learned"?"learned model":"rules"}${P?` · buy ${Math.round(P.buy*100)}% · think ${Math.round(P.think*100)}% · skip ${Math.round(P.skip*100)}%`:""}${o.threshold_offset?` · your strictness ${o.threshold_offset>0?"+":""}${o.threshold_offset}`:""}</div>
    ${expected?`<div class="exp">stylist rules said: <b>${expected}</b> ${expected===o.verdict?"· match":"· different"}</div>`:""}</div></div>
-   <p class="expl">${o.explanation}</p>${o.fills_goal?`<span class="goalchip">fills your goal: ${o.fills_goal}</span>`:""}`;
+   <p class="expl">${o.explanation}</p><p class="note" style="margin:-4px 0 8px">${o.sources&&o.sources.explanation==="llm"?"written by the local AI (Ollama) from the facts below":"template text (local AI off)"}</p>${o.fills_goal?`<span class="goalchip">fills your goal: ${o.fills_goal}</span>`:""}`;
   if(o.uncertain&&o.question){h+=`<div class="ask"><b>Not sure.</b> ${o.question}`;
     if(o.question_key==="need_for_occasion")h+=`<div><button class="mini" data-ans="yes">Yes, I need it</button><button class="mini" data-ans="no">No</button></div>`;
     h+=`</div>`}
@@ -290,8 +294,10 @@ function render(o,expected){
   if(o.predicted_wears!=null)h+=`<div class="sub"><h2>Predicted use</h2><p style="margin:0"><b style="font-size:22px">~${o.predicted_wears}</b> wears a year${o.cost_per_wear_tnd?` · <b>${o.cost_per_wear_tnd} TND</b> per wear`:""}<br><span class="note">from how often you wear similar pieces</span></p></div>`;
   if(o.similar_items.length) h+=`<div class="sub"><h2>Similar in your wardrobe</h2><div class="grid">${o.similar_items.map(s=>byId[s.item_id]?tile({...byId[s.item_id],label:byId[s.item_id].label+" · "+s.similarity},o.is_duplicate):"").join("")}</div></div>`;
   if(o.pairs_with.length) h+=`<div class="sub"><h2>Pairs with (${o.new_outfits} new outfits)</h2><div class="grid">${o.pairs_with.slice(0,12).map(id=>byId[id]?tile(byId[id]):"").join("")}</div></div>`;
+  if(o.memory_notes&&o.memory_notes.length) h+=`<div class="sub"><h2>Smart Buy remembered</h2>${o.memory_notes.map(n=>`<p class="note" style="margin:2px 0">• ${n}</p>`).join("")}</div>`;
+  if(o.sources&&Object.keys(o.sources).length) h+=`<p class="note">Answered by: ${Object.entries(o.sources).map(([k,v])=>`${k} → <b>${v}</b>`).join(" · ")}</p>`;
   if(o.size_advice) h+=`<div class="sub"><h2>Size</h2><p style="margin:0"><b style="font-size:22px">${o.size_advice.size}</b> at ${o.size_advice.brand}<br><span class="note">${o.size_advice.note}</span></p></div>`;
-  if(o.buy_links.length) h+=`<div class="sub"><h2>Buy locally</h2><div class="links">${o.buy_links.map(l=>`<a class="link" href="${l.url}" target="_blank" rel="noopener">${l.subcategory?garment(l.subcategory,l.colour,40):""}<div><b>${l.item}</b><div class="note">${l.shop} · ${l.price_tnd} TND</div></div><span class="code">${l.promo_code||""}</span></a>`).join("")}</div><p class="note">Fictional shops (synthetic data).</p></div>`;
+  if(o.buy_links.length) h+=`<div class="sub"><h2>Buy locally</h2><div class="links">${o.buy_links.map(l=>`<a class="link" href="${l.url}" target="_blank" rel="noopener" onclick='track(${JSON.stringify({product_id:l.product_id,shop:l.shop,rank:l.rank,search_id:l.search_id})})'>${l.image_url?`<img src="${l.image_url}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px">`:(l.subcategory?garment(l.subcategory,l.colour,40):"")}<div><b>${l.item}</b><div class="note">${l.shop}${l.city?" · "+l.city:""} · ${l.price_tnd} TND</div></div>${l.promo_code?`<span class="code">${l.promo_code}</span>`:""}</a>`).join("")}</div><p class="note">${o.buy_links[0].source==="m7"?"Real Tunisian shops (M7 local catalogue).":"Fictional shops (synthetic data)."}</p></div>`;
   h+=`<div class="sub"><h2>Was this good advice?</h2><button class="mini" data-fb="1">Good advice</button> <button class="mini danger" data-fb="0">Not for me</button> <span class="note" id="fbMsg"></span></div>`;
   $("result").innerHTML=h+"</div>";
 }
@@ -307,8 +313,8 @@ async function go(){
   if(!WARD.items.length){$("err").textContent="This wardrobe is empty: add photos to your closet first";return}
   const img=MODE==="list"?$("cand").value:MODE==="photo"?`custom:${PHOTO.subcategory}:${PHOTO.colour}`:`custom:${$("type").value}:${COLOUR}`;
   const expected=MODE==="list"?(META.candidates.find(c=>c.id===img)||{}).expected:null;
-  const body={user_id:$("user").value,probe_image:img,price_tnd:price,shop_brand:$("brand").value||null,
-    body:{chest_cm:parseFloat($("chest").value)||null,waist_cm:parseFloat($("waist").value)||null,like_fit:$("likefit").value,fit_refs:$("refsize").value.trim()?[{brand:$("refbrand").value,size:$("refsize").value.trim().toUpperCase(),category:$("refpart").value,fit:$("reffit").value}]:[]},
+  const body={user_id:$("user").value,language:$("lang").value,probe_image:img,price_tnd:price,shop_brand:$("brand").value||null,
+    body:{chest_cm:parseFloat($("chest").value)||null,waist_cm:parseFloat($("waist").value)||null,like_fit:$("likefit").value,fit_text:$("fittext").value.trim()||null,fit_refs:$("refsize").value.trim()?[{brand:$("refbrand").value,size:$("refsize").value.trim().toUpperCase(),category:$("refpart").value,fit:$("reffit").value}]:[]},
     need_for_occasion:NEED,ai_confidence:MODE==="photo"?PHOTO.confidence.type:null};
   $("go").disabled=true;
   try{render(await api("/api/verdict",body),expected)}catch(e){$("err").textContent=e.message}finally{$("go").disabled=false}

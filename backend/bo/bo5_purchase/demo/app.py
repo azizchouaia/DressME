@@ -119,6 +119,14 @@ class Feedback(BaseModel):
     good: bool
 
 
+@app.post("/api/click")
+def click(body: dict):
+    """User tapped a buy link -> logged in M7's event log (BO5 KPI: clicks to local shops)."""
+    from modules.m13_partner_links import service as partners
+    return {"logged": partners.log_click(body.get("product_id", ""), body.get("shop"), body.get("user_id"),
+                                         body.get("rank"), body.get("search_id"))}
+
+
 @app.post("/api/feedback")
 def feedback(fb: Feedback):
     if not agent.bandit:

@@ -16,7 +16,10 @@ from modules.m13_partner_links import service as partners
 from modules.m18_size_fit import service as sizefit
 from .bandit import PersonalThresholds
 from .clients import get_clients
-from .contract import SmartBuyInput, SmartBuyOutput
+from .contract import AgentInfo, Body, NextAction, SmartBuyInput, SmartBuyOutput
+from .identity import CARD, VERSION, tool_description
+from .memory import AgentMemory
+from . import explainer
 from . import goals as goals_mod
 from .pipeline import gap, redundancy, score, uncertainty, unlock, wear, whatif
 from .pipeline.decide import NAMES, decide
@@ -27,19 +30,23 @@ MODEL_FILE = HERE / "models" / "verdict_model.json"
 
 
 class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
-    name = "smartbuy"
-    description = ("Judge whether a piece the user wants to buy duplicates their wardrobe, how many new "
-                   "outfits it unlocks, and answer buy / think / skip with size advice and local buy links.")
+    name = CARD["name"]
+    version = VERSION
+    description = tool_description()
     input_model = SmartBuyInput
     output_model = SmartBuyOutput
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict | None = None, memory: AgentMemory | None = None):
         super().__init__(config or CONFIG)
-        self.clients = get_clients(self.config["use_mocks"], self.config.get("dataset", "synthetic"))
+        self.memory = memory or AgentMemory()
+        self.clients = get_clients(self.config["use_mocks"], self.config.get("dataset", "synthetic"),
+                                   self.config.get("real") or [])
         data_dir = (HERE.parent.parent / self.config["data_dir"]).resolve()
         self.charts = sizefit.load_charts(data_dir)
-        self.shops = partners.load(data_dir)
-        self.typical = partners.typical_prices(self.shops)   # usual price per type, from local shops
+        self.shops = partners.load(data_dir, self.config.get("shops_source", "auto"))
+        # usual price per type: real local shops (M7) first, fictional shops for the types they lack
+        self.typical = {**partners.typical_prices(partners.load(data_dir, "fictional")),
+                        **partners.typical_prices(self.shops)}
         self.model = None
         if self.config.get("decision") == "learned" and MODEL_FILE.exists():
             self.model = json.loads(MODEL_FILE.read_text())
@@ -70,6 +77,8 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
 
     async def facts(self, image: str, user_id: str, price: float | None, need_for_occasion: bool | None = None) -> dict:
         cfg, cl = self.config, self.clients
+        if hasattr(cl, "sources"):
+            cl.sources.clear()  # which module answered, for this request only
         cand = cl.classify(image)                                                     # M1
         cand.setdefault("id", Path(image).stem)
         neigh = cl.similar(user_id, cand["embedding"], max(cfg["top_k_neighbours"], 10))  # M1
@@ -85,7 +94,99 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
                 "gap": g, "price": price, "typical_price": self.typical.get(cand["subcategory"]),
                 "goal": gf, "goals": user_goals}
 
+    # ------------------------------------------------------------------ agent loop with memory
+    def card(self) -> dict:
+        return CARD
+
     async def run(self, inp: SmartBuyInput) -> SmartBuyOutput:
+        """judge (photo) or answer (to the last question): memory in, decision, memory out, next actions."""
+        uid, sid, notes, answering = inp.user_id, inp.session_id, [], inp.answer is not None
+        if inp.answer:
+            s = self.memory.session(uid, sid)
+            if not s or not s.get("question"):
+                raise ValueError("nothing to answer: no open Smart Buy question in this session")
+            req = dict(s["request"])
+            key, val = inp.answer.question_key, inp.answer.value
+            if key == "need_for_occasion":
+                req["need_for_occasion"] = val in (True, "yes", "true", "oui", "ey")
+            elif key == "confirm_type":
+                if val in (False, "no", "non", "le"):
+                    raise ValueError("photo not confirmed: please send a clearer photo")
+                req["ai_confidence"] = 1.0
+            notes.append(f"used your answer to: {s.get('question')}")
+            inp = SmartBuyInput.model_validate({**req, "session_id": sid, "language": inp.language})
+        if not inp.probe_image:
+            raise ValueError("send a photo (probe_image) or an answer")
+        if inp.body and inp.body.fit_text:  # free text -> fit facts (rules, LLM if needed)
+            from modules.m18_size_fit import text_fit
+            brands = [b for b in self.charts if not b.startswith("_")]
+            parsed = text_fit.parse(inp.body.fit_text, brands, self.config.get("fit_text_llm", True))
+            known = {(r["brand"], r["size"]) for r in inp.body.fit_refs}
+            refs = list(inp.body.fit_refs) + [r for r in parsed["refs"] if (r["brand"], r["size"]) not in known]
+            like = parsed["like_fit"] if inp.body.like_fit == "normal" and parsed["like_fit"] else inp.body.like_fit
+            inp = inp.model_copy(update={"body": inp.body.model_copy(update={"fit_refs": refs, "like_fit": like})})
+            got = "; ".join(f"{r['brand']} {r['size']} {r['fit'].replace('_', ' ')}" for r in parsed["refs"])
+            notes.append(f"read from your text ({parsed['method']}): {got or 'nothing clear'}"
+                         + (f", you like it {like}" if parsed["like_fit"] else ""))
+            notes += text_fit.part_tips(parsed["refs"])
+        prefs = self.memory.preferences(uid)
+        if inp.body and (inp.body.fit_refs or inp.body.like_fit != "normal" or inp.body.chest_cm or inp.body.waist_cm):
+            self.memory.set_preferences(uid, body=inp.body.model_dump())
+        elif prefs.get("body"):
+            inp = inp.model_copy(update={"body": Body(**prefs["body"])})
+            notes.append("used your saved body / fit info for the size")
+
+        out = await self._judge(inp)
+
+        before = self.memory.same_piece_before(uid, out.piece)
+        if before and not answering:
+            fb = before.get("feedback") or {}
+            extra = " and you bought it" if fb.get("bought") else ""
+            notes.append(f"you asked about a {out.piece.lower()} before ({before['at']}): {before['verdict'].upper()}{extra}")
+        out.decision_id = self.memory.remember(uid, sid, inp.model_dump(mode="json", exclude={"answer"}),
+                                               out.model_dump())
+        out.agent, out.session_id, out.memory_notes = AgentInfo(name=self.name, version=self.version), sid, notes
+        out.next_actions = self._next_actions(out, inp)
+        return out
+
+    def _next_actions(self, out: SmartBuyOutput, inp: SmartBuyInput) -> list[NextAction]:
+        acts = []
+        if out.uncertain and out.question:
+            acts.append(NextAction(action="ask_user", label=out.question, tool="smartbuy",
+                                   args={"session_id": out.session_id, "answer": {"question_key": out.question_key}}
+                                   if out.question_key else {}))
+        if out.verdict == "buy":
+            if out.buy_links:
+                acts.append(NextAction(action="open_shop", label=f"Buy it at {out.buy_links[0].shop}", tool=None,
+                                       args={"url": out.buy_links[0].url, "product_id": out.buy_links[0].product_id, "shop": out.buy_links[0].shop}))
+            acts.append(NextAction(action="show_outfits", label="See outfits with this piece", tool="stylist",
+                                   args={"endpoint": "/m02/complete", "pinned": out.piece}))
+        elif out.verdict == "think":
+            acts.append(NextAction(action="find_cheaper", label="Find it cheaper in local shops", tool="localshop",
+                                   args={"subcategory": None, "max_price_tnd": round((inp.price_tnd or 0) * 0.8) or None,
+                                         "query": out.piece}))
+        else:
+            if out.similar_items:
+                acts.append(NextAction(action="show_outfits", label=f"Style your {out.similar_items[0].label.lower()} instead",
+                                       tool="stylist", args={"endpoint": "/m02/complete",
+                                                         "pinned_item_ids": [out.similar_items[0].item_id]}))
+            if out.fills_gap is None:
+                acts.append(NextAction(action="find_alternative", label="Find a piece that fills a real gap",
+                                       tool="smartbuy", args={"endpoint": "/m06/shopping-list", "user_id": inp.user_id}))
+        acts.append(NextAction(action="feedback", label="Did you buy it? Was the advice good?", tool="smartbuy",
+                               args={"endpoint": "/m06/feedback", "decision_id": out.decision_id}))
+        return acts
+
+    def feedback(self, user_id: str, decision_id: str, bought: bool | None = None, liked: bool | None = None) -> dict:
+        """Long-term memory + personal strictness (bandit): was the advice good?"""
+        h = self.memory.feedback(user_id, decision_id, bought, liked)
+        if h is None:
+            raise ValueError(f"unknown decision {decision_id}")
+        if self.bandit and liked is not None:
+            self.bandit.update(user_id, h.get("offset", 0), liked)
+        return h
+
+    async def _judge(self, inp: SmartBuyInput) -> SmartBuyOutput:
         cfg, cl = self.config, self.clients
         f = await self.facts(inp.probe_image, inp.user_id, inp.price_tnd, inp.need_for_occasion)
         cand, red, unl, g, n_same = f["cand"], f["red"], f["unl"], f["gap"], f["n_same"]
@@ -109,17 +210,27 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
         contrib = {self._label(k, d["features"].get(k), x): x                                  # idea 7
                    for k, x in sorted(d["contributions"].items(), key=lambda kv: -abs(kv[1])) if abs(x) >= 0.5}
 
-        expl = cl.explain({"verdict": v, "reasons": rs, "candidate": cand["label"]})  # M8
+        mode = cfg.get("explainer", "own")                                            # own (Ollama) | m8 | template
+        if mode == "m8":
+            expl, expl_src = cl.explain({"verdict": v, "reasons": rs, "candidate": cand["label"]}), "m8"
+        else:
+            expl, expl_src = explainer.explain(v, cand["label"], rs, inp.price_tnd, inp.language, mode,
+                                               cfg.get("explainer_timeout", 20))
         size = sizefit.advise(self.charts, inp.shop_brand, cand["category"],
                               inp.body.model_dump() if inp.body else None)            # M18
-        links = partners.links(self.shops, cand["subcategory"], cand["colour"], inp.price_tnd) if v != "skip" else []  # M13
+        links = []
+        if v != "skip":  # M7 search (same look as the photo, or type + colour), else M13's shop list
+            links = cl.catalogue_search(cand["subcategory"], cand["colour"], inp.price_tnd,
+                                        embedding=cand.get("embedding")) if hasattr(cl, "sources") else []
+            links = links or partners.links(self.shops, cand["subcategory"], cand["colour"], inp.price_tnd,
+                                            one_per_shop=True)
         return SmartBuyOutput(
             verdict=v, score=d["score"], breakdown=d["breakdown"], category=cand["category"],
             is_duplicate=red["is_duplicate"],
             similar_items=[{"item_id": n["item_id"], "label": n["label"], "similarity": n["similarity"]} for n in red["similar"]],
             new_outfits=unl["new_outfits"], pairs_with=unl["pairs_with"], fills_gap=g,
             cost_per_outfit_tnd=d["cost_per_outfit"], reasons=rs, explanation=expl,
-            size_advice=size, buy_links=links,
+            size_advice=size, buy_links=links, sources={**getattr(cl, "sources", {}), "explanation": expl_src}, piece=cand["label"],
             decision_mode="learned" if self.model else "rules", probabilities=d["probabilities"],
             contributions=contrib, what_if=wi, uncertain=unc["uncertain"], question=unc["question"],
             question_key=unc["question_key"], predicted_wears=wp["predicted_wears"],
