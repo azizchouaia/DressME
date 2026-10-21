@@ -1,4 +1,4 @@
-"""Every module has a card. Only the nine agents are tools the planner can call."""
+"""Every module has a card. The planner can call the agents, including taste."""
 
 import importlib
 
@@ -15,6 +15,7 @@ AGENTS = {
     "m10_share_cards": "share",
     "m11_trip_planner": "trips",
     "m15_challenges": "challenges",
+    "m19_taste": "taste",
 }
 SKILLS = {
     "m03_wear_log": "stylist",
