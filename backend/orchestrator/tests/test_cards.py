@@ -16,6 +16,7 @@ AGENTS = {
     "m11_trip_planner": "trips",
     "m15_challenges": "challenges",
     "m19_taste": "taste",
+    "m20_talk": "talk",
 }
 SKILLS = {
     "m03_wear_log": "stylist",

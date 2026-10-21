@@ -272,9 +272,11 @@ def _exploration(tastes: list[np.ndarray], seed: int) -> np.ndarray:
 
 
 def closest_taste(vector: np.ndarray, tastes: list[np.ndarray]) -> float:
-    if not tastes:
+    vector = np.asarray(vector, dtype=np.float32).reshape(-1)
+    usable = [taste for taste in tastes if np.asarray(taste).reshape(-1).shape == vector.shape]
+    if not usable:
         return 0.0
-    return max(cosine(vector, taste) for taste in tastes)
+    return max(cosine(vector, taste) for taste in usable)
 
 
 def memory_view(events: list[Event], names: dict[str, str]) -> dict[str, list[str]]:

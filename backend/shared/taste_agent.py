@@ -49,6 +49,7 @@ def _state(user_id: str) -> tuple[dict, dict]:
     state.setdefault("dislike", [])
     state.setdefault("save", {})
     state.setdefault("profile", "")
+    state.setdefault("avoid", {})
     return users, state
 
 
@@ -100,6 +101,8 @@ def learn(user_id: str, piece_id: str, kind: str, vector=None, title: str = "", 
         bucket = state[kind]
         if piece_id not in bucket:
             bucket.append(piece_id)
+        if kind == "dislike" and title:
+            state.setdefault("avoid", {})[piece_id] = title
     _write(_users_path(), users)
     from shared.taste_store import save_event
 
@@ -125,7 +128,9 @@ def _from_postgres(user_id: str):
             state["skip"].append(row["id"])
         elif row["kind"] == "save":
             state["save"][row["id"]] = row
-        if row["kind"] == "like" and row["vector"]:
+        if row["kind"] == "dislike" and row.get("title"):
+            state.setdefault("avoid", {})[row["id"]] = row["title"]
+        if row["kind"] == "like" and isinstance(row.get("vector"), list) and len(row["vector"]) == 512:
             vectors[row["id"]] = np.asarray(row["vector"], dtype=np.float32)
             events.append(Event(kind="like", piece_id=row["id"], at=1))
             state["like"][row["id"]] = row
@@ -143,7 +148,7 @@ def _memory(user_id: str):
     for piece_id, value in (state.get("like") or {}).items():
         raw = value.get("vector") if isinstance(value, dict) else None
         raw = raw or (cache.get(piece_id) or {}).get("vector")
-        if not raw:
+        if not isinstance(raw, list) or len(raw) != 512:
             continue
         vectors[piece_id] = np.asarray(raw, dtype=np.float32)
         events.append(Event(kind="like", piece_id=piece_id, at=1))
@@ -244,4 +249,19 @@ def advise(user_id: str, candidates: list[dict] | None = None, purpose: str = "o
         "verdict": "buy" if purpose == "buy" and score >= 55 else ("skip" if purpose == "buy" else "wear"),
         "items": items,
         "next_actions": [],
+    }
+
+
+def brief(user_id: str) -> dict:
+    """What this person loves, avoids, and has saved. Scores stay with score_map."""
+
+    state, _cache, _events, _vectors, _disliked = _memory(user_id)
+    loves = [value["title"] for value in (state.get("like") or {}).values() if isinstance(value, dict) and value.get("title")]
+    wardrobe = [value["title"] for value in (state.get("save") or {}).values() if isinstance(value, dict) and value.get("title")]
+    avoids = [title for title in (state.get("avoid") or {}).values() if title]
+    return {
+        "gender": state.get("profile") or "",
+        "loves": loves[:12],
+        "avoids": avoids[:8],
+        "wardrobe": wardrobe[:12],
     }

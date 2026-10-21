@@ -18,3 +18,5 @@ Run the loop tests from `backend/`:
 ```
 
 `run_turn` in `graph.py` is the local entry. `backend/api/routes/chat.py` is still the gateway stub.
+
+Who does what, and when the planner should call them, is in [AGENTS.md](AGENTS.md).
