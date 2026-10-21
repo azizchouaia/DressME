@@ -1,0 +1,10 @@
+{
+  "model": "patrickjohncyh/fashion-clip",
+  "dim": 512,
+  "products": 6531,
+  "embedded": 6531,
+  "encoded_now": 0,
+  "catalogue_csv": "local_catalogue_clean.csv",
+  "built_at": "2026-10-15T20:25:53+00:00",
+  "seconds": 0.0
+}
