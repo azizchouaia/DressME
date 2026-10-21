@@ -87,6 +87,19 @@ affinity, duration, user's past completion rate; split by user, selection by NDC
 
 Both files also store the full comparison and the feature importance.
 
+## Memory of the agent (`memory.py`)
+| Kind | What is kept | Where |
+|---|---|---|
+| Long-term, episodic | challenges, participations, daily entries, posts, likes, comments | SQLite `data/memory.sqlite` (`SqliteChallengeStore`, write-through, survives a restart) |
+| User memory of the coach | tips already given, rules broken again and again, messages of each day | SQLite, tables `coach_tip`, `coach_issue`, `coach_message` (`CoachMemory`) |
+| Short-term, working | the last 3 days of the challenge + today's facts | added to the coach prompt (`Memory (earlier days of this user)`) |
+| Semantic | coaching tips | RAG knowledge base `knowledge/style_tips.yaml` |
+
+Effects: the RAG skips tips already given to the user in this challenge, and when a rule breaks again the coach says
+so ("That is 3 times for the colour theme"). The M10 share agent keeps its cards, opens and sign-ups the same way
+(`modules/m10_share_cards/memory.py`). `BO7_MEMORY_PATH` / `BO7_SHARE_MEMORY_PATH` change the files; `:memory:`
+keeps everything in RAM (tests).
+
 ## Real clothes in the demo (stand-in for M1)
 On `/bo7/demo` → **My wardrobe 📷**, upload a photo of a garment (flat on a plain background) or give a photo to a demo item.
 `cutout.py` removes the background (`rembg` U²-Net if installed, else border-colour flood fill), crops it and runs K-means for
@@ -136,5 +149,6 @@ cd backend && pip install -r modules/m15_challenges/requirements.txt && pytest m
 
 ## Status
 - [x] baseline working end-to-end with mocks (demo wardrobe, memory store)
+- [x] persistent memory (SQLite) and coach memory (tips given, recurring problems, last days)
 - [x] rule engine, feasibility, recommendation, leaderboard, M10 cards on posts
 - [ ] Postgres store, real M1 wardrobe (`wardrobe_source: http`), M5 style tags, `worn` events to M3

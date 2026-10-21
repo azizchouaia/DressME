@@ -58,9 +58,16 @@ class ChallengesAgent(BaseAgent[ChallengesInput, ChallengesOutput]):
         wardrobe: WardrobeProvider | None = None,
         store: MemoryChallengeStore | None = None,
         share_agent=None,
+        coach_memory=None,
     ):
         super().__init__(config or CONFIG)
         self.store = store or MemoryChallengeStore(self.config.get("seed", []))
+        # what the coach remembers per user and challenge (memory.CoachMemory); in-memory SQLite by default
+        if coach_memory is None:
+            from .memory import CoachMemory, connect
+
+            coach_memory = CoachMemory(connect(":memory:"))
+        self.coach_memory = coach_memory
         if wardrobe is None:
             wardrobe = (
                 HttpWardrobe(self.config["wardrobe_url"])
@@ -225,7 +232,8 @@ class ChallengesAgent(BaseAgent[ChallengesInput, ChallengesOutput]):
             )
         )
         previous = self._previous(user_id, part["entries"], wardrobe)
-        violations = rules.run(self._rules(ch), today, previous)
+        broken = rules.run_by_rule(self._rules(ch), today, previous)
+        violations = [v for _, v in broken]
         valid = not violations
         steps.append(
             PipelineStep(
@@ -302,6 +310,17 @@ class ChallengesAgent(BaseAgent[ChallengesInput, ChallengesOutput]):
         )
 
         names = [wardrobe[i].subcategory or i for i in hint]
+        mem = self.coach_memory.recall(user_id, challenge_id)  # long-term + short-term memory of the coach
+        steps.append(
+            PipelineStep(
+                stage="code",
+                method="memory",
+                name="Coach memory (SQLite)",
+                detail=f"{len(mem['tips_given'])} tip(s) already given, "
+                + (", ".join(f"{r} ×{n}" for r, n in mem["issues"].items()) or "no rule broken before")
+                + f", last {len(mem['recent'])} day(s) in the prompt",
+            )
+        )
         tip = coach.advise(
             challenge=ch.title,
             rule_types=[r.type for r in ch.rules],
@@ -312,7 +331,13 @@ class ChallengesAgent(BaseAgent[ChallengesInput, ChallengesOutput]):
             probability=prog.completion_probability or 0.5,
             risk=prog.risk or "at_risk",
             streak=prog.streak,
+            memory=mem,
+            broken_rules=[r for r, _ in broken],
         )
+        self.coach_memory.remember(
+            user_id, challenge_id, day, valid=valid, tip_ids=[d["id"] for d in tip["retrieved"]],
+            broken=broken, message=tip["message"], source=tip["source"],
+        )  # fmt: skip
         steps.append(
             PipelineStep(
                 stage="code",

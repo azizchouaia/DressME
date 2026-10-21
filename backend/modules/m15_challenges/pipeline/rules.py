@@ -135,9 +135,13 @@ def validate(rules: list[dict], duration: int) -> list[str]:
     return errors
 
 
+def run_by_rule(
+    rules: list[dict], today: list[Garment], previous: list[tuple[int, list[Garment]]]
+) -> list[tuple[str, str]]:
+    """Same as run(), each violation with the type of the rule it breaks (for the coach's memory)."""
+    return [(r["type"], v) for r in rules for v in RULES[r["type"]](r.get("params", {}), today, previous)]
+
+
 def run(rules: list[dict], today: list[Garment], previous: list[tuple[int, list[Garment]]]) -> list[str]:
     """rules: [{"type", "params"}] → all violations, in rule order."""
-    out: list[str] = []
-    for r in rules:
-        out += RULES[r["type"]](r.get("params", {}), today, previous)
-    return out
+    return [v for _, v in run_by_rule(rules, today, previous)]
