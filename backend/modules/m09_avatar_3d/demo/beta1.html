@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DressMe Beta 1</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js"
+} }
+</script>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e6dfd4;
+    --accent: #8a5a2b; --accent-ink: #fff; --accent-soft: #f1e4d4; --chip: #efe9df; --good: #3f7d4e; --warn: #b5532f;
+    --stage-top: #f3ebe0; --stage-bottom: #e4d9ca;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151412; --panel: #1f1d1a; --ink: #f0ebe3; --muted: #a39d93; --line: #34302a;
+      --accent: #d9a46a; --accent-ink: #1b1209; --accent-soft: #3a2d20; --chip: #2a2723; --good: #7cc08b; --warn: #e48a66;
+      --stage-top: #2a2622; --stage-bottom: #1a1816;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button { font: inherit; color: inherit; }
+  .app { max-width: 1180px; margin: 0 auto; padding: 0 16px 40px; }
+  header { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); margin: 0 -16px; padding: 10px 16px 8px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand h1 { font-size: 19px; margin: 0; letter-spacing: -.2px; }
+  .brand .beta { font-size: 11px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 7px; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-top: 8px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: none; border: 1px solid var(--line); background: var(--chip); border-radius: 999px; padding: 6px 13px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+  .tab.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tab small { opacity: .7; font-size: 11px; }
+  .view { display: none; } .view.on { display: block; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+  .grid > * { min-width: 0; }
+  html, body { overflow-x: hidden; }
+  @media (min-width: 960px) { .grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; } .stickyside { position: sticky; top: 96px; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px; min-width: 0; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--chip); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn { border: 0; background: var(--accent); color: var(--accent-ink); padding: 11px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .ghost { border: 1px solid var(--line); background: transparent; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 13px; }
+  label.l { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  select, input[type=text] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; min-width: 0; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=color] { width: 46px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: none; padding: 2px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* stage */
+  .stage { position: relative; height: min(62vh, 640px); min-height: 380px; border-radius: 18px; overflow: hidden; background: linear-gradient(var(--stage-top), var(--stage-bottom)); border: 1px solid var(--line); touch-action: none; }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .stage.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+  .overlay-tl, .overlay-tr, .overlay-b { position: absolute; z-index: 3; }
+  .overlay-tl { top: 10px; left: 10px; }
+  .overlay-tr { top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; max-width: 60%; }
+  .overlay-b { left: 10px; right: 10px; bottom: 10px; display: flex; justify-content: center; pointer-events: none; }
+  .pill { background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 999px; padding: 6px 11px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .worn { padding: 4px 6px 4px 4px; }
+  .worn img { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; background: var(--chip); }
+  .worn .x { border: 0; background: var(--chip); width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 1; }
+  .status { pointer-events: auto; }
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; display: inline-block; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .onboard { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 16px; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(4px); }
+  .onboard .card { width: min(420px, 100%); }
+  .hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--muted); font-size: 14px; z-index: 2; pointer-events: none; }
+
+  /* pieces strip */
+  .stripbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 14px 0 8px; }
+  .filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; }
+  .pc { flex: none; width: 104px; scroll-snap-align: start; border: 2px solid var(--line); border-radius: 14px; background: var(--panel); position: relative; cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; }
+  .pc.wearing { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .pc .im { height: 104px; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 12px 12px 0 0; background: var(--chip); }
+  .pc .im img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; -webkit-user-drag: none; }
+  .pc .sw { width: 64px; height: 64px; border-radius: 12px; }
+  .pc .nm { font-size: 12px; padding: 5px 7px 7px; line-height: 1.25; }
+  .pc .nm b { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; }
+  .pc .badge { position: absolute; top: 5px; left: 5px; font-size: 11px; background: var(--panel); border-radius: 999px; padding: 1px 6px; border: 1px solid var(--line); display: flex; align-items: center; gap: 4px; }
+  .pc .more { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 13px; line-height: 1; }
+  .pc.add { display: flex; align-items: center; justify-content: center; flex-direction: column; color: var(--accent); border-style: dashed; cursor: pointer; min-height: 150px; font-weight: 600; gap: 4px; }
+  .pc.add span { font-size: 30px; line-height: 1; }
+  .pc.laundry .im { opacity: .45; }
+  .ghostdrag { position: fixed; z-index: 100; width: 84px; height: 84px; pointer-events: none; transform: translate(-50%, -60%); filter: drop-shadow(0 8px 16px rgba(0,0,0,.25)); }
+  .ghostdrag img { width: 100%; height: 100%; object-fit: contain; }
+
+  /* outfits */
+  .outfits { display: grid; gap: 10px; margin-top: 12px; }
+  .of { border: 2px solid var(--line); border-radius: 14px; padding: 10px; cursor: pointer; background: var(--bg); }
+  .of.on { border-color: var(--accent); }
+  .of .thumbs { display: flex; gap: 6px; }
+  .of .thumbs div { width: 54px; height: 54px; border-radius: 10px; background: var(--chip); display: flex; align-items: center; justify-content: center; padding: 4px; }
+  .of .thumbs img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .of .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .score { font-weight: 800; color: var(--accent); font-size: 18px; }
+  .of p { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+  /* sheets */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 50; display: none; }
+  .sheet-bg.on { display: block; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 88vh; overflow-y: auto; background: var(--panel); border-radius: 20px 20px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .25s ease; max-width: 640px; margin: 0 auto; }
+  .sheet.on { transform: none; }
+  .sheet .grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 0 auto 10px; }
+  .sheet h3 { margin: 0 0 6px; font-size: 17px; }
+  .photo { display: flex; gap: 10px; }
+  .drop { flex: 1; border: 2px dashed var(--line); border-radius: 12px; min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; text-align: center; padding: 8px; color: var(--muted); font-size: 13px; }
+  .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .drop input { display: none; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 90; background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px); display: none; }
+  .toast.on { display: block; }
+  iframe.mod { width: 100%; height: calc(100vh - 120px); border: 1px solid var(--line); border-radius: 16px; background: var(--panel); margin-top: 14px; }
+  .facts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .fact { background: var(--bg); border-radius: 10px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+  .fact b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><h1>DressMe</h1><span class="beta">BETA 1</span><span class="small muted" id="who"></span></div>
+    <nav class="tabs" id="tabs">
+      <button class="tab on" data-v="tryon">Try-on & outfits <small>M2 · M9</small></button>
+      <button class="tab" data-v="log">Wear log & laundry <small>M3</small></button>
+      <button class="tab" data-v="plan">Planner <small>M4</small></button>
+      <button class="tab" data-v="caps">Capsule <small>M17</small></button>
+      <button class="tab" data-v="lab">Recommender lab <small>M2</small></button>
+    </nav>
+  </header>
+
+  <section class="view on" id="v-tryon">
+    <div class="grid">
+      <div class="stickyside">
+        <div class="stage" id="stage">
+          <div class="hint" id="hint"></div>
+          <div class="overlay-tl"><button class="pill" id="bodypill" title="change my body">—</button></div>
+          <div class="overlay-tr" id="wornbox"></div>
+          <div class="overlay-b" style="flex-direction:column;align-items:center;gap:6px">
+            <span class="pill status" id="physpill" style="display:none"></span>
+            <span class="pill status" id="status3d" style="display:none"></span>
+          </div>
+          <button class="pill" id="turnbtn" style="position:absolute;left:10px;bottom:10px;z-index:4;display:none">▶ Turn</button>
+          <div class="onboard" id="onboard" style="display:none">
+            <div class="card">
+              <h2>Step 1 · Create your avatar</h2>
+              <div class="chips" id="sex"><button class="chip" data-v="female">Woman</button><button class="chip" data-v="male">Man</button></div>
+              <label class="l">Height: <b id="hv"></b> cm</label><input type="range" id="height" min="140" max="210">
+              <label class="l">Weight: <b id="wv"></b> kg</label><input type="range" id="weight" min="35" max="150">
+              <p class="small muted">A faceless mannequin with your measurements. Every piece of your wardrobe is then fitted to it in the background, so trying clothes on is instant.</p>
+              <div class="row"><button class="btn" id="mkbody" style="flex:1">Create my avatar</button><button class="ghost" id="cancelbody">Cancel</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="stripbar">
+          <div class="filters" id="filters">
+            <button class="chip on" data-f="all">All</button><button class="chip" data-f="top">Tops</button><button class="chip" data-f="bottom">Bottoms</button>
+            <button class="chip" data-f="dress">Dresses</button><button class="chip" data-f="outerwear">Jackets</button><button class="chip" data-f="shoes">Shoes</button>
+          </div>
+          <button class="ghost" id="undress" title="remove everything">Undress</button>
+        </div>
+        <div class="strip" id="strip"></div>
+        <p class="small muted" style="margin:0">Drag a piece up onto the avatar (or tap it) to wear it. Tap ✕ on the avatar to take it off. ⋯ for details and laundry.</p>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Step 2 · Recommend <span class="small" id="wx"></span></h2>
+          <label class="l">Occasion</label>
+          <div class="chips" id="occ"><button class="chip on" data-v="casual">Casual</button><button class="chip" data-v="work">Work</button><button class="chip" data-v="event">Event</button></div>
+          <label class="l">Mood</label>
+          <div class="chips" id="mood"><button class="chip on" data-v="">Any</button><button class="chip" data-v="comfy">Comfy</button><button class="chip" data-v="bold">Bold</button><button class="chip" data-v="classy">Classy</button></div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="rec" style="flex:1">Recommend 3 outfits</button>
+            <button class="ghost" id="complete" title="keep what is on the avatar, M2 fills the rest">Complete my look</button>
+          </div>
+          <div class="outfits" id="outfits"></div>
+          <div class="row" id="woreRow" style="margin-top:10px;display:none">
+            <button class="ghost" id="wore">✓ I wore this today</button>
+            <span class="small muted">saved in the wear log (M3): M2 then rotates your pieces</span>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>How it works</h2>
+          <div class="small muted">
+            <p style="margin:0 0 6px"><b>Pieces:</b> phone photo → background removed (pretrained BiRefNet) → texture cleaned of creases → mapped on a CC0 3D garment of that type, at your size, fit and fabric weight.</p>
+            <p style="margin:0 0 6px"><b>3D:</b> each piece is pre-built for your body (MPFB + Blender, cloth simulation for big sizes) when you save it, so wearing it is instant.</p>
+            <p style="margin:0"><b>Outfits:</b> M2 scores your pieces with the pretrained OutfitTransformer on FashionCLIP vectors, the weather, the occasion and your wear log (M3: laundry and recently worn pieces are left out).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-log"><iframe class="mod" data-src="/m03/demo" title="Wear log"></iframe></section>
+  <section class="view" id="v-plan"><iframe class="mod" data-src="/m04/demo" title="Planner"></iframe></section>
+  <section class="view" id="v-caps"><iframe class="mod" data-src="/m17/demo" title="Capsule"></iframe></section>
+  <section class="view" id="v-lab"><iframe class="mod" data-src="/m02/demo" title="Recommender lab"></iframe></section>
+</div>
+
+<div class="sheet-bg" id="sheetbg"></div>
+<div class="sheet" id="addsheet">
+  <div class="grab"></div>
+  <h3>Add a piece</h3>
+  <p class="small muted" style="margin:0 0 10px">Lay it flat on a plain floor or sheet, sleeves / legs straight, photo from above.</p>
+  <div class="photo">
+    <label class="drop" id="dfront"><input type="file" id="front" accept="image/*" capture="environment"><span>📷 Front photo</span></label>
+    <label class="drop" id="dback"><input type="file" id="back" accept="image/*" capture="environment"><span>Back photo<br><span class="small">(optional)</span></span></label>
+  </div>
+  <label class="l">Name (optional)</label><input type="text" id="pname" placeholder="e.g. Spain jersey">
+  <div class="grid2">
+    <div><label class="l">Type</label><select id="ptype"></select></div>
+    <div><label class="l">Size</label><select id="psize"></select></div>
+    <div><label class="l">Fit</label><select id="pfit"></select></div>
+    <div><label class="l">Fabric weight</label><select id="pgsm">
+      <option value="">typical for the type</option><option value="110">light · 110 g/m²</option><option value="160">t-shirt · 160 g/m²</option>
+      <option value="220">medium · 220 g/m²</option><option value="320">heavy · 320 g/m²</option><option value="400">very heavy · 400 g/m²</option></select></div>
+  </div>
+  <div class="grid2">
+    <div id="slvbox"><label class="l">Sleeves</label><select id="psleeves"><option value="">as the type</option><option value="short">short</option><option value="long">long</option></select></div>
+    <div id="lenbox" style="display:none"><label class="l">Length</label><select id="plength"><option value="mini">mini</option><option value="midi" selected>midi</option><option value="long">long</option></select></div>
+  </div>
+  <div class="row" style="margin-top:10px"><input type="color" id="pcolor" value="#3b6db3"><span class="small muted">colour, only used without photo</span></div>
+  <div class="row" style="margin-top:14px"><button class="btn" id="psave" style="flex:1">Save piece</button><button class="ghost" data-close>Cancel</button></div>
+  <p class="small muted" id="pstatus" style="margin:8px 0 0"></p>
+</div>
+
+<div class="sheet" id="piecesheet">
+  <div class="grab"></div>
+  <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
+    <div style="width:96px;height:96px;flex:none;border-radius:12px;background:var(--chip);display:flex;align-items:center;justify-content:center;padding:6px" id="psimg"></div>
+    <div style="min-width:0"><h3 id="pstitle"></h3><div class="small muted" id="psmeta"></div><div class="small" id="ps3d" style="margin-top:4px"></div></div>
+  </div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn" id="pswear" style="flex:1">Wear it</button>
+    <button class="ghost" id="pslaundry">🧺 To laundry</button>
+    <button class="ghost" id="psdel" style="color:var(--warn)">Delete</button>
+  </div>
+  <div class="row" style="margin-top:10px"><button class="ghost" data-close style="width:100%">Close</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshBVH } from 'three-mesh-bvh';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('dmb1_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem('dmb1_' + k, JSON.stringify(v)); } catch (e) {} } };
+const USER = new URLSearchParams(location.search).get('user') || 'me';
+$('#who').textContent = '· ' + USER;
+let toastT;
+function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+async function api(url, opts = {}) {
+  const r = await fetch(url, opts); const txt = await r.text(); let j;
+  try { j = JSON.parse(txt); } catch (e) { throw new Error('server ' + r.status + ': ' + txt.slice(0, 160)); }
+  if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail || j).slice(0, 200));
+  return j;
+}
+const post = (url, body) => api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+// ---------------- tabs ----------------
+$('#tabs').onclick = e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === b));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + b.dataset.v));
+  const fr = document.querySelector('#v-' + b.dataset.v + ' iframe'); if (fr && !fr.src) fr.src = fr.dataset.src;
+  if (b.dataset.v === 'tryon') resize();
+};
+
+// ---------------- 3D stage ----------------
+const stage = $('#stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NeutralToneMapping;
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8d8579, 1.1));
+const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(2, 4, 3); scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6); fill.position.set(-3, 2, -2); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.7); rim.position.set(0, 3, -4); scene.add(rim);
+{ // soft floor shadow
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const grd = g.createRadialGradient(64, 64, 4, 64, 64, 64); grd.addColorStop(0, 'rgba(0,0,0,0.32)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = 0.002; scene.add(m);
+}
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+camera.position.set(0, 1.05, 4.4);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.92, 0); controls.enableDamping = true; controls.enablePan = false;
+controls.minDistance = 1.3; controls.maxDistance = 7; controls.maxPolarAngle = 1.75;
+controls.autoRotate = false; controls.autoRotateSpeed = 1.2;
+window.__viewer = { camera, controls };  // for automated screenshots
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage); resize();
+renderer.setAnimationLoop(now => { tickTurn(now); controls.update(); renderer.render(scene, camera); });
+
+const loader = new GLTFLoader();
+const cache = new Map();  // glb url -> Promise<Object3D>
+function loadGlb(url) {
+  if (!cache.has(url)) cache.set(url, new Promise((ok, ko) => loader.load(url, g => {
+    g.scene.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.material) o.material.side = THREE.DoubleSide; } });
+    ok(g.scene);
+  }, undefined, ko)));
+  return cache.get(url);
+}
+
+// ---------------- state ----------------
+const S = { body: null, pieces: [], byId: {}, worn: {}, bodyObj: null, bodyUrl: null, filter: 'all', laundry: new Set(), outfits: [], outfit: null };
+const SLOT_ICON = { top: '👕', bottom: '👖', dress: '👗', outerwear: '🧥', shoes: '👟' };
+const CONFLICT = { top: ['top', 'dress'], bottom: ['bottom', 'dress'], dress: ['dress', 'top', 'bottom'], outerwear: ['outerwear'], shoes: ['shoes'] };
+let poll = null;
+
+async function refresh() {
+  let st;
+  try { st = (await api('/m09/wardrobe3d?user_id=' + encodeURIComponent(USER))).result; } catch (e) { toast(e.message); return; }
+  S.body = st.body; S.pieces = st.pieces; S.byId = Object.fromEntries(st.pieces.map(p => [p.piece_id, p]));
+  renderBodyPill(); renderStrip(); await syncBody(); await syncWorn(); renderStatus(st);
+  clearTimeout(poll); if (st.busy) poll = setTimeout(refresh, 2500);
+}
+
+function renderStatus(st) {
+  const el = $('#status3d');
+  if (!S.body) { el.style.display = 'none'; return; }
+  const total = S.pieces.length, ready = S.pieces.filter(p => p.status3d === 'ready').length;
+  if (!S.body.glb_url) { el.style.display = ''; el.innerHTML = '<span class="spin"></span> Creating your avatar…'; return; }
+  if (st.busy) { el.style.display = ''; el.innerHTML = `<span class="spin"></span> Fitting your clothes in 3D… ${ready}/${total}`; return; }
+  const failed = S.pieces.filter(p => p.status3d === 'failed').length;
+  el.style.display = failed ? '' : 'none'; el.textContent = failed ? failed + ' piece(s) could not be built in 3D' : '';
+}
+
+function renderBodyPill() {
+  const b = S.body;
+  $('#bodypill').innerHTML = b ? `${b.sex === 'female' ? '♀' : '♂'} ${Math.round(b.height_cm)} cm · ${Math.round(b.weight_kg)} kg <span class="muted">✎</span>` : 'Create avatar';
+  if (!b && !store.get('dismissed', false)) openOnboard();
+  $('#hint').textContent = b ? '' : 'Create your avatar to start';
+}
+
+async function syncBody() {
+  const url = S.body && S.body.glb_url;
+  if (url === S.bodyUrl) return;
+  stopTurn();
+  // a new body: every garment changes too
+  if (S.bodyObj) scene.remove(S.bodyObj);
+  for (const w of Object.values(S.worn)) if (w.obj) { scene.remove(w.obj); w.obj = null; w.url = null; }
+  S.bodyObj = null; S.bodyUrl = url;
+  if (!url) return;
+  const obj = await loadGlb(url);
+  if (S.bodyUrl !== url) return;
+  S.bodyObj = obj; scene.add(obj);
+  const box = new THREE.Box3().setFromObject(obj);
+  controls.target.set(0, (box.min.y + box.max.y) / 2, 0);
+}
+
+// worn: slot -> {id, url, obj}; garments load in parallel, the chips show at once (spinner while loading)
+async function syncWorn() {
+  renderWorn(); renderStrip();
+  store.set('worn', Object.fromEntries(Object.entries(S.worn).map(([k, v]) => [k, v.id])));
+  const jobs = [];
+  for (const [slot, w] of Object.entries(S.worn)) {
+    const p = S.byId[w.id];
+    if (!p) { removeSlot(slot); continue; }
+    if (!p.glb_url || p.glb_url === w.url) continue;
+    if (w.obj) scene.remove(w.obj);
+    w.url = p.glb_url; w.obj = null;
+    const url = p.glb_url;
+    jobs.push(loadGlb(url).then(obj => {
+      if (S.worn[slot] === w && w.url === url && S.bodyObj) { w.obj = obj; scene.add(obj); renderWorn(); }
+    }).catch(() => toast('Could not load ' + name(p))));
+  }
+  await Promise.all(jobs);
+  const t0 = performance.now(), n = resolveLayers();
+  window.__layers = { moved: n, ms: Math.round(performance.now() - t0) };
+  renderWorn();
+  scheduleOutfit();
+}
+
+// ---------------- layers: an outer garment never goes through an inner one ----------------
+// Each garment is pre-fitted alone on the body; when several are worn, every vertex of an outer garment that is
+// behind (or too close to) an inner one is pushed just outside it, along the inner surface's normal. Runs in the
+// browser in a fraction of a second for any combination; taking a garment off restores the original shapes.
+const LAYER = { shoes: 0, bottom: 1, dress: 2, top: 3, outerwear: 4 };
+const GAP = 0.006, NEAR = 0.06;
+const meshesOf = obj => { const a = []; obj.traverse(o => { if (o.isMesh) a.push(o); }); return a; };
+function restoreMesh(m) {
+  const pos = m.geometry.attributes.position;
+  if (!m.userData.orig) m.userData.orig = pos.array.slice();
+  else if (m.userData.moved) { pos.array.set(m.userData.orig); pos.needsUpdate = true; m.geometry.computeBoundingSphere(); }
+  m.userData.moved = false;
+}
+const _v = new THREE.Vector3(), _lp = new THREE.Vector3(), _d = new THREE.Vector3(), _n = new THREE.Vector3();
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
+function faceNormal(geo, f, out) {
+  const idx = geo.index, pos = geo.attributes.position;
+  const i0 = idx ? idx.getX(f * 3) : f * 3, i1 = idx ? idx.getX(f * 3 + 1) : f * 3 + 1, i2 = idx ? idx.getX(f * 3 + 2) : f * 3 + 2;
+  _a.fromBufferAttribute(pos, i0); _b.fromBufferAttribute(pos, i1); _c.fromBufferAttribute(pos, i2);
+  return out.subVectors(_c, _b).cross(_d.subVectors(_a, _b)).normalize();
+}
+function pushOut(m, colliders) {
+  const pos = m.geometry.attributes.position;
+  m.updateMatrixWorld(true);
+  const mw = m.matrixWorld, inv = mw.clone().invert();
+  const hit = { point: new THREE.Vector3(), distance: 0, faceIndex: 0 };
+  let moved = 0;
+  for (let i = 0; i < pos.count; i++) {
+    _v.fromBufferAttribute(pos, i).applyMatrix4(mw);
+    let changed = false;
+    for (const c of colliders) {
+      _lp.copy(_v).applyMatrix4(c.inv);
+      if (!c.bvh.closestPointToPoint(_lp, hit, 0, NEAR)) continue;
+      faceNormal(c.geo, hit.faceIndex, _n);
+      const d = _d.subVectors(_lp, hit.point).dot(_n);
+      if (d < GAP) { _lp.copy(hit.point).addScaledVector(_n, GAP); _v.copy(_lp).applyMatrix4(c.mw); changed = true; }
+    }
+    if (changed) { _lp.copy(_v).applyMatrix4(inv); pos.setXYZ(i, _lp.x, _lp.y, _lp.z); moved++; }
+  }
+  if (moved) { pos.needsUpdate = true; m.geometry.computeBoundingSphere(); m.userData.moved = true; }
+  return moved;
+}
+function resolveLayers() {
+  const worn = Object.values(S.worn).filter(w => w.obj && S.byId[w.id]).map(w => ({ w, p: S.byId[w.id] }));
+  worn.sort((x, y) => (LAYER[x.p.kind] ?? 3) - (LAYER[y.p.kind] ?? 3));
+  const colliders = [];
+  let total = 0;
+  for (const { w } of worn) {
+    const ms = meshesOf(w.obj);
+    ms.forEach(restoreMesh);
+    if (colliders.length) for (const m of ms) total += pushOut(m, colliders);
+    for (const m of ms) {
+      m.updateMatrixWorld(true);
+      colliders.push({ geo: m.geometry, bvh: new MeshBVH(m.geometry), mw: m.matrixWorld.clone(), inv: m.matrixWorld.clone().invert() });
+    }
+  }
+  return total;
+}
+
+// ---------------- cloth physics (server): the outfit worn together, and the turn animation ----------------
+let outfitTimer = null, outfitSeq = 0;
+const wornIds = () => Object.values(S.worn).map(w => w.id).sort();
+function physPill(html) { const el = $('#physpill'); el.style.display = html ? '' : 'none'; el.innerHTML = html || ''; }
+function scheduleOutfit() {
+  clearTimeout(outfitTimer);
+  stopTurn();
+  const ids = wornIds();
+  $('#turnbtn').style.display = ids.length && S.bodyObj ? '' : 'none';
+  if (ids.length < 2) { physPill(''); return; }
+  outfitTimer = setTimeout(() => pollOutfit(ids, ++outfitSeq), 600);
+}
+async function pollOutfit(ids, seq) {
+  if (seq !== outfitSeq || ids.join() !== wornIds().join()) return;
+  let r;
+  try { r = (await post('/m09/outfit3d', { user_id: USER, piece_ids: ids, animate: false })).result; }
+  catch (e) { physPill(''); return; }
+  if (seq !== outfitSeq) return;
+  if (r.status === 'ready') { physPill(''); await applyOutfit(r.pieces); return; }
+  if (r.status === 'failed') { physPill(''); return; }
+  physPill('<span class="spin"></span> Draping the outfit with cloth physics…');
+  setTimeout(() => pollOutfit(ids, seq), 2500);
+}
+async function applyOutfit(urls) {
+  const jobs = Object.entries(S.worn).map(async ([slot, w]) => {
+    const u = urls[w.id]; if (!u || w.url === u) return;
+    const obj = await loadGlb(u);
+    if (S.worn[slot] !== w) return;
+    if (w.obj) { meshesOf(w.obj).forEach(restoreMesh); scene.remove(w.obj); }
+    w.obj = obj; w.url = u; scene.add(obj);
+  });
+  await Promise.all(jobs);
+  resolveLayers(); renderWorn();
+}
+
+// turn animation: the avatar turns on the spot while the fabric (baked cloth simulation) swings and settles
+const turn = { on: false, objs: [], hidden: [], meta: null, t0: 0, pivot: null };
+function turnAngle(frame, T) {
+  const f0 = T.settle, f1 = T.settle + T.turn;
+  if (frame <= f0) return 0; if (frame >= f1) return Math.PI * 2;
+  const t = (frame - f0) / (f1 - f0); return Math.PI * 2 * t * t * (3 - 2 * t);
+}
+function stopTurn() {
+  if (!turn.pivot) return;
+  turn.on = false;
+  const kids = [...turn.pivot.children];
+  for (const o of kids) { turn.pivot.remove(o); if (!turn.objs.includes(o)) scene.add(o); }
+  scene.remove(turn.pivot); turn.pivot = null;
+  turn.hidden.forEach(o => o.visible = true); turn.hidden = []; turn.objs = [];
+  $('#turnbtn').textContent = '▶ Turn';
+}
+async function startTurn() {
+  if (turn.pivot) { stopTurn(); return; }
+  const ids = wornIds(); if (!ids.length) return;
+  $('#turnbtn').disabled = true;
+  let r;
+  for (;;) {
+    try { r = (await post('/m09/outfit3d', { user_id: USER, piece_ids: ids, animate: true })).result; }
+    catch (e) { toast(e.message); break; }
+    if (r.status === 'ready' || r.status === 'failed') break;
+    $('#turnbtn').innerHTML = '<span class="spin"></span> Simulating the fabric… (~30 s, once)';
+    await new Promise(ok => setTimeout(ok, 2500));
+    if (ids.join() !== wornIds().join()) { r = null; break; }
+  }
+  $('#turnbtn').disabled = false; $('#turnbtn').textContent = '▶ Turn';
+  if (!r || r.status !== 'ready' || !r.animation) { if (r && r.status === 'failed') toast('The animation could not be simulated'); return; }
+  const m = r.animation;
+  const animObjs = await Promise.all(Object.entries(m.urls).map(async ([id, u]) => [id, (await loadGlb(u)).clone()]));
+  turn.pivot = new THREE.Group(); scene.add(turn.pivot);
+  scene.remove(S.bodyObj); turn.pivot.add(S.bodyObj);
+  for (const w of Object.values(S.worn)) {
+    if (!w.obj) continue;
+    const a = animObjs.find(([id]) => id === w.id);
+    scene.remove(w.obj); turn.pivot.add(w.obj);
+    if (a) { w.obj.visible = false; turn.hidden.push(w.obj); turn.pivot.add(a[1]); turn.objs.push(a[1]); }
+  }
+  turn.meta = m; turn.t0 = performance.now(); turn.on = true;
+  $('#turnbtn').textContent = '■ Stop';
+}
+function tickTurn(now) {
+  if (!turn.on || !turn.pivot) return;
+  const m = turn.meta, frame = 1 + (now - turn.t0) / 1000 * m.fps;
+  if (frame >= m.total) { turn.t0 = now; }  // loop
+  const f = Math.min(frame, m.total);
+  turn.pivot.rotation.y = turnAngle(f, m.turn);
+  const fr = m.frames; let k = 0;
+  while (k < fr.length - 2 && fr[k + 1] <= f) k++;
+  const a = Math.min(1, Math.max(0, (f - fr[k]) / Math.max(1, fr[k + 1] - fr[k])));
+  for (const o of turn.objs) o.traverse(x => {
+    if (!x.isMesh || !x.morphTargetInfluences) return;
+    x.morphTargetInfluences.fill(0);
+    x.morphTargetInfluences[k] = 1 - a; if (k + 1 < x.morphTargetInfluences.length) x.morphTargetInfluences[k + 1] = a;
+  });
+}
+$('#turnbtn').onclick = startTurn;
+
+function removeSlot(slot) {
+  const w = S.worn[slot]; if (!w) return;
+  stopTurn();
+  if (w.obj) { meshesOf(w.obj).forEach(restoreMesh); scene.remove(w.obj); }
+  delete S.worn[slot];
+}
+
+function put(id, quiet) {
+  const p = S.byId[id]; if (!p) return false;
+  if (p.status3d !== 'ready' && !quiet) toast(p.status3d === 'failed' ? 'This piece could not be built in 3D' : 'Still fitting this piece in 3D… it will appear in a moment');
+  for (const s of CONFLICT[p.slot] || [p.slot]) removeSlot(s);
+  S.worn[p.slot] = { id, url: null, obj: null };
+  return true;
+}
+async function wear(id, quiet) {
+  if (!S.body) { openOnboard(); return; }
+  if (put(id, quiet)) await syncWorn();
+}
+function takeOff(id) { for (const [s, w] of Object.entries(S.worn)) if (w.id === id) removeSlot(s); syncWorn(); }
+async function wearOutfit(ids) { for (const s of Object.keys(S.worn)) removeSlot(s); ids.forEach(id => put(id, true)); await syncWorn(); }
+
+function renderWorn() {
+  const order = ['outerwear', 'top', 'dress', 'bottom', 'shoes'];
+  $('#wornbox').innerHTML = order.filter(s => S.worn[s]).map(s => {
+    const p = S.byId[S.worn[s].id]; if (!p) return '';
+    const im = p.cutout_url ? `<img src="${esc(p.cutout_url)}" alt="">` : `<span style="width:26px;height:26px;border-radius:6px;background:${esc(p.main_color)};display:inline-block"></span>`;
+    const ld = S.worn[s].obj ? '' : ' <span class="spin"></span>';
+    return `<span class="pill worn">${im}<span>${esc(name(p))}</span>${ld}<button class="x" data-off="${p.piece_id}" aria-label="take off">✕</button></span>`;
+  }).join('');
+  $('#wornbox').querySelectorAll('[data-off]').forEach(b => b.onclick = () => takeOff(b.dataset.off));
+}
+
+const name = p => p.sheet.name || p.sheet.type;
+
+// ---------------- pieces strip + drag and drop ----------------
+function renderStrip() {
+  const wornIds = new Set(Object.values(S.worn).map(w => w.id));
+  const list = S.pieces.filter(p => S.filter === 'all' || p.slot === S.filter);
+  const card = p => {
+    const im = p.cutout_url ? `<img src="${esc(p.cutout_url)}" alt="">` : `<div class="sw" style="background:${esc(p.main_color)}"></div>`;
+    const b = p.status3d === 'ready' ? '' : p.status3d === 'failed' ? '<span class="badge">⚠ 3D</span>' : '<span class="badge"><span class="spin" style="width:10px;height:10px"></span>3D</span>';
+    const ld = S.laundry.has(p.piece_id) ? '<span class="badge" style="left:auto;right:34px">🧺</span>' : '';
+    return `<div class="pc ${wornIds.has(p.piece_id) ? 'wearing' : ''} ${S.laundry.has(p.piece_id) ? 'laundry' : ''}" data-id="${p.piece_id}">
+      ${b}${ld}<button class="more" data-more="${p.piece_id}" aria-label="details">⋯</button>
+      <div class="im">${im}</div><div class="nm"><b>${esc(name(p))}</b><span class="muted">${esc(p.sheet.size || '')} ${esc(SLOT_ICON[p.slot] || '')}</span></div></div>`;
+  };
+  $('#strip').innerHTML = `<div class="pc add" id="addcard"><span>＋</span>Add piece</div>` + list.map(card).join('');
+  $('#addcard').onclick = () => openSheet('#addsheet');
+  $('#strip').querySelectorAll('[data-more]').forEach(b => b.onclick = e => { e.stopPropagation(); openPiece(b.dataset.more); });
+  $('#strip').querySelectorAll('.pc[data-id]').forEach(el => attachDrag(el));
+}
+
+let drag = null;
+function attachDrag(el) {
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('.more')) return;
+    drag = { id: el.dataset.id, x: e.clientX, y: e.clientY, pid: e.pointerId, type: e.pointerType, on: false, el };
+  });
+  el.addEventListener('click', e => {
+    if (e.target.closest('.more') || el.dataset.dragged) { delete el.dataset.dragged; return; }
+    const id = el.dataset.id;
+    Object.values(S.worn).some(w => w.id === id) ? takeOff(id) : wear(id);
+  });
+}
+window.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.pid) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.on) {
+    const start = drag.type === 'mouse' ? Math.hypot(dx, dy) > 8 : (dy < -12 && Math.abs(dy) > Math.abs(dx) * 1.1);
+    if (!start) return;
+    drag.on = true; drag.el.dataset.dragged = '1';
+    const p = S.byId[drag.id];
+    const g = document.createElement('div'); g.className = 'ghostdrag';
+    g.innerHTML = p.cutout_url ? `<img src="${esc(p.cutout_url)}" alt="">` : `<div style="width:100%;height:100%;border-radius:16px;background:${esc(p.main_color)}"></div>`;
+    document.body.appendChild(g); drag.ghost = g;
+  }
+  drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+  stage.classList.toggle('drop', overStage(e));
+  e.preventDefault();
+}, { passive: false });
+function overStage(e) { const r = stage.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; }
+function endDrag(e, cancel) {
+  if (!drag) return;
+  if (drag.on) {
+    drag.ghost.remove(); stage.classList.remove('drop');
+    if (!cancel && overStage(e)) wear(drag.id);
+    const el = drag.el; setTimeout(() => delete el.dataset.dragged, 50);
+  }
+  drag = null;
+}
+window.addEventListener('pointerup', e => endDrag(e, false));
+window.addEventListener('pointercancel', e => endDrag(e, true));
+
+$('#filters').onclick = e => { const b = e.target.closest('[data-f]'); if (!b) return; S.filter = b.dataset.f; document.querySelectorAll('#filters .chip').forEach(c => c.classList.toggle('on', c === b)); renderStrip(); };
+$('#undress').onclick = () => { for (const s of Object.keys(S.worn)) removeSlot(s); syncWorn(); S.outfit = null; renderOutfits(); };
+
+// ---------------- body ----------------
+const B = Object.assign({ sex: 'male', height_cm: 178, weight_kg: 75 }, store.get('bodydraft', {}));
+function renderBodyForm() {
+  document.querySelectorAll('#sex .chip').forEach(c => c.classList.toggle('on', c.dataset.v === B.sex));
+  $('#height').value = B.height_cm; $('#hv').textContent = B.height_cm; $('#weight').value = B.weight_kg; $('#wv').textContent = B.weight_kg;
+}
+function openOnboard() { if (S.body) Object.assign(B, { sex: S.body.sex, height_cm: Math.round(S.body.height_cm), weight_kg: Math.round(S.body.weight_kg) }); renderBodyForm(); $('#onboard').style.display = ''; }
+$('#sex').onclick = e => { if (!e.target.dataset.v) return; B.sex = e.target.dataset.v; renderBodyForm(); };
+$('#height').oninput = e => { B.height_cm = +e.target.value; $('#hv').textContent = B.height_cm; };
+$('#weight').oninput = e => { B.weight_kg = +e.target.value; $('#wv').textContent = B.weight_kg; };
+$('#bodypill').onclick = openOnboard;
+$('#cancelbody').onclick = () => { $('#onboard').style.display = 'none'; store.set('dismissed', true); };
+$('#mkbody').onclick = async () => {
+  store.set('bodydraft', B); $('#mkbody').disabled = true;
+  try { await post('/m09/body?user_id=' + encodeURIComponent(USER), B); $('#onboard').style.display = 'none'; await refresh(); }
+  catch (e) { toast(e.message); }
+  $('#mkbody').disabled = false;
+};
+
+// ---------------- sheets ----------------
+function openSheet(sel) { $('#sheetbg').classList.add('on'); $(sel).classList.add('on'); }
+function closeSheets() { $('#sheetbg').classList.remove('on'); document.querySelectorAll('.sheet').forEach(s => s.classList.remove('on')); }
+$('#sheetbg').onclick = closeSheets;
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeSheets);
+
+let sheetId = null;
+function openPiece(id) {
+  const p = S.byId[id]; if (!p) return; sheetId = id;
+  $('#psimg').innerHTML = p.cutout_url ? `<img src="${esc(p.cutout_url)}" style="max-width:100%;max-height:100%;object-fit:contain" alt="">` : `<div style="width:70px;height:70px;border-radius:12px;background:${esc(p.main_color)}"></div>`;
+  $('#pstitle').textContent = name(p);
+  const s = p.sheet;
+  $('#psmeta').textContent = [s.type, s.size || 'template fit', s.fit, s.gsm ? s.gsm + ' g/m²' : '', s.length, s.sleeves ? s.sleeves + ' sleeves' : '', p.has_back_photo ? 'front + back photo' : p.photo ? 'front photo' : 'colour only'].filter(Boolean).join(' · ');
+  $('#ps3d').innerHTML = p.status3d === 'ready' ? '<span style="color:var(--good)">✓ ready in 3D</span>' : p.status3d === 'failed' ? '<span style="color:var(--warn)">3D failed: ' + esc(p.error3d || '') + '</span>' : '<span class="spin"></span> being fitted in 3D…';
+  const worn = Object.values(S.worn).some(w => w.id === id);
+  $('#pswear').textContent = worn ? 'Take it off' : 'Wear it';
+  $('#pslaundry').textContent = S.laundry.has(id) ? '✓ Back in closet' : '🧺 To laundry';
+  openSheet('#piecesheet');
+}
+$('#pswear').onclick = () => { const id = sheetId; closeSheets(); Object.values(S.worn).some(w => w.id === id) ? takeOff(id) : wear(id); };
+$('#psdel').onclick = async () => {
+  if (!confirm('Delete this piece?')) return;
+  const id = sheetId; closeSheets(); takeOff(id);
+  try { await api(`/m09/pieces/${id}?user_id=${encodeURIComponent(USER)}`, { method: 'DELETE' }); refresh(); } catch (e) { toast(e.message); }
+};
+$('#pslaundry').onclick = async () => {
+  const id = sheetId, to = S.laundry.has(id) ? 'available' : 'laundry';
+  try {
+    await post('/m03/status', { user_id: USER, payload: { item_ids: [id], status: to } });
+    to === 'laundry' ? S.laundry.add(id) : S.laundry.delete(id);
+    toast(to === 'laundry' ? 'In the laundry: M2 will not suggest it until it is back' : 'Back in your closet');
+    closeSheets(); renderStrip();
+  } catch (e) { toast(e.message); }
+};
+async function loadLaundry() {
+  try {
+    const r = (await post('/m03/states', { user_id: USER, payload: { item_ids: S.pieces.map(p => p.piece_id) } })).result;
+    S.laundry = new Set((r.items || []).filter(x => x.status === 'laundry').map(x => x.item_id)); renderStrip();
+  } catch (e) { /* M3 off: no laundry badges */ }
+}
+
+// ---------------- add a piece ----------------
+const TOPS = ['t-shirt', 'jersey', 'top', 'blouse', 'polo shirt', 'shirt', 'long-sleeve top', 'sweater', 'hoodie'];
+async function loadOptions() {
+  const o = (await api('/m09/options')).result;
+  const nice = ['t-shirt', 'jersey', 'top', 'blouse', 'polo shirt', 'shirt', 'long-sleeve top', 'sweater', 'hoodie', 'pants', 'jeans', 'cargo pants', 'shorts', 'skirt', 'dress', 'jacket', 'blazer', 'shoes'];
+  const label = { 'jersey': 'jersey / football shirt', 'shirt': 'shirt (buttons, long sleeves)', 't-shirt': 't-shirt (tucked)', 'pants': 'pants / joggers' };
+  $('#ptype').innerHTML = nice.filter(t => o.types.includes(t) || t === 'skirt').map(t => `<option value="${t}">${label[t] || t}</option>`).join('');
+  $('#psize').innerHTML = '<option value="">template fit</option>' + o.sizes.map(s => `<option ${s === 'M' ? 'selected' : ''}>${s}</option>`).join('');
+  $('#pfit').innerHTML = o.fits.map(f => `<option ${f === 'regular' ? 'selected' : ''}>${f}</option>`).join('');
+}
+$('#ptype').onchange = () => { const t = $('#ptype').value; $('#lenbox').style.display = t === 'skirt' ? '' : 'none'; $('#slvbox').style.display = TOPS.includes(t) ? '' : 'none'; };
+for (const side of ['front', 'back']) $('#' + side).onchange = e => {
+  const f = e.target.files[0], box = $('#d' + side); box.querySelectorAll('img').forEach(i => i.remove());
+  if (f) { const img = document.createElement('img'); img.src = URL.createObjectURL(f); box.appendChild(img); }
+};
+$('#psave').onclick = async () => {
+  const fd = new FormData(), t = $('#ptype').value;
+  fd.append('user_id', USER); fd.append('type', t); fd.append('size', $('#psize').value); fd.append('fit', $('#pfit').value);
+  fd.append('gsm', $('#pgsm').value); fd.append('color', $('#pcolor').value); fd.append('name', $('#pname').value);
+  if (t === 'skirt') fd.append('length', $('#plength').value);
+  if (TOPS.includes(t)) fd.append('sleeves', $('#psleeves').value);
+  const f = $('#front').files[0], b = $('#back').files[0];
+  if (f) fd.append('front', f); if (b) fd.append('back', b);
+  $('#psave').disabled = true; $('#pstatus').innerHTML = '<span class="spin"></span> ' + (f ? 'Removing the background and building the texture… (~20 s)' : 'Saving…');
+  try {
+    await api('/m09/pieces', { method: 'POST', body: fd });
+    $('#pstatus').textContent = ''; closeSheets(); toast('Saved. Its 3D version is being fitted to your avatar…');
+    $('#front').value = ''; $('#back').value = ''; $('#pname').value = ''; document.querySelectorAll('.drop img').forEach(i => i.remove());
+    await refresh();
+  } catch (e) { $('#pstatus').textContent = e.message; }
+  $('#psave').disabled = false;
+};
+
+// ---------------- recommendations (M2) ----------------
+const R = { occasion: 'casual', mood: '' };
+for (const [sel, k] of [['#occ', 'occasion'], ['#mood', 'mood']]) $(sel).onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return; R[k] = b.dataset.v;
+  document.querySelectorAll(sel + ' .chip').forEach(c => c.classList.toggle('on', c === b));
+};
+async function recommend(action) {
+  const btn = action === 'complete' ? $('#complete') : $('#rec'); btn.disabled = true;
+  const pinned = Object.values(S.worn).map(w => w.id);
+  if (action === 'complete' && !pinned.length) { toast('Put a piece on the avatar first, M2 completes the look around it'); btn.disabled = false; return; }
+  $('#outfits').innerHTML = '<div class="small muted"><span class="spin"></span> M2 is scoring your pieces…</div>';
+  try {
+    const r = (await post('/beta1/recommend', { user_id: USER, occasion: R.occasion, mood: R.mood || null, n: 3, action, pinned_item_ids: pinned })).result;
+    S.outfits = r.outfits || [];
+    const w = r.context && r.context.weather; $('#wx').textContent = w ? `${Math.round(w.temp_c)}°C · ${w.condition}` : '';
+    if (!S.outfits.length) { $('#outfits').innerHTML = '<div class="small muted">No outfit found: add more pieces (a top and a bottom, or a dress).</div>'; S.outfit = null; }
+    else { S.outfit = 0; renderOutfits(); await wearOutfit(S.outfits[0].items); }
+  } catch (e) { $('#outfits').innerHTML = ''; toast(e.message); }
+  btn.disabled = false;
+}
+function renderOutfits() {
+  $('#woreRow').style.display = S.outfit === null || !S.outfits.length ? 'none' : '';
+  if (S.outfit === null) { document.querySelectorAll('.of').forEach(o => o.classList.remove('on')); return; }
+  $('#outfits').innerHTML = S.outfits.map((o, k) => `<div class="of ${k === S.outfit ? 'on' : ''}" data-k="${k}">
+    <div class="top"><div class="thumbs">${o.items.map(id => { const p = S.byId[id]; if (!p) return ''; return `<div>${p.cutout_url ? `<img src="${esc(p.cutout_url)}" alt="">` : `<span style="width:36px;height:36px;border-radius:8px;background:${esc(p.main_color)};display:block"></span>`}</div>`; }).join('')}</div>
+    <div style="text-align:right"><div class="score">${Math.round(o.score * 100)}%</div><div class="small muted">match</div></div></div>
+    <p>${esc(o.explanation || (o.reasons || []).join('. '))}</p></div>`).join('');
+  $('#outfits').querySelectorAll('.of').forEach(el => el.onclick = async () => { S.outfit = +el.dataset.k; renderOutfits(); await wearOutfit(S.outfits[S.outfit].items); });
+}
+$('#rec').onclick = () => recommend('recommend');
+$('#complete').onclick = () => recommend('complete');
+$('#wore').onclick = async () => {
+  const ids = Object.values(S.worn).map(w => w.id); if (!ids.length) return;
+  const o = S.outfit !== null ? S.outfits[S.outfit] : null;
+  try {
+    await post('/m03/worn', { user_id: USER, payload: { item_ids: ids, outfit_id: o && o.items.every(i => ids.includes(i)) ? o.outfit_id : null, source: o ? 'suggestion' : 'manual' } });
+    toast('Logged in your wear log ✓ (see the Wear log tab)');
+  } catch (e) { toast(e.message); }
+};
+
+// ---------------- start ----------------
+for (const [slot, id] of Object.entries(store.get('worn', {}))) S.worn[slot] = { id, url: null, obj: null };
+const wearParam = new URLSearchParams(location.search).get('wear');  // ?wear=id1,id2: open with this outfit on
+loadOptions().catch(e => toast(e.message));
+refresh().then(async () => {
+  try { if (wearParam) await wearOutfit(wearParam.split(',').filter(Boolean)); }
+  catch (e) { console.error(e); }
+  if (new URLSearchParams(location.search).get('turn'))  // ?turn=1: play at once
+    setTimeout(startTurn, 1500);
+  loadLaundry();
+});
+</script>
+</body>
+</html>

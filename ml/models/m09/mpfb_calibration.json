@@ -1,0 +1,6539 @@
+{
+ "source": "MPFB 2.0.18 basemesh, default age/proportions; height = mesh extent with helpers hidden; mass = closed-volume x 1.01 kg/L",
+ "rows": [
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 123.9,
+   "volume_l": 18.3,
+   "mass_kg": 18.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 123.9,
+   "volume_l": 20.7,
+   "mass_kg": 20.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 124.0,
+   "volume_l": 23.3,
+   "mass_kg": 23.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 123.9,
+   "volume_l": 26.1,
+   "mass_kg": 26.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 123.7,
+   "volume_l": 29.0,
+   "mass_kg": 29.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 123.5,
+   "volume_l": 32.2,
+   "mass_kg": 32.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 123.7,
+   "volume_l": 36.0,
+   "mass_kg": 36.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 123.8,
+   "volume_l": 39.9,
+   "mass_kg": 40.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 123.8,
+   "volume_l": 44.1,
+   "mass_kg": 44.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 123.7,
+   "volume_l": 48.3,
+   "mass_kg": 48.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 123.5,
+   "volume_l": 52.7,
+   "mass_kg": 53.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 131.1,
+   "volume_l": 20.6,
+   "mass_kg": 20.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 131.2,
+   "volume_l": 23.2,
+   "mass_kg": 23.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 131.5,
+   "volume_l": 26.1,
+   "mass_kg": 26.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 131.5,
+   "volume_l": 29.3,
+   "mass_kg": 29.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 131.0,
+   "volume_l": 32.4,
+   "mass_kg": 32.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 130.8,
+   "volume_l": 35.9,
+   "mass_kg": 36.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 130.9,
+   "volume_l": 39.9,
+   "mass_kg": 40.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 131.3,
+   "volume_l": 44.5,
+   "mass_kg": 44.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 131.3,
+   "volume_l": 49.0,
+   "mass_kg": 49.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 130.9,
+   "volume_l": 53.4,
+   "mass_kg": 53.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 130.8,
+   "volume_l": 58.1,
+   "mass_kg": 58.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 138.4,
+   "volume_l": 23.1,
+   "mass_kg": 23.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 138.7,
+   "volume_l": 26.0,
+   "mass_kg": 26.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 138.7,
+   "volume_l": 29.1,
+   "mass_kg": 29.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 138.6,
+   "volume_l": 32.5,
+   "mass_kg": 32.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 138.5,
+   "volume_l": 36.2,
+   "mass_kg": 36.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 138.1,
+   "volume_l": 39.8,
+   "mass_kg": 40.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 138.5,
+   "volume_l": 44.4,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 138.5,
+   "volume_l": 49.0,
+   "mass_kg": 49.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 138.5,
+   "volume_l": 53.9,
+   "mass_kg": 54.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 138.5,
+   "volume_l": 58.9,
+   "mass_kg": 59.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 138.1,
+   "volume_l": 63.8,
+   "mass_kg": 64.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 146.2,
+   "volume_l": 25.9,
+   "mass_kg": 26.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 145.8,
+   "volume_l": 28.9,
+   "mass_kg": 29.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 145.8,
+   "volume_l": 32.3,
+   "mass_kg": 32.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 145.7,
+   "volume_l": 36.0,
+   "mass_kg": 36.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 145.7,
+   "volume_l": 39.9,
+   "mass_kg": 40.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 145.6,
+   "volume_l": 44.2,
+   "mass_kg": 44.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 145.6,
+   "volume_l": 48.9,
+   "mass_kg": 49.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 145.6,
+   "volume_l": 53.8,
+   "mass_kg": 54.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 145.6,
+   "volume_l": 59.0,
+   "mass_kg": 59.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 145.6,
+   "volume_l": 64.4,
+   "mass_kg": 65.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 145.9,
+   "volume_l": 70.3,
+   "mass_kg": 71.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 153.2,
+   "volume_l": 28.7,
+   "mass_kg": 29.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 153.0,
+   "volume_l": 32.0,
+   "mass_kg": 32.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 152.9,
+   "volume_l": 35.7,
+   "mass_kg": 36.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 152.8,
+   "volume_l": 39.7,
+   "mass_kg": 40.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 152.8,
+   "volume_l": 44.0,
+   "mass_kg": 44.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 152.7,
+   "volume_l": 48.6,
+   "mass_kg": 49.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 152.7,
+   "volume_l": 53.6,
+   "mass_kg": 54.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 152.7,
+   "volume_l": 58.9,
+   "mass_kg": 59.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 152.7,
+   "volume_l": 64.5,
+   "mass_kg": 65.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 152.7,
+   "volume_l": 70.3,
+   "mass_kg": 71.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 152.8,
+   "volume_l": 76.4,
+   "mass_kg": 77.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 159.4,
+   "volume_l": 31.3,
+   "mass_kg": 31.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 159.4,
+   "volume_l": 34.9,
+   "mass_kg": 35.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 159.3,
+   "volume_l": 38.9,
+   "mass_kg": 39.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 159.2,
+   "volume_l": 43.2,
+   "mass_kg": 43.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 159.2,
+   "volume_l": 47.8,
+   "mass_kg": 48.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 159.1,
+   "volume_l": 52.8,
+   "mass_kg": 53.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 159.1,
+   "volume_l": 58.1,
+   "mass_kg": 58.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 159.1,
+   "volume_l": 63.7,
+   "mass_kg": 64.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 159.1,
+   "volume_l": 69.6,
+   "mass_kg": 70.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 159.1,
+   "volume_l": 75.8,
+   "mass_kg": 76.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 159.1,
+   "volume_l": 82.2,
+   "mass_kg": 83.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 171.8,
+   "volume_l": 38.2,
+   "mass_kg": 38.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 172.0,
+   "volume_l": 42.5,
+   "mass_kg": 42.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 171.9,
+   "volume_l": 47.0,
+   "mass_kg": 47.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 171.9,
+   "volume_l": 52.0,
+   "mass_kg": 52.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 171.8,
+   "volume_l": 57.3,
+   "mass_kg": 57.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 171.7,
+   "volume_l": 62.8,
+   "mass_kg": 63.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 171.7,
+   "volume_l": 68.9,
+   "mass_kg": 69.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 171.7,
+   "volume_l": 75.2,
+   "mass_kg": 76.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 171.7,
+   "volume_l": 81.9,
+   "mass_kg": 82.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 171.7,
+   "volume_l": 88.8,
+   "mass_kg": 89.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 171.5,
+   "volume_l": 95.8,
+   "mass_kg": 96.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 185.6,
+   "volume_l": 46.9,
+   "mass_kg": 47.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 186.0,
+   "volume_l": 52.1,
+   "mass_kg": 52.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 186.0,
+   "volume_l": 57.3,
+   "mass_kg": 57.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 185.9,
+   "volume_l": 63.1,
+   "mass_kg": 63.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 185.8,
+   "volume_l": 69.1,
+   "mass_kg": 69.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 185.8,
+   "volume_l": 75.5,
+   "mass_kg": 76.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 185.8,
+   "volume_l": 82.3,
+   "mass_kg": 83.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 185.8,
+   "volume_l": 89.5,
+   "mass_kg": 90.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 185.8,
+   "volume_l": 97.1,
+   "mass_kg": 98.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 185.8,
+   "volume_l": 105.0,
+   "mass_kg": 106.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 185.2,
+   "volume_l": 112.5,
+   "mass_kg": 113.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 200.9,
+   "volume_l": 58.1,
+   "mass_kg": 58.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 200.1,
+   "volume_l": 63.1,
+   "mass_kg": 63.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 200.0,
+   "volume_l": 69.1,
+   "mass_kg": 69.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 199.9,
+   "volume_l": 75.6,
+   "mass_kg": 76.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 199.9,
+   "volume_l": 82.4,
+   "mass_kg": 83.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 200.6,
+   "volume_l": 90.6,
+   "mass_kg": 91.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 199.8,
+   "volume_l": 97.4,
+   "mass_kg": 98.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 199.8,
+   "volume_l": 105.5,
+   "mass_kg": 106.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 199.8,
+   "volume_l": 114.1,
+   "mass_kg": 115.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 199.8,
+   "volume_l": 122.9,
+   "mass_kg": 124.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 200.6,
+   "volume_l": 133.2,
+   "mass_kg": 134.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 215.2,
+   "volume_l": 70.1,
+   "mass_kg": 70.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 215.0,
+   "volume_l": 76.3,
+   "mass_kg": 77.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 214.0,
+   "volume_l": 82.3,
+   "mass_kg": 83.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 214.0,
+   "volume_l": 89.7,
+   "mass_kg": 90.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 214.8,
+   "volume_l": 98.4,
+   "mass_kg": 99.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 214.9,
+   "volume_l": 106.9,
+   "mass_kg": 107.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 214.7,
+   "volume_l": 115.4,
+   "mass_kg": 116.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 213.8,
+   "volume_l": 123.3,
+   "mass_kg": 124.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 213.8,
+   "volume_l": 132.9,
+   "mass_kg": 134.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 214.7,
+   "volume_l": 144.0,
+   "mass_kg": 145.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 214.9,
+   "volume_l": 154.6,
+   "mass_kg": 156.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 229.6,
+   "volume_l": 83.7,
+   "mass_kg": 84.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 229.2,
+   "volume_l": 90.6,
+   "mass_kg": 91.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 228.9,
+   "volume_l": 98.1,
+   "mass_kg": 99.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 228.8,
+   "volume_l": 106.5,
+   "mass_kg": 107.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 229.0,
+   "volume_l": 115.5,
+   "mass_kg": 116.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 229.2,
+   "volume_l": 125.0,
+   "mass_kg": 126.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 229.0,
+   "volume_l": 134.5,
+   "mass_kg": 135.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 228.7,
+   "volume_l": 144.2,
+   "mass_kg": 145.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 228.7,
+   "volume_l": 154.9,
+   "mass_kg": 156.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 228.9,
+   "volume_l": 166.3,
+   "mass_kg": 168.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 229.2,
+   "volume_l": 178.2,
+   "mass_kg": 180.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 124.4,
+   "volume_l": 21.3,
+   "mass_kg": 21.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 123.6,
+   "volume_l": 22.7,
+   "mass_kg": 23.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 123.6,
+   "volume_l": 24.6,
+   "mass_kg": 24.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 123.6,
+   "volume_l": 26.5,
+   "mass_kg": 26.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 123.6,
+   "volume_l": 28.5,
+   "mass_kg": 28.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 123.5,
+   "volume_l": 30.6,
+   "mass_kg": 30.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 123.5,
+   "volume_l": 32.8,
+   "mass_kg": 33.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 123.5,
+   "volume_l": 35.1,
+   "mass_kg": 35.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 123.5,
+   "volume_l": 37.5,
+   "mass_kg": 37.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 123.5,
+   "volume_l": 40.0,
+   "mass_kg": 40.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 124.2,
+   "volume_l": 42.9,
+   "mass_kg": 43.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 131.5,
+   "volume_l": 23.8,
+   "mass_kg": 24.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 130.9,
+   "volume_l": 25.5,
+   "mass_kg": 25.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 130.9,
+   "volume_l": 27.5,
+   "mass_kg": 27.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 130.8,
+   "volume_l": 29.6,
+   "mass_kg": 29.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 130.8,
+   "volume_l": 31.8,
+   "mass_kg": 32.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 130.8,
+   "volume_l": 34.1,
+   "mass_kg": 34.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 130.8,
+   "volume_l": 36.6,
+   "mass_kg": 36.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 130.8,
+   "volume_l": 39.1,
+   "mass_kg": 39.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 130.8,
+   "volume_l": 41.7,
+   "mass_kg": 42.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 130.8,
+   "volume_l": 44.3,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 131.3,
+   "volume_l": 47.4,
+   "mass_kg": 47.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 138.6,
+   "volume_l": 26.5,
+   "mass_kg": 26.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 138.2,
+   "volume_l": 28.5,
+   "mass_kg": 28.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 138.1,
+   "volume_l": 30.7,
+   "mass_kg": 31.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 138.1,
+   "volume_l": 33.0,
+   "mass_kg": 33.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 138.1,
+   "volume_l": 35.4,
+   "mass_kg": 35.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 138.1,
+   "volume_l": 37.9,
+   "mass_kg": 38.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 138.1,
+   "volume_l": 40.6,
+   "mass_kg": 41.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 138.1,
+   "volume_l": 43.3,
+   "mass_kg": 43.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 138.1,
+   "volume_l": 46.1,
+   "mass_kg": 46.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 138.1,
+   "volume_l": 49.0,
+   "mass_kg": 49.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 138.5,
+   "volume_l": 52.2,
+   "mass_kg": 52.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 145.7,
+   "volume_l": 29.5,
+   "mass_kg": 29.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 145.4,
+   "volume_l": 31.7,
+   "mass_kg": 32.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 145.4,
+   "volume_l": 34.0,
+   "mass_kg": 34.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 145.4,
+   "volume_l": 36.6,
+   "mass_kg": 36.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 145.3,
+   "volume_l": 39.2,
+   "mass_kg": 39.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 145.3,
+   "volume_l": 42.0,
+   "mass_kg": 42.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 145.3,
+   "volume_l": 44.8,
+   "mass_kg": 45.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 145.3,
+   "volume_l": 47.7,
+   "mass_kg": 48.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 145.3,
+   "volume_l": 50.8,
+   "mass_kg": 51.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 145.3,
+   "volume_l": 53.9,
+   "mass_kg": 54.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 145.6,
+   "volume_l": 57.2,
+   "mass_kg": 57.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 152.9,
+   "volume_l": 32.7,
+   "mass_kg": 33.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 152.7,
+   "volume_l": 35.1,
+   "mass_kg": 35.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 152.7,
+   "volume_l": 37.7,
+   "mass_kg": 38.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 152.6,
+   "volume_l": 40.4,
+   "mass_kg": 40.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 152.6,
+   "volume_l": 43.3,
+   "mass_kg": 43.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 152.6,
+   "volume_l": 46.3,
+   "mass_kg": 46.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 152.6,
+   "volume_l": 49.3,
+   "mass_kg": 49.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 152.6,
+   "volume_l": 52.5,
+   "mass_kg": 53.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 152.6,
+   "volume_l": 55.7,
+   "mass_kg": 56.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 152.6,
+   "volume_l": 59.1,
+   "mass_kg": 59.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 152.7,
+   "volume_l": 62.5,
+   "mass_kg": 63.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 159.3,
+   "volume_l": 35.7,
+   "mass_kg": 36.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 159.2,
+   "volume_l": 38.4,
+   "mass_kg": 38.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 159.2,
+   "volume_l": 41.2,
+   "mass_kg": 41.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 159.2,
+   "volume_l": 44.1,
+   "mass_kg": 44.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 159.2,
+   "volume_l": 47.2,
+   "mass_kg": 47.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 159.1,
+   "volume_l": 50.4,
+   "mass_kg": 50.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 159.1,
+   "volume_l": 53.6,
+   "mass_kg": 54.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 159.1,
+   "volume_l": 57.0,
+   "mass_kg": 57.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 159.1,
+   "volume_l": 60.4,
+   "mass_kg": 61.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 159.1,
+   "volume_l": 64.0,
+   "mass_kg": 64.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 159.1,
+   "volume_l": 67.6,
+   "mass_kg": 68.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 171.9,
+   "volume_l": 43.4,
+   "mass_kg": 43.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 172.1,
+   "volume_l": 46.6,
+   "mass_kg": 47.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 172.1,
+   "volume_l": 49.8,
+   "mass_kg": 50.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 172.1,
+   "volume_l": 53.2,
+   "mass_kg": 53.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 172.0,
+   "volume_l": 56.7,
+   "mass_kg": 57.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 172.0,
+   "volume_l": 60.4,
+   "mass_kg": 61.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 172.0,
+   "volume_l": 64.1,
+   "mass_kg": 64.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 172.0,
+   "volume_l": 67.9,
+   "mass_kg": 68.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 172.0,
+   "volume_l": 71.8,
+   "mass_kg": 72.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 172.0,
+   "volume_l": 75.8,
+   "mass_kg": 76.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 171.7,
+   "volume_l": 79.6,
+   "mass_kg": 80.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 185.9,
+   "volume_l": 53.1,
+   "mass_kg": 53.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 186.4,
+   "volume_l": 57.1,
+   "mass_kg": 57.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 186.4,
+   "volume_l": 60.8,
+   "mass_kg": 61.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 186.4,
+   "volume_l": 64.7,
+   "mass_kg": 65.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 186.3,
+   "volume_l": 68.7,
+   "mass_kg": 69.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 186.3,
+   "volume_l": 72.9,
+   "mass_kg": 73.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 186.3,
+   "volume_l": 77.1,
+   "mass_kg": 77.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 186.3,
+   "volume_l": 81.5,
+   "mass_kg": 82.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 186.3,
+   "volume_l": 86.0,
+   "mass_kg": 86.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 186.3,
+   "volume_l": 90.5,
+   "mass_kg": 91.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 185.8,
+   "volume_l": 94.6,
+   "mass_kg": 95.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 200.0,
+   "volume_l": 64.3,
+   "mass_kg": 65.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 200.7,
+   "volume_l": 69.1,
+   "mass_kg": 69.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 200.7,
+   "volume_l": 73.3,
+   "mass_kg": 74.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 200.7,
+   "volume_l": 77.7,
+   "mass_kg": 78.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 200.6,
+   "volume_l": 82.3,
+   "mass_kg": 83.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 200.6,
+   "volume_l": 87.1,
+   "mass_kg": 88.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 200.6,
+   "volume_l": 91.9,
+   "mass_kg": 92.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 200.6,
+   "volume_l": 96.8,
+   "mass_kg": 97.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 200.6,
+   "volume_l": 101.9,
+   "mass_kg": 102.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 200.6,
+   "volume_l": 107.0,
+   "mass_kg": 108.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 199.8,
+   "volume_l": 111.3,
+   "mass_kg": 112.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 214.0,
+   "volume_l": 77.0,
+   "mass_kg": 77.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 215.1,
+   "volume_l": 82.7,
+   "mass_kg": 83.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 215.0,
+   "volume_l": 87.4,
+   "mass_kg": 88.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 215.0,
+   "volume_l": 92.4,
+   "mass_kg": 93.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 215.0,
+   "volume_l": 97.6,
+   "mass_kg": 98.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 214.9,
+   "volume_l": 103.0,
+   "mass_kg": 104.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 214.9,
+   "volume_l": 108.4,
+   "mass_kg": 109.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 214.9,
+   "volume_l": 113.9,
+   "mass_kg": 115.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 214.9,
+   "volume_l": 119.6,
+   "mass_kg": 120.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 214.9,
+   "volume_l": 125.4,
+   "mass_kg": 126.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 213.8,
+   "volume_l": 129.7,
+   "mass_kg": 131.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 228.0,
+   "volume_l": 91.2,
+   "mass_kg": 92.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 229.4,
+   "volume_l": 97.9,
+   "mass_kg": 98.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 229.3,
+   "volume_l": 103.3,
+   "mass_kg": 104.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 229.3,
+   "volume_l": 108.9,
+   "mass_kg": 110.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 229.3,
+   "volume_l": 114.7,
+   "mass_kg": 115.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 229.2,
+   "volume_l": 120.7,
+   "mass_kg": 121.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 229.2,
+   "volume_l": 126.7,
+   "mass_kg": 128.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 229.2,
+   "volume_l": 132.9,
+   "mass_kg": 134.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 229.2,
+   "volume_l": 139.2,
+   "mass_kg": 140.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 229.2,
+   "volume_l": 145.7,
+   "mass_kg": 147.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 227.9,
+   "volume_l": 150.1,
+   "mass_kg": 151.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 123.5,
+   "volume_l": 24.2,
+   "mass_kg": 24.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 123.5,
+   "volume_l": 25.1,
+   "mass_kg": 25.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 123.5,
+   "volume_l": 26.1,
+   "mass_kg": 26.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 123.5,
+   "volume_l": 27.0,
+   "mass_kg": 27.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 123.5,
+   "volume_l": 28.0,
+   "mass_kg": 28.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 123.5,
+   "volume_l": 29.1,
+   "mass_kg": 29.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 123.5,
+   "volume_l": 29.9,
+   "mass_kg": 30.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 123.5,
+   "volume_l": 30.8,
+   "mass_kg": 31.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 123.5,
+   "volume_l": 31.7,
+   "mass_kg": 32.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 123.5,
+   "volume_l": 32.6,
+   "mass_kg": 32.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 123.5,
+   "volume_l": 33.5,
+   "mass_kg": 33.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 130.8,
+   "volume_l": 27.1,
+   "mass_kg": 27.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 130.8,
+   "volume_l": 28.1,
+   "mass_kg": 28.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 130.8,
+   "volume_l": 29.2,
+   "mass_kg": 29.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 130.8,
+   "volume_l": 30.2,
+   "mass_kg": 30.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 130.8,
+   "volume_l": 31.3,
+   "mass_kg": 31.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 130.8,
+   "volume_l": 32.5,
+   "mass_kg": 32.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 130.8,
+   "volume_l": 33.4,
+   "mass_kg": 33.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 130.8,
+   "volume_l": 34.4,
+   "mass_kg": 34.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 130.8,
+   "volume_l": 35.3,
+   "mass_kg": 35.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 130.8,
+   "volume_l": 36.3,
+   "mass_kg": 36.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 130.8,
+   "volume_l": 37.3,
+   "mass_kg": 37.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 138.1,
+   "volume_l": 30.3,
+   "mass_kg": 30.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 138.1,
+   "volume_l": 31.4,
+   "mass_kg": 31.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 138.1,
+   "volume_l": 32.5,
+   "mass_kg": 32.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 138.1,
+   "volume_l": 33.7,
+   "mass_kg": 34.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 138.1,
+   "volume_l": 34.9,
+   "mass_kg": 35.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 138.1,
+   "volume_l": 36.1,
+   "mass_kg": 36.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 138.1,
+   "volume_l": 37.1,
+   "mass_kg": 37.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 138.1,
+   "volume_l": 38.2,
+   "mass_kg": 38.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 138.1,
+   "volume_l": 39.2,
+   "mass_kg": 39.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 138.1,
+   "volume_l": 40.3,
+   "mass_kg": 40.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 138.1,
+   "volume_l": 41.4,
+   "mass_kg": 41.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 145.6,
+   "volume_l": 33.8,
+   "mass_kg": 34.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 145.3,
+   "volume_l": 34.9,
+   "mass_kg": 35.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 145.3,
+   "volume_l": 36.1,
+   "mass_kg": 36.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 145.3,
+   "volume_l": 37.4,
+   "mass_kg": 37.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 145.3,
+   "volume_l": 38.7,
+   "mass_kg": 39.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 145.3,
+   "volume_l": 40.0,
+   "mass_kg": 40.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 145.3,
+   "volume_l": 41.1,
+   "mass_kg": 41.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 145.3,
+   "volume_l": 42.2,
+   "mass_kg": 42.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 145.3,
+   "volume_l": 43.4,
+   "mass_kg": 43.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 145.3,
+   "volume_l": 44.5,
+   "mass_kg": 45.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 145.6,
+   "volume_l": 45.9,
+   "mass_kg": 46.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 152.7,
+   "volume_l": 37.3,
+   "mass_kg": 37.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 152.6,
+   "volume_l": 38.6,
+   "mass_kg": 39.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 152.6,
+   "volume_l": 39.9,
+   "mass_kg": 40.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 152.6,
+   "volume_l": 41.3,
+   "mass_kg": 41.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 152.6,
+   "volume_l": 42.7,
+   "mass_kg": 43.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 152.6,
+   "volume_l": 44.1,
+   "mass_kg": 44.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 152.6,
+   "volume_l": 45.3,
+   "mass_kg": 45.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 152.6,
+   "volume_l": 46.6,
+   "mass_kg": 47.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 152.6,
+   "volume_l": 47.8,
+   "mass_kg": 48.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 152.6,
+   "volume_l": 49.0,
+   "mass_kg": 49.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 152.7,
+   "volume_l": 50.4,
+   "mass_kg": 50.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 159.1,
+   "volume_l": 40.7,
+   "mass_kg": 41.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 159.1,
+   "volume_l": 42.1,
+   "mass_kg": 42.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 159.1,
+   "volume_l": 43.6,
+   "mass_kg": 44.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 159.1,
+   "volume_l": 45.0,
+   "mass_kg": 45.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 159.1,
+   "volume_l": 46.5,
+   "mass_kg": 47.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 159.1,
+   "volume_l": 48.1,
+   "mass_kg": 48.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 159.1,
+   "volume_l": 49.4,
+   "mass_kg": 49.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 159.1,
+   "volume_l": 50.7,
+   "mass_kg": 51.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 159.1,
+   "volume_l": 52.0,
+   "mass_kg": 52.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 159.1,
+   "volume_l": 53.3,
+   "mass_kg": 53.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 159.1,
+   "volume_l": 54.7,
+   "mass_kg": 55.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 171.7,
+   "volume_l": 49.2,
+   "mass_kg": 49.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 172.0,
+   "volume_l": 51.0,
+   "mass_kg": 51.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 172.0,
+   "volume_l": 52.6,
+   "mass_kg": 53.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 172.0,
+   "volume_l": 54.3,
+   "mass_kg": 54.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 172.0,
+   "volume_l": 56.0,
+   "mass_kg": 56.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 172.0,
+   "volume_l": 57.8,
+   "mass_kg": 58.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 172.0,
+   "volume_l": 59.2,
+   "mass_kg": 59.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 172.0,
+   "volume_l": 60.7,
+   "mass_kg": 61.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 172.0,
+   "volume_l": 62.2,
+   "mass_kg": 62.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 172.0,
+   "volume_l": 63.7,
+   "mass_kg": 64.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 171.7,
+   "volume_l": 65.1,
+   "mass_kg": 65.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 185.8,
+   "volume_l": 59.9,
+   "mass_kg": 60.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 186.3,
+   "volume_l": 62.2,
+   "mass_kg": 62.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 186.3,
+   "volume_l": 64.0,
+   "mass_kg": 64.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 186.3,
+   "volume_l": 66.0,
+   "mass_kg": 66.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 186.3,
+   "volume_l": 67.9,
+   "mass_kg": 68.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 186.3,
+   "volume_l": 70.0,
+   "mass_kg": 70.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 186.3,
+   "volume_l": 71.6,
+   "mass_kg": 72.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 186.3,
+   "volume_l": 73.3,
+   "mass_kg": 74.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 186.3,
+   "volume_l": 75.1,
+   "mass_kg": 75.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 186.3,
+   "volume_l": 76.8,
+   "mass_kg": 77.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 185.8,
+   "volume_l": 78.0,
+   "mass_kg": 78.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 200.6,
+   "volume_l": 72.8,
+   "mass_kg": 73.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 200.6,
+   "volume_l": 74.9,
+   "mass_kg": 75.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 200.6,
+   "volume_l": 77.0,
+   "mass_kg": 77.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 200.6,
+   "volume_l": 79.2,
+   "mass_kg": 80.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 200.6,
+   "volume_l": 81.5,
+   "mass_kg": 82.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 200.6,
+   "volume_l": 83.7,
+   "mass_kg": 84.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 200.6,
+   "volume_l": 85.6,
+   "mass_kg": 86.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 200.6,
+   "volume_l": 87.6,
+   "mass_kg": 88.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 200.6,
+   "volume_l": 89.5,
+   "mass_kg": 90.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 200.6,
+   "volume_l": 91.5,
+   "mass_kg": 92.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 200.6,
+   "volume_l": 93.5,
+   "mass_kg": 94.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 214.9,
+   "volume_l": 86.9,
+   "mass_kg": 87.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 214.9,
+   "volume_l": 89.3,
+   "mass_kg": 90.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 214.9,
+   "volume_l": 91.7,
+   "mass_kg": 92.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 214.9,
+   "volume_l": 94.1,
+   "mass_kg": 95.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 214.9,
+   "volume_l": 96.7,
+   "mass_kg": 97.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 214.9,
+   "volume_l": 99.2,
+   "mass_kg": 100.2
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 214.9,
+   "volume_l": 101.4,
+   "mass_kg": 102.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 214.9,
+   "volume_l": 103.5,
+   "mass_kg": 104.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 214.9,
+   "volume_l": 105.7,
+   "mass_kg": 106.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 214.9,
+   "volume_l": 108.0,
+   "mass_kg": 109.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 214.9,
+   "volume_l": 110.2,
+   "mass_kg": 111.3
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 229.2,
+   "volume_l": 102.7,
+   "mass_kg": 103.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 229.2,
+   "volume_l": 105.4,
+   "mass_kg": 106.4
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 229.2,
+   "volume_l": 108.1,
+   "mass_kg": 109.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 229.2,
+   "volume_l": 110.8,
+   "mass_kg": 111.9
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 229.2,
+   "volume_l": 113.6,
+   "mass_kg": 114.8
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 229.2,
+   "volume_l": 116.5,
+   "mass_kg": 117.7
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 229.2,
+   "volume_l": 118.9,
+   "mass_kg": 120.1
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 229.2,
+   "volume_l": 121.3,
+   "mass_kg": 122.6
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 229.2,
+   "volume_l": 123.8,
+   "mass_kg": 125.0
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 229.2,
+   "volume_l": 126.3,
+   "mass_kg": 127.5
+  },
+  {
+   "gender": 0.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 229.2,
+   "volume_l": 128.8,
+   "mass_kg": 130.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 137.4,
+   "volume_l": 25.9,
+   "mass_kg": 26.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 137.5,
+   "volume_l": 29.4,
+   "mass_kg": 29.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 137.6,
+   "volume_l": 33.2,
+   "mass_kg": 33.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 137.6,
+   "volume_l": 37.2,
+   "mass_kg": 37.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 137.5,
+   "volume_l": 41.3,
+   "mass_kg": 41.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 137.3,
+   "volume_l": 45.6,
+   "mass_kg": 46.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 137.5,
+   "volume_l": 51.4,
+   "mass_kg": 51.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 137.6,
+   "volume_l": 57.7,
+   "mass_kg": 58.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 137.6,
+   "volume_l": 64.3,
+   "mass_kg": 65.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 137.5,
+   "volume_l": 71.3,
+   "mass_kg": 72.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 137.4,
+   "volume_l": 78.7,
+   "mass_kg": 79.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 144.6,
+   "volume_l": 28.8,
+   "mass_kg": 29.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 144.7,
+   "volume_l": 32.6,
+   "mass_kg": 32.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 145.2,
+   "volume_l": 36.8,
+   "mass_kg": 37.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 145.2,
+   "volume_l": 41.2,
+   "mass_kg": 41.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 144.7,
+   "volume_l": 45.5,
+   "mass_kg": 45.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 144.6,
+   "volume_l": 50.2,
+   "mass_kg": 50.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 144.7,
+   "volume_l": 56.4,
+   "mass_kg": 56.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 145.2,
+   "volume_l": 63.3,
+   "mass_kg": 63.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 145.2,
+   "volume_l": 70.5,
+   "mass_kg": 71.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 144.7,
+   "volume_l": 77.7,
+   "mass_kg": 78.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 144.7,
+   "volume_l": 85.6,
+   "mass_kg": 86.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 151.9,
+   "volume_l": 31.9,
+   "mass_kg": 32.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 152.3,
+   "volume_l": 36.1,
+   "mass_kg": 36.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 152.3,
+   "volume_l": 40.5,
+   "mass_kg": 40.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 152.3,
+   "volume_l": 45.2,
+   "mass_kg": 45.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 152.3,
+   "volume_l": 50.1,
+   "mass_kg": 50.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 151.9,
+   "volume_l": 55.0,
+   "mass_kg": 55.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 152.3,
+   "volume_l": 61.9,
+   "mass_kg": 62.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 152.3,
+   "volume_l": 68.9,
+   "mass_kg": 69.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 152.3,
+   "volume_l": 76.6,
+   "mass_kg": 77.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 152.3,
+   "volume_l": 84.7,
+   "mass_kg": 85.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 151.9,
+   "volume_l": 92.9,
+   "mass_kg": 93.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 159.7,
+   "volume_l": 35.5,
+   "mass_kg": 35.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 159.4,
+   "volume_l": 39.7,
+   "mass_kg": 40.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 159.4,
+   "volume_l": 44.4,
+   "mass_kg": 44.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 159.4,
+   "volume_l": 49.5,
+   "mass_kg": 50.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 159.4,
+   "volume_l": 54.7,
+   "mass_kg": 55.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 159.4,
+   "volume_l": 60.3,
+   "mass_kg": 60.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 159.4,
+   "volume_l": 67.3,
+   "mass_kg": 68.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 159.4,
+   "volume_l": 74.9,
+   "mass_kg": 75.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 159.4,
+   "volume_l": 83.0,
+   "mass_kg": 83.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 159.4,
+   "volume_l": 91.6,
+   "mass_kg": 92.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 159.7,
+   "volume_l": 101.1,
+   "mass_kg": 102.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 166.6,
+   "volume_l": 38.9,
+   "mass_kg": 39.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 166.5,
+   "volume_l": 43.6,
+   "mass_kg": 44.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 166.5,
+   "volume_l": 48.6,
+   "mass_kg": 49.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 166.5,
+   "volume_l": 54.0,
+   "mass_kg": 54.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 166.5,
+   "volume_l": 59.6,
+   "mass_kg": 60.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 166.5,
+   "volume_l": 65.6,
+   "mass_kg": 66.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 166.5,
+   "volume_l": 73.1,
+   "mass_kg": 73.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 166.5,
+   "volume_l": 81.1,
+   "mass_kg": 81.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 166.5,
+   "volume_l": 89.8,
+   "mass_kg": 90.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 166.5,
+   "volume_l": 98.9,
+   "mass_kg": 99.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 166.7,
+   "volume_l": 108.7,
+   "mass_kg": 109.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 172.9,
+   "volume_l": 42.2,
+   "mass_kg": 42.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 172.9,
+   "volume_l": 47.2,
+   "mass_kg": 47.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 172.9,
+   "volume_l": 52.6,
+   "mass_kg": 53.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 172.9,
+   "volume_l": 58.3,
+   "mass_kg": 58.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 172.9,
+   "volume_l": 64.3,
+   "mass_kg": 64.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 172.9,
+   "volume_l": 70.6,
+   "mass_kg": 71.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 172.9,
+   "volume_l": 78.5,
+   "mass_kg": 79.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 172.9,
+   "volume_l": 87.0,
+   "mass_kg": 87.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 172.9,
+   "volume_l": 96.1,
+   "mass_kg": 97.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 172.9,
+   "volume_l": 105.7,
+   "mass_kg": 106.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 173.0,
+   "volume_l": 115.9,
+   "mass_kg": 117.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 185.3,
+   "volume_l": 50.6,
+   "mass_kg": 51.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 185.5,
+   "volume_l": 56.5,
+   "mass_kg": 57.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 185.5,
+   "volume_l": 62.5,
+   "mass_kg": 63.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 185.5,
+   "volume_l": 69.0,
+   "mass_kg": 69.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 185.5,
+   "volume_l": 75.8,
+   "mass_kg": 76.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 185.5,
+   "volume_l": 82.9,
+   "mass_kg": 83.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 185.5,
+   "volume_l": 91.8,
+   "mass_kg": 92.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 185.5,
+   "volume_l": 101.2,
+   "mass_kg": 102.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 185.5,
+   "volume_l": 111.4,
+   "mass_kg": 112.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 185.6,
+   "volume_l": 122.1,
+   "mass_kg": 123.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 185.4,
+   "volume_l": 133.1,
+   "mass_kg": 134.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 199.1,
+   "volume_l": 61.1,
+   "mass_kg": 61.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 199.6,
+   "volume_l": 68.1,
+   "mass_kg": 68.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 199.6,
+   "volume_l": 75.0,
+   "mass_kg": 75.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 199.6,
+   "volume_l": 82.4,
+   "mass_kg": 83.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 199.6,
+   "volume_l": 90.1,
+   "mass_kg": 91.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 199.6,
+   "volume_l": 98.1,
+   "mass_kg": 99.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 199.6,
+   "volume_l": 108.1,
+   "mass_kg": 109.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 199.6,
+   "volume_l": 118.8,
+   "mass_kg": 119.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 199.6,
+   "volume_l": 130.1,
+   "mass_kg": 131.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 199.6,
+   "volume_l": 142.1,
+   "mass_kg": 143.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 199.1,
+   "volume_l": 153.9,
+   "mass_kg": 155.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 214.4,
+   "volume_l": 74.5,
+   "mass_kg": 75.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 213.6,
+   "volume_l": 81.2,
+   "mass_kg": 82.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 213.6,
+   "volume_l": 89.1,
+   "mass_kg": 90.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 213.6,
+   "volume_l": 97.4,
+   "mass_kg": 98.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 213.6,
+   "volume_l": 106.1,
+   "mass_kg": 107.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 214.4,
+   "volume_l": 116.2,
+   "mass_kg": 117.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 213.6,
+   "volume_l": 126.3,
+   "mass_kg": 127.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 213.6,
+   "volume_l": 138.1,
+   "mass_kg": 139.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 213.6,
+   "volume_l": 150.8,
+   "mass_kg": 152.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 213.6,
+   "volume_l": 164.1,
+   "mass_kg": 165.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 214.5,
+   "volume_l": 179.5,
+   "mass_kg": 181.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 228.7,
+   "volume_l": 88.7,
+   "mass_kg": 89.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 228.5,
+   "volume_l": 96.9,
+   "mass_kg": 97.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 227.7,
+   "volume_l": 104.8,
+   "mass_kg": 105.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 227.7,
+   "volume_l": 114.1,
+   "mass_kg": 115.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 228.5,
+   "volume_l": 125.0,
+   "mass_kg": 126.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 228.8,
+   "volume_l": 135.5,
+   "mass_kg": 136.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 228.5,
+   "volume_l": 147.7,
+   "mass_kg": 149.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 227.7,
+   "volume_l": 159.5,
+   "mass_kg": 161.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 227.7,
+   "volume_l": 173.5,
+   "mass_kg": 175.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 228.5,
+   "volume_l": 189.7,
+   "mass_kg": 191.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 228.8,
+   "volume_l": 205.7,
+   "mass_kg": 207.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 243.1,
+   "volume_l": 104.7,
+   "mass_kg": 105.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 242.8,
+   "volume_l": 113.8,
+   "mass_kg": 114.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 242.5,
+   "volume_l": 123.3,
+   "mass_kg": 124.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 242.5,
+   "volume_l": 133.8,
+   "mass_kg": 135.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 242.8,
+   "volume_l": 145.1,
+   "mass_kg": 146.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 243.1,
+   "volume_l": 156.8,
+   "mass_kg": 158.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 242.8,
+   "volume_l": 170.2,
+   "mass_kg": 171.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 242.5,
+   "volume_l": 184.4,
+   "mass_kg": 186.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 242.5,
+   "volume_l": 199.8,
+   "mass_kg": 201.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 242.8,
+   "volume_l": 216.6,
+   "mass_kg": 218.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.0,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 243.1,
+   "volume_l": 234.2,
+   "mass_kg": 236.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 138.0,
+   "volume_l": 31.2,
+   "mass_kg": 31.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 137.3,
+   "volume_l": 33.1,
+   "mass_kg": 33.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 137.3,
+   "volume_l": 35.4,
+   "mass_kg": 35.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 137.3,
+   "volume_l": 37.8,
+   "mass_kg": 38.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 137.3,
+   "volume_l": 40.2,
+   "mass_kg": 40.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 137.3,
+   "volume_l": 42.8,
+   "mass_kg": 43.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 137.3,
+   "volume_l": 45.9,
+   "mass_kg": 46.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 137.3,
+   "volume_l": 49.2,
+   "mass_kg": 49.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 137.3,
+   "volume_l": 52.6,
+   "mass_kg": 53.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 137.3,
+   "volume_l": 56.2,
+   "mass_kg": 56.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 138.0,
+   "volume_l": 60.3,
+   "mass_kg": 60.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 145.2,
+   "volume_l": 34.4,
+   "mass_kg": 34.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 144.6,
+   "volume_l": 36.6,
+   "mass_kg": 37.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 144.6,
+   "volume_l": 39.1,
+   "mass_kg": 39.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 144.6,
+   "volume_l": 41.7,
+   "mass_kg": 42.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 144.6,
+   "volume_l": 44.4,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 144.6,
+   "volume_l": 47.2,
+   "mass_kg": 47.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 144.6,
+   "volume_l": 50.5,
+   "mass_kg": 51.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 144.6,
+   "volume_l": 54.0,
+   "mass_kg": 54.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 144.6,
+   "volume_l": 57.7,
+   "mass_kg": 58.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 144.6,
+   "volume_l": 61.5,
+   "mass_kg": 62.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 145.2,
+   "volume_l": 65.9,
+   "mass_kg": 66.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 152.3,
+   "volume_l": 37.9,
+   "mass_kg": 38.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 151.9,
+   "volume_l": 40.4,
+   "mass_kg": 40.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 151.9,
+   "volume_l": 43.1,
+   "mass_kg": 43.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 151.9,
+   "volume_l": 45.9,
+   "mass_kg": 46.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 151.9,
+   "volume_l": 48.8,
+   "mass_kg": 49.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 151.9,
+   "volume_l": 51.8,
+   "mass_kg": 52.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 151.9,
+   "volume_l": 55.4,
+   "mass_kg": 55.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 151.9,
+   "volume_l": 59.1,
+   "mass_kg": 59.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 151.9,
+   "volume_l": 63.1,
+   "mass_kg": 63.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 151.9,
+   "volume_l": 67.2,
+   "mass_kg": 67.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 152.3,
+   "volume_l": 71.7,
+   "mass_kg": 72.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 159.4,
+   "volume_l": 41.7,
+   "mass_kg": 42.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 159.1,
+   "volume_l": 44.4,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 159.1,
+   "volume_l": 47.3,
+   "mass_kg": 47.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 159.1,
+   "volume_l": 50.3,
+   "mass_kg": 50.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 159.1,
+   "volume_l": 53.4,
+   "mass_kg": 54.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 159.1,
+   "volume_l": 56.7,
+   "mass_kg": 57.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 159.1,
+   "volume_l": 60.5,
+   "mass_kg": 61.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 159.1,
+   "volume_l": 64.5,
+   "mass_kg": 65.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 159.1,
+   "volume_l": 68.8,
+   "mass_kg": 69.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 159.1,
+   "volume_l": 73.1,
+   "mass_kg": 73.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 159.4,
+   "volume_l": 77.8,
+   "mass_kg": 78.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 166.5,
+   "volume_l": 45.6,
+   "mass_kg": 46.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 166.4,
+   "volume_l": 48.6,
+   "mass_kg": 49.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 166.4,
+   "volume_l": 51.8,
+   "mass_kg": 52.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 166.4,
+   "volume_l": 55.0,
+   "mass_kg": 55.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 166.4,
+   "volume_l": 58.4,
+   "mass_kg": 58.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 166.4,
+   "volume_l": 61.8,
+   "mass_kg": 62.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 166.4,
+   "volume_l": 66.0,
+   "mass_kg": 66.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 166.4,
+   "volume_l": 70.3,
+   "mass_kg": 71.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 166.4,
+   "volume_l": 74.7,
+   "mass_kg": 75.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 166.4,
+   "volume_l": 79.4,
+   "mass_kg": 80.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 166.5,
+   "volume_l": 84.3,
+   "mass_kg": 85.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 172.9,
+   "volume_l": 49.4,
+   "mass_kg": 49.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 172.9,
+   "volume_l": 52.7,
+   "mass_kg": 53.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 172.9,
+   "volume_l": 56.0,
+   "mass_kg": 56.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 172.9,
+   "volume_l": 59.5,
+   "mass_kg": 60.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 172.9,
+   "volume_l": 63.1,
+   "mass_kg": 63.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 172.9,
+   "volume_l": 66.7,
+   "mass_kg": 67.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 172.9,
+   "volume_l": 71.1,
+   "mass_kg": 71.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 172.9,
+   "volume_l": 75.7,
+   "mass_kg": 76.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 172.9,
+   "volume_l": 80.4,
+   "mass_kg": 81.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 172.9,
+   "volume_l": 85.3,
+   "mass_kg": 86.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 172.9,
+   "volume_l": 90.4,
+   "mass_kg": 91.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 185.5,
+   "volume_l": 59.0,
+   "mass_kg": 59.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 185.8,
+   "volume_l": 62.9,
+   "mass_kg": 63.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 185.8,
+   "volume_l": 66.7,
+   "mass_kg": 67.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 185.8,
+   "volume_l": 70.6,
+   "mass_kg": 71.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 185.8,
+   "volume_l": 74.7,
+   "mass_kg": 75.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 185.8,
+   "volume_l": 78.8,
+   "mass_kg": 79.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 185.8,
+   "volume_l": 83.8,
+   "mass_kg": 84.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 185.8,
+   "volume_l": 88.9,
+   "mass_kg": 89.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 185.8,
+   "volume_l": 94.2,
+   "mass_kg": 95.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 185.8,
+   "volume_l": 99.7,
+   "mass_kg": 100.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 185.5,
+   "volume_l": 105.1,
+   "mass_kg": 106.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 199.6,
+   "volume_l": 71.0,
+   "mass_kg": 71.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 200.1,
+   "volume_l": 75.7,
+   "mass_kg": 76.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 200.1,
+   "volume_l": 80.1,
+   "mass_kg": 80.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 200.1,
+   "volume_l": 84.5,
+   "mass_kg": 85.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 200.1,
+   "volume_l": 89.2,
+   "mass_kg": 90.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 200.1,
+   "volume_l": 93.9,
+   "mass_kg": 94.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 200.1,
+   "volume_l": 99.5,
+   "mass_kg": 100.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 200.1,
+   "volume_l": 105.3,
+   "mass_kg": 106.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 200.1,
+   "volume_l": 111.3,
+   "mass_kg": 112.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 200.1,
+   "volume_l": 117.5,
+   "mass_kg": 118.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 199.6,
+   "volume_l": 123.1,
+   "mass_kg": 124.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 213.6,
+   "volume_l": 84.5,
+   "mass_kg": 85.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 214.4,
+   "volume_l": 90.2,
+   "mass_kg": 91.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 214.4,
+   "volume_l": 95.1,
+   "mass_kg": 96.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 214.4,
+   "volume_l": 100.2,
+   "mass_kg": 101.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 214.4,
+   "volume_l": 105.4,
+   "mass_kg": 106.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 214.4,
+   "volume_l": 110.7,
+   "mass_kg": 111.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 214.4,
+   "volume_l": 117.0,
+   "mass_kg": 118.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 214.4,
+   "volume_l": 123.5,
+   "mass_kg": 124.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 214.4,
+   "volume_l": 130.2,
+   "mass_kg": 131.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 214.4,
+   "volume_l": 137.2,
+   "mass_kg": 138.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 213.6,
+   "volume_l": 143.1,
+   "mass_kg": 144.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 227.7,
+   "volume_l": 99.7,
+   "mass_kg": 100.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 228.8,
+   "volume_l": 106.4,
+   "mass_kg": 107.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 228.8,
+   "volume_l": 111.9,
+   "mass_kg": 113.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 228.8,
+   "volume_l": 117.6,
+   "mass_kg": 118.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 228.8,
+   "volume_l": 123.5,
+   "mass_kg": 124.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 228.8,
+   "volume_l": 129.5,
+   "mass_kg": 130.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 228.8,
+   "volume_l": 136.5,
+   "mass_kg": 137.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 228.8,
+   "volume_l": 143.7,
+   "mass_kg": 145.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 228.8,
+   "volume_l": 151.2,
+   "mass_kg": 152.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 228.8,
+   "volume_l": 158.9,
+   "mass_kg": 160.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 227.7,
+   "volume_l": 165.0,
+   "mass_kg": 166.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 241.7,
+   "volume_l": 116.6,
+   "mass_kg": 117.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 243.1,
+   "volume_l": 124.4,
+   "mass_kg": 125.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 243.1,
+   "volume_l": 130.6,
+   "mass_kg": 131.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 243.1,
+   "volume_l": 137.0,
+   "mass_kg": 138.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 243.1,
+   "volume_l": 143.5,
+   "mass_kg": 144.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 243.1,
+   "volume_l": 150.2,
+   "mass_kg": 151.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 243.1,
+   "volume_l": 157.9,
+   "mass_kg": 159.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 243.1,
+   "volume_l": 166.0,
+   "mass_kg": 167.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 243.1,
+   "volume_l": 174.3,
+   "mass_kg": 176.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 243.1,
+   "volume_l": 182.8,
+   "mass_kg": 184.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.25,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 241.7,
+   "volume_l": 189.0,
+   "mass_kg": 190.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.0,
+   "height_cm": 137.3,
+   "volume_l": 36.4,
+   "mass_kg": 36.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.1,
+   "height_cm": 137.3,
+   "volume_l": 37.2,
+   "mass_kg": 37.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.2,
+   "height_cm": 137.3,
+   "volume_l": 37.9,
+   "mass_kg": 38.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.3,
+   "height_cm": 137.3,
+   "volume_l": 38.7,
+   "mass_kg": 39.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.4,
+   "height_cm": 137.3,
+   "volume_l": 39.4,
+   "mass_kg": 39.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.5,
+   "height_cm": 137.3,
+   "volume_l": 40.2,
+   "mass_kg": 40.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.6,
+   "height_cm": 137.3,
+   "volume_l": 41.0,
+   "mass_kg": 41.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.7,
+   "height_cm": 137.3,
+   "volume_l": 41.8,
+   "mass_kg": 42.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.8,
+   "height_cm": 137.3,
+   "volume_l": 42.7,
+   "mass_kg": 43.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 0.9,
+   "height_cm": 137.3,
+   "volume_l": 43.5,
+   "mass_kg": 43.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.0,
+   "weight": 1.0,
+   "height_cm": 137.3,
+   "volume_l": 44.4,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.0,
+   "height_cm": 144.6,
+   "volume_l": 40.2,
+   "mass_kg": 40.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.1,
+   "height_cm": 144.6,
+   "volume_l": 41.0,
+   "mass_kg": 41.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.2,
+   "height_cm": 144.6,
+   "volume_l": 41.8,
+   "mass_kg": 42.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.3,
+   "height_cm": 144.6,
+   "volume_l": 42.7,
+   "mass_kg": 43.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.4,
+   "height_cm": 144.6,
+   "volume_l": 43.5,
+   "mass_kg": 43.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.5,
+   "height_cm": 144.6,
+   "volume_l": 44.3,
+   "mass_kg": 44.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.6,
+   "height_cm": 144.6,
+   "volume_l": 45.2,
+   "mass_kg": 45.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.7,
+   "height_cm": 144.6,
+   "volume_l": 46.1,
+   "mass_kg": 46.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.8,
+   "height_cm": 144.6,
+   "volume_l": 47.0,
+   "mass_kg": 47.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 0.9,
+   "height_cm": 144.6,
+   "volume_l": 47.9,
+   "mass_kg": 48.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.1,
+   "weight": 1.0,
+   "height_cm": 144.6,
+   "volume_l": 48.8,
+   "mass_kg": 49.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.0,
+   "height_cm": 151.9,
+   "volume_l": 44.3,
+   "mass_kg": 44.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.1,
+   "height_cm": 151.9,
+   "volume_l": 45.2,
+   "mass_kg": 45.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.2,
+   "height_cm": 151.9,
+   "volume_l": 46.0,
+   "mass_kg": 46.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.3,
+   "height_cm": 151.9,
+   "volume_l": 46.9,
+   "mass_kg": 47.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.4,
+   "height_cm": 151.9,
+   "volume_l": 47.8,
+   "mass_kg": 48.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.5,
+   "height_cm": 151.9,
+   "volume_l": 48.8,
+   "mass_kg": 49.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.6,
+   "height_cm": 151.9,
+   "volume_l": 49.7,
+   "mass_kg": 50.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.7,
+   "height_cm": 151.9,
+   "volume_l": 50.7,
+   "mass_kg": 51.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.8,
+   "height_cm": 151.9,
+   "volume_l": 51.6,
+   "mass_kg": 52.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 0.9,
+   "height_cm": 151.9,
+   "volume_l": 52.6,
+   "mass_kg": 53.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.2,
+   "weight": 1.0,
+   "height_cm": 151.9,
+   "volume_l": 53.6,
+   "mass_kg": 54.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.0,
+   "height_cm": 159.4,
+   "volume_l": 48.8,
+   "mass_kg": 49.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.1,
+   "height_cm": 159.1,
+   "volume_l": 49.5,
+   "mass_kg": 50.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.2,
+   "height_cm": 159.1,
+   "volume_l": 50.5,
+   "mass_kg": 51.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.3,
+   "height_cm": 159.1,
+   "volume_l": 51.5,
+   "mass_kg": 52.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.4,
+   "height_cm": 159.1,
+   "volume_l": 52.4,
+   "mass_kg": 53.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.5,
+   "height_cm": 159.1,
+   "volume_l": 53.4,
+   "mass_kg": 54.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.6,
+   "height_cm": 159.1,
+   "volume_l": 54.5,
+   "mass_kg": 55.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.7,
+   "height_cm": 159.1,
+   "volume_l": 55.5,
+   "mass_kg": 56.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.8,
+   "height_cm": 159.1,
+   "volume_l": 56.5,
+   "mass_kg": 57.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 0.9,
+   "height_cm": 159.1,
+   "volume_l": 57.6,
+   "mass_kg": 58.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.3,
+   "weight": 1.0,
+   "height_cm": 159.4,
+   "volume_l": 58.8,
+   "mass_kg": 59.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.0,
+   "height_cm": 166.5,
+   "volume_l": 53.3,
+   "mass_kg": 53.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.1,
+   "height_cm": 166.4,
+   "volume_l": 54.2,
+   "mass_kg": 54.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.2,
+   "height_cm": 166.4,
+   "volume_l": 55.2,
+   "mass_kg": 55.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.3,
+   "height_cm": 166.4,
+   "volume_l": 56.3,
+   "mass_kg": 56.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.4,
+   "height_cm": 166.4,
+   "volume_l": 57.3,
+   "mass_kg": 57.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.5,
+   "height_cm": 166.4,
+   "volume_l": 58.4,
+   "mass_kg": 59.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.6,
+   "height_cm": 166.4,
+   "volume_l": 59.5,
+   "mass_kg": 60.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.7,
+   "height_cm": 166.4,
+   "volume_l": 60.6,
+   "mass_kg": 61.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.8,
+   "height_cm": 166.4,
+   "volume_l": 61.7,
+   "mass_kg": 62.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 0.9,
+   "height_cm": 166.4,
+   "volume_l": 62.8,
+   "mass_kg": 63.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.4,
+   "weight": 1.0,
+   "height_cm": 166.5,
+   "volume_l": 64.1,
+   "mass_kg": 64.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.0,
+   "height_cm": 172.9,
+   "volume_l": 57.5,
+   "mass_kg": 58.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.1,
+   "height_cm": 172.9,
+   "volume_l": 58.6,
+   "mass_kg": 59.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.2,
+   "height_cm": 172.9,
+   "volume_l": 59.7,
+   "mass_kg": 60.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.3,
+   "height_cm": 172.9,
+   "volume_l": 60.8,
+   "mass_kg": 61.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.4,
+   "height_cm": 172.9,
+   "volume_l": 62.0,
+   "mass_kg": 62.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.5,
+   "height_cm": 172.9,
+   "volume_l": 63.1,
+   "mass_kg": 63.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.6,
+   "height_cm": 172.9,
+   "volume_l": 64.3,
+   "mass_kg": 64.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.7,
+   "height_cm": 172.9,
+   "volume_l": 65.4,
+   "mass_kg": 66.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.8,
+   "height_cm": 172.9,
+   "volume_l": 66.6,
+   "mass_kg": 67.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 0.9,
+   "height_cm": 172.9,
+   "volume_l": 67.8,
+   "mass_kg": 68.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.5,
+   "weight": 1.0,
+   "height_cm": 172.9,
+   "volume_l": 69.0,
+   "mass_kg": 69.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.0,
+   "height_cm": 185.5,
+   "volume_l": 68.2,
+   "mass_kg": 68.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.1,
+   "height_cm": 185.8,
+   "volume_l": 69.6,
+   "mass_kg": 70.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.2,
+   "height_cm": 185.8,
+   "volume_l": 70.9,
+   "mass_kg": 71.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.3,
+   "height_cm": 185.8,
+   "volume_l": 72.2,
+   "mass_kg": 72.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.4,
+   "height_cm": 185.8,
+   "volume_l": 73.5,
+   "mass_kg": 74.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.5,
+   "height_cm": 185.8,
+   "volume_l": 74.8,
+   "mass_kg": 75.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.6,
+   "height_cm": 185.8,
+   "volume_l": 76.1,
+   "mass_kg": 76.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.7,
+   "height_cm": 185.8,
+   "volume_l": 77.4,
+   "mass_kg": 78.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.8,
+   "height_cm": 185.8,
+   "volume_l": 78.8,
+   "mass_kg": 79.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 0.9,
+   "height_cm": 185.8,
+   "volume_l": 80.1,
+   "mass_kg": 80.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.6,
+   "weight": 1.0,
+   "height_cm": 185.5,
+   "volume_l": 81.2,
+   "mass_kg": 82.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.0,
+   "height_cm": 199.6,
+   "volume_l": 81.4,
+   "mass_kg": 82.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.1,
+   "height_cm": 200.1,
+   "volume_l": 83.4,
+   "mass_kg": 84.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.2,
+   "height_cm": 200.1,
+   "volume_l": 84.9,
+   "mass_kg": 85.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.3,
+   "height_cm": 200.1,
+   "volume_l": 86.3,
+   "mass_kg": 87.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.4,
+   "height_cm": 200.1,
+   "volume_l": 87.8,
+   "mass_kg": 88.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.5,
+   "height_cm": 200.1,
+   "volume_l": 89.3,
+   "mass_kg": 90.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.6,
+   "height_cm": 200.1,
+   "volume_l": 90.8,
+   "mass_kg": 91.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.7,
+   "height_cm": 200.1,
+   "volume_l": 92.3,
+   "mass_kg": 93.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.8,
+   "height_cm": 200.1,
+   "volume_l": 93.9,
+   "mass_kg": 94.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 0.9,
+   "height_cm": 200.1,
+   "volume_l": 95.4,
+   "mass_kg": 96.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.7,
+   "weight": 1.0,
+   "height_cm": 199.6,
+   "volume_l": 96.3,
+   "mass_kg": 97.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.0,
+   "height_cm": 214.4,
+   "volume_l": 97.3,
+   "mass_kg": 98.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.1,
+   "height_cm": 214.4,
+   "volume_l": 98.9,
+   "mass_kg": 99.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.2,
+   "height_cm": 214.4,
+   "volume_l": 100.6,
+   "mass_kg": 101.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.3,
+   "height_cm": 214.4,
+   "volume_l": 102.2,
+   "mass_kg": 103.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.4,
+   "height_cm": 214.4,
+   "volume_l": 103.9,
+   "mass_kg": 105.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.5,
+   "height_cm": 214.4,
+   "volume_l": 105.7,
+   "mass_kg": 106.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.6,
+   "height_cm": 214.4,
+   "volume_l": 107.3,
+   "mass_kg": 108.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.7,
+   "height_cm": 214.4,
+   "volume_l": 109.0,
+   "mass_kg": 110.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.8,
+   "height_cm": 214.4,
+   "volume_l": 110.7,
+   "mass_kg": 111.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 0.9,
+   "height_cm": 214.4,
+   "volume_l": 112.5,
+   "mass_kg": 113.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.8,
+   "weight": 1.0,
+   "height_cm": 214.4,
+   "volume_l": 114.2,
+   "mass_kg": 115.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.0,
+   "height_cm": 228.8,
+   "volume_l": 114.3,
+   "mass_kg": 115.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.1,
+   "height_cm": 228.8,
+   "volume_l": 116.2,
+   "mass_kg": 117.3
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.2,
+   "height_cm": 228.8,
+   "volume_l": 118.0,
+   "mass_kg": 119.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.3,
+   "height_cm": 228.8,
+   "volume_l": 119.9,
+   "mass_kg": 121.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.4,
+   "height_cm": 228.8,
+   "volume_l": 121.9,
+   "mass_kg": 123.1
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.5,
+   "height_cm": 228.8,
+   "volume_l": 123.8,
+   "mass_kg": 125.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.6,
+   "height_cm": 228.8,
+   "volume_l": 125.7,
+   "mass_kg": 126.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.7,
+   "height_cm": 228.8,
+   "volume_l": 127.6,
+   "mass_kg": 128.9
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.8,
+   "height_cm": 228.8,
+   "volume_l": 129.5,
+   "mass_kg": 130.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 0.9,
+   "height_cm": 228.8,
+   "volume_l": 131.5,
+   "mass_kg": 132.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 0.9,
+   "weight": 1.0,
+   "height_cm": 228.8,
+   "volume_l": 133.4,
+   "mass_kg": 134.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.0,
+   "height_cm": 243.1,
+   "volume_l": 133.3,
+   "mass_kg": 134.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.1,
+   "height_cm": 243.1,
+   "volume_l": 135.4,
+   "mass_kg": 136.7
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.2,
+   "height_cm": 243.1,
+   "volume_l": 137.5,
+   "mass_kg": 138.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.3,
+   "height_cm": 243.1,
+   "volume_l": 139.6,
+   "mass_kg": 141.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.4,
+   "height_cm": 243.1,
+   "volume_l": 141.7,
+   "mass_kg": 143.2
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.5,
+   "height_cm": 243.1,
+   "volume_l": 143.9,
+   "mass_kg": 145.4
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.6,
+   "height_cm": 243.1,
+   "volume_l": 146.0,
+   "mass_kg": 147.5
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.7,
+   "height_cm": 243.1,
+   "volume_l": 148.1,
+   "mass_kg": 149.6
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.8,
+   "height_cm": 243.1,
+   "volume_l": 150.3,
+   "mass_kg": 151.8
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 0.9,
+   "height_cm": 243.1,
+   "volume_l": 152.4,
+   "mass_kg": 154.0
+  },
+  {
+   "gender": 1.0,
+   "muscle": 0.5,
+   "height": 1.0,
+   "weight": 1.0,
+   "height_cm": 243.1,
+   "volume_l": 154.6,
+   "mass_kg": 156.2
+  }
+ ]
+}

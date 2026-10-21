@@ -7,11 +7,13 @@ from fastapi import FastAPI
 
 import modules
 
-from .routes import chat, health
+from .routes import agents, beta1, chat, health
 
 app = FastAPI(title="DressMe API", version="0.2.0")
 app.include_router(health.router)
 app.include_router(chat.router, prefix="/chat", tags=["chat (BO8)"])
+app.include_router(beta1.router)
+app.include_router(agents.router)
 
 for m in sorted(pkgutil.iter_modules(modules.__path__), key=lambda m: m.name):
     try:

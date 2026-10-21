@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DressMe 3D Try-on</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f3ee; --panel: #fffdf9; --ink: #1f1d1a; --muted: #6f6a62; --line: #e4ddd2;
+    --accent: #8a5a2b; --accent-soft: #f1e4d4; --good: #3f7d4e; --warn: #b5532f; --chip: #efe9df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --panel: #201e1b; --ink: #f0ebe3; --muted: #a39d93; --line: #35312b;
+      --accent: #d9a46a; --accent-soft: #3a2d20; --good: #7cc08b; --warn: #e48a66; --chip: #2b2824;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px 16px 96px; }
+  header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { margin: 0; font-size: 21px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; min-width: 0; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  label.l { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  select, input[type=text], input[type=number] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; min-width: 0; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=color] { width: 48px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: none; padding: 2px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--chip); color: var(--ink); padding: 7px 14px; border-radius: 999px; cursor: pointer; font: inherit; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn { border: 0; background: var(--accent); color: #fff; padding: 11px 16px; border-radius: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 7px 12px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 13px; }
+  .photo { display: flex; gap: 10px; }
+  .drop { flex: 1; border: 2px dashed var(--line); border-radius: 12px; min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; text-align: center; padding: 8px; color: var(--muted); font-size: 13px; }
+  .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .drop input { display: none; }
+  .pieces { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .piece { border: 2px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; cursor: pointer; }
+  .piece.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .piece .img { aspect-ratio: 1; background: var(--chip); display: flex; align-items: center; justify-content: center; }
+  .piece .img img { width: 100%; height: 100%; object-fit: cover; }
+  .piece .meta { padding: 7px 8px; font-size: 12px; }
+  .piece .meta b { display: block; font-size: 13px; text-transform: capitalize; }
+  .piece .x { position: absolute; top: 6px; right: 6px; border: 0; background: rgba(0,0,0,.55); color: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; }
+  .piece .tick { position: absolute; top: 6px; left: 6px; background: var(--accent); color: #fff; border-radius: 50%; width: 24px; height: 24px; display: none; align-items: center; justify-content: center; font-size: 14px; }
+  .piece.sel .tick { display: flex; }
+  .swatch { width: 100%; height: 100%; }
+  model-viewer { width: 100%; height: 72vh; min-height: 420px; background: radial-gradient(circle at 50% 40%, var(--accent-soft), var(--bg)); border-radius: 14px; --poster-color: transparent; }
+  .status { padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); margin-top: 10px; font-size: 13px; display: none; }
+  .status.on { display: block; }
+  .status.err { background: #f6d9cf; color: var(--warn); }
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; justify-content: center; z-index: 5; }
+  .dock .btn { min-width: 220px; }
+  .empty { text-align: center; padding: 30px 10px; color: var(--muted); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+  .fact { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+  .fact b { display: block; font-size: 16px; color: var(--accent); }
+  .fact span { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>DressMe · 3D try-on</h1><span class="muted small">your body, your clothes from photos, real sizes</span></header>
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h2>1 · My body</h2>
+        <div class="chips" id="sex"><button class="chip on" data-v="female">Woman</button><button class="chip" data-v="male">Man</button></div>
+        <label class="l">Height: <b id="hv">165</b> cm</label><input type="range" id="height" min="140" max="210" value="165">
+        <label class="l">Weight: <b id="wv">60</b> kg</label><input type="range" id="weight" min="35" max="150" value="60">
+      </div>
+
+      <div class="card">
+        <h2>2 · Add a piece</h2>
+        <p class="small muted" style="margin:0 0 10px">Tip: lay the piece flat on a plain floor or sheet, legs / sleeves straight, photo from above.</p>
+        <div class="photo">
+          <label class="drop" id="dfront"><input type="file" id="front" accept="image/*" capture="environment"><span>📷 Front photo</span></label>
+          <label class="drop" id="dback"><input type="file" id="back" accept="image/*" capture="environment"><span>Back photo<br><span class="small">(optional: else the main colour)</span></span></label>
+        </div>
+        <div class="grid2">
+          <div><label class="l">Type</label><select id="type"></select></div>
+          <div><label class="l">Size</label><select id="size"></select></div>
+          <div><label class="l">Fit</label><select id="fit"></select></div>
+          <div><label class="l">Fabric weight</label><select id="gsm">
+            <option value="">typical for the type</option><option value="110">light · 110 g/m²</option><option value="160">t-shirt · 160 g/m²</option>
+            <option value="220">medium · 220 g/m²</option><option value="320">heavy · 320 g/m²</option><option value="400">very heavy · 400 g/m²</option></select></div>
+        </div>
+        <div id="slvbox"><label class="l">Sleeves</label><select id="sleeves"><option value="">as the type</option><option value="short">short</option><option value="long">long</option></select></div>
+        <div id="lenbox" style="display:none"><label class="l">Length</label><select id="length"><option value="mini">mini</option><option value="midi" selected>midi</option><option value="long">long</option></select></div>
+        <div class="row" style="margin-top:10px"><input type="color" id="color" value="#3b6db3"><span class="small muted">colour (only used when there is no photo)</span></div>
+        <button class="btn" id="add" style="width:100%;margin-top:12px">Add this piece</button>
+        <div class="status" id="addst"></div>
+      </div>
+
+      <div class="card">
+        <h2>3 · My pieces <span class="small" id="selcount"></span></h2>
+        <div class="pieces" id="pieces"><div class="empty">No piece yet. Add one above.</div></div>
+        <p class="small muted" style="margin:8px 0 0">Tap pieces to choose your outfit (one top, one bottom, or a dress…).</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Avatar <span class="small" id="sys"></span></h2>
+        <model-viewer id="mv" camera-controls auto-rotate auto-rotate-delay="1500" rotation-per-second="20deg" shadow-intensity="0.8" exposure="1.05" camera-orbit="0deg 80deg 3.2m" field-of-view="30deg" alt="your avatar"><div slot="poster" id="hint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)">Add pieces, tap the ones you want to wear,<br>then press <b>&nbsp;Dress me&nbsp;</b></div></model-viewer>
+        <div class="status" id="rst"></div>
+        <div class="facts" id="facts"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="dock"><span class="small muted" id="docktxt">choose pieces</span><button class="btn" id="go" disabled>Dress me</button></div>
+<script>
+const $ = s => document.querySelector(s);
+async function readJson(r) {  // the server may answer plain text on a crash: show it instead of a JSON error
+  const t = await r.text();
+  try { return JSON.parse(t); } catch (e) { return { detail: 'server error ' + r.status + ': ' + t.slice(0, 200) }; }
+}
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem('dm3d_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem('dm3d_' + k, JSON.stringify(v)); } catch (e) {} } };
+const USER = new URLSearchParams(location.search).get('user') || store.get('user', 'me');
+const S = { pieces: [], sel: new Set(store.get('sel', [])), body: store.get('body', { sex: 'female', height_cm: 165, weight_kg: 60 }) };
+
+function setStatus(el, msg, err) { el.className = 'status on' + (err ? ' err' : ''); el.innerHTML = msg; }
+function clearStatus(el) { el.className = 'status'; }
+
+// ---- body ----
+function renderBody() {
+  document.querySelectorAll('#sex .chip').forEach(c => c.classList.toggle('on', c.dataset.v === S.body.sex));
+  $('#height').value = S.body.height_cm; $('#hv').textContent = S.body.height_cm;
+  $('#weight').value = S.body.weight_kg; $('#wv').textContent = S.body.weight_kg;
+}
+$('#sex').onclick = e => { if (!e.target.dataset.v) return; S.body.sex = e.target.dataset.v; store.set('body', S.body); renderBody(); };
+$('#height').oninput = e => { S.body.height_cm = +e.target.value; $('#hv').textContent = e.target.value; store.set('body', S.body); };
+$('#weight').oninput = e => { S.body.weight_kg = +e.target.value; $('#wv').textContent = e.target.value; store.set('body', S.body); };
+
+// ---- photo inputs ----
+for (const side of ['front', 'back']) {
+  $('#' + side).onchange = e => {
+    const f = e.target.files[0]; const box = $('#d' + side);
+    box.querySelectorAll('img').forEach(i => i.remove());
+    if (f) { const img = document.createElement('img'); img.src = URL.createObjectURL(f); box.appendChild(img); }
+  };
+}
+const TOPS = ['t-shirt', 'jersey', 'top', 'blouse', 'polo shirt', 'shirt', 'long-sleeve top', 'sweater', 'hoodie'];
+$('#type').onchange = () => {
+  $('#lenbox').style.display = $('#type').value === 'skirt' ? '' : 'none';
+  $('#slvbox').style.display = TOPS.includes($('#type').value) ? '' : 'none';
+};
+
+async function loadOptions() {
+  const o = (await (await fetch('/m09/options')).json()).result;
+  const nice = ['t-shirt', 'jersey', 'top', 'blouse', 'polo shirt', 'shirt', 'long-sleeve top', 'sweater', 'hoodie', 'pants', 'jeans', 'cargo pants', 'shorts', 'skirt', 'dress', 'jacket', 'blazer', 'shoes'];
+  const label = { 'jersey': 'jersey / football shirt (untucked, short sleeves)', 'shirt': 'shirt (buttons, long sleeves)', 't-shirt': 't-shirt (tucked)', 'pants': 'pants / joggers' };
+  $('#type').innerHTML = nice.filter(t => o.types.includes(t) || t === 'skirt').map(t => `<option value="${t}">${label[t] || t}</option>`).join('');
+  $('#size').innerHTML = '<option value="">template fit</option>' + o.sizes.map(s => `<option ${s === 'M' ? 'selected' : ''}>${s}</option>`).join('');
+  $('#fit').innerHTML = o.fits.map(f => `<option ${f === 'regular' ? 'selected' : ''}>${f}</option>`).join('');
+  $('#sys').textContent = o.blender.found ? 'Blender ✓' : 'Blender not found';
+  if (!o.blender.found) setStatus($('#rst'), 'Blender was not found at ' + esc(o.blender.path) + '. Set M09_BLENDER.', true);
+  if (!o.segmentation_python.found) setStatus($('#addst'), 'Photo environment not found (ml/.venv). Pieces without photo still work.', true);
+}
+
+// ---- pieces ----
+async function loadPieces() {
+  const r = (await (await fetch('/m09/pieces?user_id=' + encodeURIComponent(USER))).json()).result;
+  S.pieces = r.pieces;
+  const ids = new Set(S.pieces.map(p => p.piece_id)); S.sel.forEach(id => { if (!ids.has(id)) S.sel.delete(id); });
+  renderPieces();
+}
+function renderPieces() {
+  const box = $('#pieces');
+  if (!S.pieces.length) { box.innerHTML = '<div class="empty">No piece yet. Add one above.</div>'; }
+  else box.innerHTML = S.pieces.map(p => { const s = p.sheet;
+    const img = p.front_url ? `<img src="${esc(p.front_url)}" alt="">` : `<div class="swatch" style="background:${esc(p.main_color)}"></div>`;
+    return `<div class="piece ${S.sel.has(p.piece_id) ? 'sel' : ''}" data-id="${p.piece_id}"><span class="tick">✓</span><button class="x" data-del="${p.piece_id}" title="delete">✕</button>
+      <div class="img">${img}</div><div class="meta"><b>${esc(s.type)}${s.length ? ' · ' + esc(s.length) : ''}${s.sleeves ? ' · ' + esc(s.sleeves) + ' sleeves' : ''}</b>${esc(s.size || 'template fit')} · ${esc(s.fit)}${s.gsm ? ' · ' + s.gsm + ' g/m²' : ''}
+      <div style="display:flex;gap:6px;align-items:center;margin-top:4px"><span style="width:14px;height:14px;border-radius:4px;background:${esc(p.main_color)};display:inline-block"></span><span class="muted">${p.has_back_photo ? 'front + back photo' : p.photo ? 'front photo' : 'colour'}</span></div></div></div>`; }).join('');
+  box.querySelectorAll('.piece').forEach(el => el.onclick = e => {
+    if (e.target.dataset.del) return;
+    const id = el.dataset.id; S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); store.set('sel', [...S.sel]); renderPieces(); });
+  box.querySelectorAll('[data-del]').forEach(b => b.onclick = async e => {
+    e.stopPropagation(); if (!confirm('Delete this piece?')) return;
+    await fetch(`/m09/pieces/${b.dataset.del}?user_id=${encodeURIComponent(USER)}`, { method: 'DELETE' }); loadPieces(); });
+  const n = S.sel.size; $('#selcount').textContent = n ? n + ' selected' : '';
+  $('#go').disabled = !n; $('#docktxt').textContent = n ? n + ' piece(s) chosen' : 'choose pieces';
+}
+
+$('#add').onclick = async () => {
+  const fd = new FormData();
+  fd.append('user_id', USER); fd.append('type', $('#type').value); fd.append('size', $('#size').value);
+  fd.append('fit', $('#fit').value); fd.append('gsm', $('#gsm').value); fd.append('color', $('#color').value);
+  if ($('#type').value === 'skirt') fd.append('length', $('#length').value);
+  if (TOPS.includes($('#type').value)) fd.append('sleeves', $('#sleeves').value);
+  const f = $('#front').files[0], b = $('#back').files[0];
+  if (f) fd.append('front', f); if (b) fd.append('back', b);
+  $('#add').disabled = true;
+  setStatus($('#addst'), f ? 'Removing the background and building the texture… (about 10–20 s)' : 'Saving…');
+  try {
+    const r = await fetch('/m09/pieces', { method: 'POST', body: fd });
+    const j = await readJson(r); if (!r.ok) throw new Error(j.detail || r.status);
+    S.sel.add(j.result.piece.piece_id); store.set('sel', [...S.sel]);
+    setStatus($('#addst'), '✓ Added: ' + esc(j.result.piece.sheet.type) + ' · main colour ' + esc(j.result.piece.main_color));
+    $('#front').value = ''; $('#back').value = ''; document.querySelectorAll('.drop img').forEach(i => i.remove());
+    loadPieces();
+  } catch (e) { setStatus($('#addst'), esc(e.message), true); }
+  $('#add').disabled = false;
+};
+
+// ---- render ----
+$('#go').onclick = async () => {
+  $('#go').disabled = true;
+  const t = performance.now();
+  setStatus($('#rst'), 'Building your avatar in Blender: body from your measurements, each piece sized and draped… (15–60 s the first time, instant if already built)');
+  try {
+    const r = await fetch('/m09/render', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: USER, payload: { ...S.body, piece_ids: [...S.sel] } }) });
+    const j = await readJson(r); if (!r.ok) throw new Error(j.detail || r.status);
+    const res = j.result;
+    if (j.mocked) throw new Error('M9 is mocked: start the server with M09_USE_MOCK=false');
+    $('#mv').src = res.glb_url;
+    setStatus($('#rst'), `✓ ${res.cached ? 'From cache' : 'Built in ' + res.seconds + ' s'} · drag to turn around, pinch / scroll to zoom`);
+    const f = res.fit || {}, b = res.body || {};
+    const facts = [[f.avatar_height_cm + ' cm', 'avatar height'], [f.avatar_weight_kg + ' kg', 'avatar weight'], [b.chest_cm, 'chest (cm)'], [b.waist_cm, 'waist (cm)'], [b.hips_cm, 'hips (cm)']];
+    Object.entries(res.sizing || {}).forEach(([k, v]) => { if (v.scale_width) facts.push([`×${v.scale_width} / ×${v.scale_length}`, k.replace('garment_', '') + ' width / length']); });
+    $('#facts').innerHTML = facts.map(([v, l]) => `<div class="fact"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  } catch (e) { setStatus($('#rst'), esc(e.message), true); }
+  $('#go').disabled = !S.sel.size;
+};
+
+renderBody(); loadOptions().catch(e => setStatus($('#rst'), esc(e.message), true)); loadPieces();
+</script>
+</body>
+</html>
