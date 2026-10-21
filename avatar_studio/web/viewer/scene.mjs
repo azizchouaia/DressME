@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 const canvas = document.getElementById('c')
 const errorNode = document.getElementById('error')
 const resetButton = document.getElementById('reset')
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true })
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 renderer.setClearColor(0x000000, 0)
 
@@ -75,7 +75,20 @@ const posePresets = {
   hips: { armL: -36, armR: -36, elbowL: 100, elbowR: 100, armInL: 48, armInR: 48 },
   step: { armL: -80, armR: -45, legL: 32, legR: -10, kneeL: 22, elbowR: 12 },
   wave: { armL: 62, armR: -75, elbowL: 28, elbowR: 8 },
+  'man-front': { armL: -72, armR: -72, elbowL: -8, elbowR: -8, armInL: 8, armInR: 8 },
+  'man-hip': {
+    armL: -48, armInL: 10, elbowL: -100, elbowYawL: -22, wristL: 20, wristTwistL: -30,
+    leftindex: 28, leftmiddle: 30, leftring: 28, leftpinky: 24, leftthumb: 20,
+    armR: -78, elbowR: -12, armInR: 8,
+  },
+  'woman-front': { armL: -76, armR: -68, elbowL: -8, elbowR: -10, armInL: 6, armInR: 10 },
+  'woman-hip': {
+    armR: -48, armInR: 10, elbowR: -100, elbowYawR: -22, wristR: 20, wristTwistR: -30,
+    rightindex: 28, rightmiddle: 30, rightring: 28, rightpinky: 24, rightthumb: 20,
+    armL: -78, elbowL: -12, armInL: 8, outL: 8, outR: 6, kneeL: 14,
+  },
 }
+let activePose = {}
 
 function resize() {
   const width = canvas.clientWidth || 1
@@ -85,12 +98,17 @@ function resize() {
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) renderer.setSize(width, height, false)
   const bar = document.querySelector('.build-bar')
   const sheet = document.querySelector('.sheet')
+  const dock = document.querySelector('.clothes-dock')
   const top = bar ? bar.getBoundingClientRect().bottom : 0
-  const bottom = sheet && !sheet.hidden ? Math.max(0, height - sheet.getBoundingClientRect().top) : 0
-  const freeCenter = top + (height - top - bottom) / 2
+  const sheetTop = sheet && !sheet.hidden ? sheet.getBoundingClientRect().top : height
+  const dockTop = dock ? dock.getBoundingClientRect().top : height
+  const bottom = Math.max(0, height - Math.min(sheetTop, dockTop))
+  const free = Math.max(1, height - top - bottom)
+  const freeCenter = top + free / 2
   const shift = height / 2 - freeCenter
+  camera.zoom = Math.min(1, free / (height * 0.86))
   camera.aspect = width / height
-  camera.setViewOffset(width, height, 0, -shift * 0.2, width, height)
+  camera.setViewOffset(width, height, 0, shift, width, height)
   camera.updateProjectionMatrix()
 }
 
@@ -527,7 +545,8 @@ function buildRig(geometry, bounds) {
 
 function degrees(name) {
   const input = document.querySelector(`[data-pose="${name}"]`)
-  return ((Number(input?.value) || 0) * Math.PI) / 180
+  const value = input ? Number(input.value) || 0 : activePose[name] || 0
+  return (value * Math.PI) / 180
 }
 
 function shapeNumber(name) {
@@ -838,8 +857,9 @@ function applyShape() {
   materials.forEach((material) => {
     if (material && 'roughness' in material) material.roughness = 0.92 - shine * 0.67
   })
-  const height = shapeNumber('height') / 100
-  group.scale.setScalar(restHeight > 0 ? height / restHeight : 1)
+  const heightInput = document.querySelector('[data-shape="height"]')
+  const meters = heightInput ? (Number(heightInput.value) || 0) / 100 : restHeight
+  group.scale.setScalar(restHeight > 0 && meters > 0 ? meters / restHeight : 1)
   rig.root.position.y = 0
   rig.root.updateMatrixWorld(true)
   const box = new THREE.Box3().setFromObject(rig.mesh)
@@ -857,8 +877,8 @@ function applyPose() {
     pose.pelvis?.rotation.set(tilt, 0, 0)
     pose.left_shoulder?.rotation.set(0, degrees('armInL'), degrees('armL') + slope)
     pose.right_shoulder?.rotation.set(0, -degrees('armInR'), -(degrees('armR') + slope))
-    pose.left_elbow?.rotation.set(degrees('elbowL'), 0, 0)
-    pose.right_elbow?.rotation.set(degrees('elbowR'), 0, 0)
+    pose.left_elbow?.rotation.set(0, degrees('elbowYawL'), degrees('elbowL'))
+    pose.right_elbow?.rotation.set(0, -degrees('elbowYawR'), -degrees('elbowR'))
     pose.left_wrist?.rotation.set(degrees('wristL'), degrees('wristTwistL'), 0)
     pose.right_wrist?.rotation.set(degrees('wristR'), -degrees('wristTwistR'), 0)
     pose.left_hip?.rotation.set(degrees('legL') - tilt, 0, degrees('outL'))
@@ -899,12 +919,149 @@ function applyPose() {
   applyShape()
 }
 
+const clothSkin = new THREE.Vector3()
+let clothTimer = 0
+let clothBuilder = 'sith'
+
+function garmentMeshes() {
+  const meshes = []
+  group.traverse((child) => {
+    if (child.isSkinnedMesh && child.userData.garment) meshes.push(child)
+  })
+  return meshes
+}
+
+function stepCloth(dt) {
+  const damp = Math.pow(0.84, dt * 60)
+  const spring = 1 - Math.pow(0.78, dt * 60)
+  let energy = 0
+  for (const mesh of garmentMeshes()) {
+    const bind = mesh.userData.bindPos
+    const shown = mesh.userData.clothPos
+    const vel = mesh.userData.clothVel
+    const pos = mesh.geometry.attributes.position
+    if (!bind || !shown || !vel) continue
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let index = 1; index < bind.length; index += 3) {
+      minY = Math.min(minY, bind[index])
+      maxY = Math.max(maxY, bind[index])
+    }
+    const span = Math.max(maxY - minY, 1e-4)
+    pos.array.set(bind)
+    mesh.material.skinning = true
+    mesh.skeleton.update()
+    for (let index = 0; index < pos.count; index += 1) {
+      mesh.boneTransform(index, clothSkin)
+      const offset = index * 3
+      const hem = 1 - (bind[offset + 1] - minY) / span
+      const follow = spring * (0.35 + 0.65 * (1 - hem))
+      const drag = damp * (0.9 + 0.1 * hem)
+      vel[offset] = vel[offset] * drag + (clothSkin.x - shown[offset]) * follow
+      vel[offset + 1] = vel[offset + 1] * drag + (clothSkin.y - shown[offset + 1]) * follow - hem * 0.00035
+      vel[offset + 2] = vel[offset + 2] * drag + (clothSkin.z - shown[offset + 2]) * follow
+      shown[offset] += vel[offset]
+      shown[offset + 1] += vel[offset + 1]
+      shown[offset + 2] += vel[offset + 2]
+      energy += vel[offset] * vel[offset] + vel[offset + 1] * vel[offset + 1] + vel[offset + 2] * vel[offset + 2]
+    }
+    pos.array.set(shown)
+    pos.needsUpdate = true
+    mesh.material.skinning = false
+  }
+  return energy
+}
+
+function settleCloth() {
+  if (clothTimer) cancelAnimationFrame(clothTimer)
+  let last = performance.now()
+  const tick = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000)
+    last = now
+    const energy = stepCloth(dt)
+    render()
+    clothTimer = energy > 0.0008 ? requestAnimationFrame(tick) : 0
+  }
+  clothTimer = requestAnimationFrame(tick)
+}
+
 function render() {
   resize()
   controls.update()
   if (rig?.root) rig.root.updateMatrixWorld(true)
   else if (rig?.mesh) rig.mesh.updateMatrixWorld(true)
   renderer.render(scene, camera)
+}
+
+const garmentFiles = [
+  ['/garments/shirt.glb', 0xc5c8cc],
+  ['/garments/shorts.glb', 0x2c3140],
+  ['/garments/vest.glb', 0x1a1c22],
+]
+
+async function addGarments(root) {
+  const body = rig?.mesh
+  if (!body?.skeleton) return
+  const garmentLoader = new GLTFLoader()
+  for (const [url, color] of garmentFiles) {
+    try {
+      const gltf = await garmentLoader.loadAsync(`${url}?v=71`)
+      const meshes = []
+      gltf.scene.traverse((child) => {
+        if (child.isSkinnedMesh) meshes.push(child)
+      })
+      for (const child of meshes) {
+        const map = child.material?.map || null
+        const normalMap = child.material?.normalMap || null
+        child.material = new THREE.MeshStandardMaterial({
+          color: map ? 0xffffff : color,
+          map,
+          normalMap,
+          roughness: 0.72,
+          metalness: 0,
+          skinning: true,
+          side: THREE.DoubleSide,
+        })
+        child.frustumCulled = false
+        child.bind(body.skeleton, child.bindMatrix)
+        child.userData.garment = true
+        const bound = child.geometry.attributes.position.array
+        child.userData.bindPos = bound.slice()
+        child.userData.clothPos = bound.slice()
+        child.userData.clothVel = new Float32Array(bound.length)
+        root.add(child)
+      }
+    } catch (error) {
+      console.error(url, error)
+      showError(`${url}: ${error?.stack || error}`)
+    }
+  }
+}
+
+function clearGarments() {
+  const root = rig?.root
+  if (!root) return
+  const worn = []
+  root.traverse((child) => {
+    if (child.userData?.garment) worn.push(child)
+  })
+  worn.forEach((child) => child.removeFromParent())
+}
+
+async function wearSaved() {
+  if (!rig?.mesh?.skeleton || !rig.root) {
+    showError('Load the body first, then wear the saved clothes.')
+    return
+  }
+  showError('')
+  clearGarments()
+  await addGarments(rig.root)
+  settleCloth()
+  document.querySelectorAll('#wear-saved, #wear-saved-panel').forEach((button) => {
+    button.classList.add('active')
+    button.textContent = button.id === 'wear-saved' ? 'Wearing saved' : 'Wearing saved clothes'
+  })
+  render()
 }
 
 async function showMesh(url, height, options = {}) {
@@ -953,6 +1110,17 @@ async function showMesh(url, height, options = {}) {
         if (material) material.vertexColors = true
       })
       paintColors(skinned)
+      if (document.body.dataset.page === 'poses') {
+        const poseMaterials = Array.isArray(skinned.material) ? skinned.material : [skinned.material]
+        poseMaterials.forEach((material) => {
+          if (!material) return
+          material.vertexColors = false
+          material.color?.set(0xbdbdbd)
+          if ('roughness' in material) material.roughness = 0.58
+          material.needsUpdate = true
+        })
+      }
+      if (String(url).includes('smplx_thin') || String(url).includes('smplx_body')) await addGarments(object)
       skeletonHelper = new THREE.SkeletonHelper(skinned)
       skeletonHelper.visible = document.getElementById('skeleton')?.checked !== false
       group.add(skeletonHelper)
@@ -1120,6 +1288,7 @@ document.getElementById('person-create')?.addEventListener('click', () => {
 })
 
 const AVATAR_SERVICE = 'http://127.0.0.1:8766'
+const CLOTHES_SERVICE = 'http://127.0.0.1:8891'
 
 function renderPeople(people) {
   const root = document.getElementById('people')
@@ -1285,6 +1454,7 @@ document.querySelectorAll('[data-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = posePresets[button.dataset.preset] || {}
     applyingPreset = true
+    activePose = { ...preset }
     document.querySelectorAll('[data-pose]').forEach((input) => {
       input.value = '0'
     })
@@ -1292,11 +1462,71 @@ document.querySelectorAll('[data-preset]').forEach((button) => {
       const input = document.querySelector(`[data-pose="${name}"]`)
       if (input) input.value = String(value)
     })
-    document.querySelectorAll('[data-preset]').forEach((item) => item.classList.toggle('active', item === button))
+    document.querySelectorAll('[data-preset]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.preset === button.dataset.preset)
+    })
     applyingPreset = false
     applyPose()
-    render()
+    settleCloth()
   })
+})
+document.querySelectorAll('[data-builder]').forEach((button) => {
+  button.addEventListener('click', () => {
+    clothBuilder = button.dataset.builder
+    document.querySelectorAll('[data-builder]').forEach((item) => item.classList.toggle('active', item === button))
+  })
+})
+document.getElementById('wear-saved')?.addEventListener('click', () => { wearSaved() })
+document.getElementById('wear-saved-panel')?.addEventListener('click', () => { wearSaved() })
+document.getElementById('clothes-motion')?.addEventListener('click', () => {
+  const sequence = ['stand', 'step', 'hips', 'wave', 'stand']
+  let frame = 0
+  const play = () => {
+    const name = sequence[Math.min(sequence.length - 1, Math.floor(frame / 18))]
+    const preset = posePresets[name] || {}
+    document.querySelectorAll('[data-pose]').forEach((input) => { input.value = '0' })
+    Object.entries(preset).forEach(([key, value]) => {
+      const input = document.querySelector(`[data-pose="${key}"]`)
+      if (input) input.value = String(value)
+    })
+    applyPose()
+    stepCloth(1 / 30)
+    render()
+    frame += 1
+    if (frame < sequence.length * 18) requestAnimationFrame(play)
+  }
+  play()
+})
+document.getElementById('clothes-from-photo')?.addEventListener('click', async () => {
+  const fit = document.getElementById('fit')
+  if (!photoFiles.length) {
+    showError('Add one full-body photo first. That photo is the outer layer.')
+    return
+  }
+  showError('')
+  if (fit) fit.textContent = `Inventing the shirt, shorts, and back view, then building with ${clothBuilder}.`
+  try {
+    const saved = await fetch(`${CLOTHES_SERVICE}/from-photo?builder=${encodeURIComponent(clothBuilder)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: photoFiles[0],
+    })
+    const detail = (await saved.text()).trim()
+    if (!saved.ok) throw new Error(detail || `Clothes service returned ${saved.status}`)
+    if (fit) fit.textContent = detail
+    const watch = async () => {
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        const status = await fetch(`${CLOTHES_SERVICE}/status`)
+        const text = (await status.text()).trim()
+        if (fit) fit.textContent = text
+        if (/stopped|ready|meshes are in/i.test(text)) break
+      }
+    }
+    watch().catch(() => {})
+  } catch (error) {
+    showError(error instanceof Error ? error.message : 'The clothes service is not running.')
+  }
 })
 function showPanel(id) {
   if (id === 'move-panel') return
@@ -1403,7 +1633,95 @@ document.getElementById('skeleton')?.addEventListener('change', (event) => {
 window.addEventListener('resize', render)
 renderer.setAnimationLoop(render)
 window.parent.postMessage(JSON.stringify({ type: 'ready' }), '*')
+function frameCatalog() {
+  controls.target.set(0, 0.86, 0)
+  camera.position.set(0, 0.9, 4.4)
+  controls.update()
+  render()
+}
+
+function currentSex() {
+  return document.querySelector('[data-sex].active')?.dataset.sex === 'female' ? 'female' : 'male'
+}
+
+function poseKey(sex, kind) {
+  if (!kind || kind === 'tpose') return 'tpose'
+  return `${sex === 'female' ? 'woman' : 'man'}-${kind}`
+}
+
+function poseFileName() {
+  const sex = currentSex() === 'female' ? 'woman' : 'man'
+  const kind = document.querySelector('[data-kind].active')?.dataset.kind || 'tpose'
+  return `${sex}-${kind === 'tpose' ? 'tpose' : kind}`
+}
+
+function saveCanvas(name) {
+  frameCatalog()
+  const link = document.createElement('a')
+  link.download = `${name}.png`
+  link.href = renderer.domElement.toDataURL('image/png')
+  link.click()
+}
+
+function applyKind(kind) {
+  document.querySelectorAll('[data-kind]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.kind === kind)
+  })
+  activePose = { ...(posePresets[poseKey(currentSex(), kind)] || {}) }
+  applyPose()
+  frameCatalog()
+}
+
+async function showSex(sex) {
+  document.querySelectorAll('[data-sex]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.sex === sex)
+  })
+  await showMesh(`/presets/${sex}_average.glb`, 1)
+  applyKind(document.querySelector('[data-kind].active')?.dataset.kind || 'tpose')
+}
+
+const catalogShots = [
+  ['male', 'tpose', 'man-tpose'],
+  ['male', 'man-front', 'man-front'],
+  ['male', 'man-hip', 'man-hip'],
+  ['female', 'tpose', 'woman-tpose'],
+  ['female', 'woman-front', 'woman-front'],
+  ['female', 'woman-hip', 'woman-hip'],
+]
+
+document.getElementById('save-pose')?.addEventListener('click', () => {
+  saveCanvas(poseFileName())
+})
+document.getElementById('save-all-poses')?.addEventListener('click', async () => {
+  const button = document.getElementById('save-all-poses')
+  button.disabled = true
+  for (const [sex, pose, name] of catalogShots) {
+    const kind = pose === 'tpose' ? 'tpose' : pose.replace('man-', '').replace('woman-', '')
+    document.querySelectorAll('[data-kind]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.kind === kind)
+    })
+    document.querySelectorAll('[data-sex]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.sex === sex)
+    })
+    activePose = { ...(posePresets[pose] || {}) }
+    await showMesh(`/presets/${sex}_average.glb`, 1)
+    applyPose()
+    saveCanvas(name)
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  button.disabled = false
+})
+document.querySelectorAll('[data-sex]').forEach((button) => {
+  button.addEventListener('click', () => {
+    showSex(button.dataset.sex)
+  })
+})
+document.querySelectorAll('[data-kind]').forEach((button) => {
+  button.addEventListener('click', () => applyKind(button.dataset.kind))
+})
+
 const preset = new URLSearchParams(location.search).get('mesh')
-if (preset) showMesh(preset, 1)
+  || (location.pathname.endsWith('clothes.html') ? '/presets/male_average.glb' : '')
+if (preset) showMesh(preset, 1).then(() => frameCatalog())
 loadPeople()
 writeShapeReadout()
