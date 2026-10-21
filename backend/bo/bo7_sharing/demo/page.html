@@ -162,6 +162,17 @@ tr.me td{font-weight:700}
 .ch.whatsapp{background:#1F8F55}.ch.instagram{background:#B13A73}.ch.facebook{background:#2D5DA8}.ch.x{background:#16233F}.ch.copy{background:var(--soft);color:var(--ink)}.ch.qr{background:var(--paper);color:var(--ink);border:1px solid var(--ink)}
 
 /* wardrobe */
+/* shop this look (M7) */
+.stl-row{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.stl-mine{display:grid;gap:4px;font-size:12.5px;text-align:center}
+.stl-mine img{width:100px;height:90px;object-fit:contain;margin:0 auto;filter:drop-shadow(0 4px 4px rgba(0,0,0,.15))}
+.stl-prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stl-p{display:grid;gap:3px;text-decoration:none;color:var(--ink);background:var(--wall);border:1px solid var(--line);border-radius:12px;padding:8px;font-size:12.5px}
+.stl-p:hover{border-color:var(--blue)}
+.stl-p img{width:100%;height:120px;object-fit:cover;border-radius:8px;background:#fff}
+.stl-p b{font-size:12.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.stl-p .price{font-weight:700;color:var(--red)}
+@media (max-width:600px){.stl-row{grid-template-columns:1fr}}
 /* ---------- realistic wardrobe (BO7, garments read from M1) ---------- */
 .wr-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:6px 0 14px}
 .wr-stage{perspective:2200px;margin:0 auto;max-width:1204px;padding:16px 12px 18px;overflow:hidden}
@@ -303,7 +314,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const user = () => $("#user").value.trim() || "usr_042";
 const enc = encodeURIComponent;
-let WARD = [], current = null, selected = new Set(), lastResult = null;
+let WARD = [], current = null, selected = new Set(), lastResult = null, SHOPS = [];
 let pickCat = "all", pickTN = false, wardCat = "all";
 
 async function api(path, opts = {}) {
@@ -670,6 +681,7 @@ const CHANNELS = [["whatsapp","WhatsApp"],["instagram","Instagram"],["facebook",
 let lastCard = null;
 
 async function shareStudio() {
+  if (!SHOPS.length) SHOPS = await api("/bo7/demo/shops").catch(() => []);
   const el = $("#tab-share");
   el.innerHTML = `<div class="head"><div><h1>Share studio</h1>
       <p>Share your own outfits: pick your pieces, choose a card, share it on a channel, then watch which channel brings new users. The card never invents an outfit.</p></div></div>
@@ -684,6 +696,7 @@ async function shareStudio() {
     <div class="kinds">${Object.entries(KINDS).map(([k,[l,h]]) => `<button data-kind="${k}">${l}<small>${h}</small></button>`).join("")}</div>
     <div class="opts"><label>Caption language <select id="lang"><option value="en">English</option><option value="fr">Français</option><option value="tn">Derja (tounsi)</option></select></label>
       <label><input type="checkbox" id="qr"> QR code on the card</label>
+      <label>Tag a Tunisian shop <select id="tagshop"><option value="">none</option>${SHOPS.map(x => `<option>${esc(x.shop)}</option>`).join("")}</select></label>
       <span class="muted">Change your pieces or an option, then pick the card again.</span></div>
     <div class="two" style="margin-top:20px">
       <div class="panel" id="preview"><h3>No card yet</h3><p class="muted" style="margin-top:6px">Pick your pieces, then a card type: the card is drawn with exactly those pieces.</p></div>
@@ -719,6 +732,8 @@ async function makeCard(kind) {
   }
   $("#preview").innerHTML = `<p class="muted">Drawing the card…</p>`;
   try {
+    const tag = $("#tagshop")?.value;
+    if (tag) body.subtitle = `Styled with ${tag}`;  // look tagged with a Tunisian shop of M7
     lastCard = await api("/m10/cards", {method:"POST", body:{user_id:user(), ...body,
       language: $("#lang").value, qr: $("#qr").checked}});
     $("#preview").innerHTML = `<img class="cardimg" src="${lastCard.image_url}" alt="${esc(lastCard.alt_text)}">
@@ -731,7 +746,29 @@ async function makeCard(kind) {
         <a class="btn sm" target="_blank" href="${esc(lastCard.channel_links?.whatsapp || "#")}">Open in WhatsApp</a></div>`;
     $("#copy").onclick = () => navigator.clipboard?.writeText(lastCard.share_url).then(() => toast("Link copied"));
     kpis();
+    shopTheLook();
   } catch (e) { $("#preview").innerHTML = `<div class="err">The card could not be drawn: ${esc(e.message)}</div>`; }
+}
+
+async function shopTheLook() {
+  const pieces = [...shareSel].map(i => WARD.find(g => g.item_id === i)).filter(Boolean)
+    .map(g => ({item_id: g.item_id, name: g.name, color: g.color, category: g.category}));
+  if (!pieces.length) return;
+  const box = document.createElement("div"); box.className = "stl";
+  box.innerHTML = `<h3 style="margin-top:22px">Shop this look in Tunisia</h3>
+    <p class="muted" style="margin-top:4px">Similar pieces sold by Tunisian shops and brands, from the local catalogue (M7).</p><p class="muted">Searching…</p>`;
+  $("#preview").appendChild(box);
+  try {
+    const rows = await api("/bo7/demo/shop-the-look", {method:"POST", body:{pieces}});
+    box.querySelector("p:last-child").remove();
+    box.insertAdjacentHTML("beforeend", rows.map(r => {
+      const g = WARD.find(x => x.item_id === r.item_id);
+      return `<div class="stl-row"><div class="stl-mine">${g?.photo_url ? `<img src="${g.photo_url}" alt="">` : ""}<span>${esc(g?.name || r.query)}</span></div>
+        <div class="stl-prods">${r.products.length ? r.products.map(p => `<a class="stl-p" href="${esc(p.url || "#")}" target="_blank" rel="noopener">
+          ${p.photo ? `<img src="${esc(p.photo)}" alt="" loading="lazy">` : ""}<b>${esc(p.item)}</b>
+          <span class="muted">${esc(p.shop)} · ${esc(p.kind)}</span><span class="price">${p.price_tnd != null ? `${p.price_tnd} TND` : ""}</span></a>`).join("")
+          : `<span class="muted">No similar piece in the Tunisian shops yet.</span>`}</div></div>`; }).join(""));
+  } catch (e) { box.querySelector("p:last-child").textContent = "The local catalogue is not reachable right now."; }
 }
 
 async function kpis() {
@@ -809,6 +846,8 @@ function openPiece(id) {
     <div class="spot">${g.photo_url ? `<img src="${g.photo_url}" alt="${esc(g.name)}">` : `<span style="width:140px;height:180px;border-radius:14px;background:${g.color_hex}"></span>`}</div>
     <div class="row" style="gap:8px;flex-wrap:wrap">${g.color ? `<span class="chip" style="background:${g.color_hex};color:${lum(g.color_hex)<.5?"#fff":"#16233F"}">${esc(g.color)}</span>` : ""}
       ${g.local_tag ? `<span class="chip" style="background:var(--red-soft);color:var(--red)">Tunisian maker · ${esc(g.local_tag)}</span>` : ""}</div>
+    ${(() => { const sh = SHOPS.find(x => x.shop === g.local_tag); return sh ? `<p style="margin-top:12px;font-size:13.5px">${esc(sh.kind)} of the local catalogue${sh.city ? ` · ${esc(sh.city)}` : ""} · ${sh.products} products ·
+      <a href="${esc(sh.url)}" target="_blank" rel="noopener">visit the shop</a></p>` : ""; })()}
     <p class="muted" style="margin-top:14px;font-size:13px">Used by your challenges and share cards. Remove it if you gave it away or sold it.</p>
     <p style="margin-top:14px"><button class="btn" data-del="${g.item_id}">Remove from my wardrobe</button></p>`;
   $("#wrd").classList.add("on"); $("#wrshade").classList.add("on");
@@ -825,7 +864,9 @@ function addPanel() {
     <div class="row" style="margin-top:10px;flex-wrap:wrap">
       <select id="cat" aria-label="Category">${CATS.map(c => `<option value="${c}">${CAT_LABEL[c]}</option>`).join("")}</select>
       <input id="nm" placeholder="Name, e.g. white shirt" style="flex:1;min-width:150px" aria-label="Name"></div>
-    <input id="brand" placeholder="Tunisian maker (optional)" style="width:100%;margin-top:8px" aria-label="Maker">
+    <input id="brand" list="m07shops" placeholder="Tunisian shop or maker (optional)" style="width:100%;margin-top:8px" aria-label="Maker">
+    <datalist id="m07shops">${SHOPS.map(x => `<option value="${esc(x.shop)}">${esc(x.kind)}${x.city ? " · " + esc(x.city) : ""}</option>`).join("")}</datalist>
+    <p class="muted" style="margin-top:4px;font-size:12.5px">${SHOPS.length} Tunisian shops and brands from the local catalogue (M7). A piece bought there counts for the local-brand challenges.</p>
     <p class="muted" style="margin-top:6px;font-size:12.5px">Several photos at once share the category and are named after the file.</p>
     <p style="margin-top:12px"><button class="btn primary" id="up">Hang it in my wardrobe</button></p><div id="upres"></div>`;
   $("#wrd").classList.add("on"); $("#wrshade").classList.add("on");
@@ -845,6 +886,7 @@ function closeDrawer() { $("#wrd")?.classList.remove("on"); $("#wrshade")?.class
 
 async function wardrobeTab() {
   await refreshWard();
+  if (!SHOPS.length) SHOPS = await api("/bo7/demo/shops").catch(() => []);
   const el = $("#tab-wardrobe");
   const n = k => k === "all" ? WARD.length : k === "tn" ? WARD.filter(g => g.local_tag).length : WARD.filter(g => g.category === k).length;
   const filters = ["all", ...CATS.filter(k => n(k)), ...(n("tn") ? ["tn"] : [])];
@@ -871,6 +913,7 @@ async function wardrobeTab() {
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
 
 /* ---------------- boot ---------------- */
+api("/bo7/demo/shops").then(r => { SHOPS = r || []; }).catch(() => {});
 refreshWard().then(listChallenges)
   .catch(e => $("#tab-challenges").innerHTML = `<div class="err">The API is not reachable: ${esc(e.message)}</div>`);
 </script>

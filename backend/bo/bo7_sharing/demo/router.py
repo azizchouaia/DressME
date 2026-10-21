@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
-from bo.bo7_sharing import m01_seed
+from bo.bo7_sharing import m01_seed, m07_local
 from bo.bo7_sharing.demo import cutout
 from modules.m15_challenges.singleton import challenges_agent
 from modules.m15_challenges.wardrobe import M1Wardrobe
@@ -43,10 +43,28 @@ def _m1() -> M1Wardrobe | None:
     return w if isinstance(w, M1Wardrobe) else None
 
 
+@router.get("/shops")
+async def local_shops():
+    """Tunisian shops and brands of the local catalogue (M7, BO6), to tag pieces and looks."""
+    return await m07_local.shops()
+
+
+class LookIn(BaseModel):
+    pieces: list[dict] = Field(max_length=8, description="[{item_id, name, color, category}]")
+
+
+@router.post("/shop-the-look")
+async def shop_the_look(body: LookIn):
+    """For each piece of a shared look, the closest products sold by Tunisian shops (M7 search)."""
+    return await m07_local.shop_the_look(body.pieces)
+
+
 @router.get("/wardrobe")
 async def demo_wardrobe(user_id: str = "usr_042"):
     """The user's wardrobe, read from M1 (or from the fixture wardrobe in the tests)."""
     w = challenges_agent.wardrobe
+    if _m1():
+        w.local_brands |= await m07_local.names()  # a piece whose brand is an M7 shop is Tunisian
     out = []
     extra = {r["item_id"]: r for r in (w._added() if hasattr(w, "_added") else [])}
     for g in w.items(user_id):
@@ -108,6 +126,8 @@ async def _add_to_m1(w: M1Wardrobe, body: PhotoIn) -> dict:
         raise HTTPException(400, f"M1 could not read this image: {e}") from e
     g = out.garment
     upd = {"category": body.category, "subcategory": body.name, "brand": body.local_tag}
+    if body.local_tag and body.local_tag in await m07_local.names():  # bought in a shop of M7
+        upd |= {"store": body.local_tag, "store_id": m07_local.shop_id(body.local_tag)}
     if mocked and res["colors"]:
         upd["colors"] = res["colors"]
     upd = {k: v for k, v in upd.items() if v}
