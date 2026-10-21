@@ -37,8 +37,8 @@ def log_path() -> Path | None:
     return REPO_ROOT / CONFIG.get("log_dir", "ml/data/logs") / "m07_events.jsonl"
 
 
-def _write(event: dict) -> None:
-    path = log_path()
+def _write(event: dict, path: Path | None = None) -> None:
+    path = path or log_path()
     if path is None:
         return
     try:
@@ -51,7 +51,13 @@ def _write(event: dict) -> None:
 
 
 def _event(
-    type_: str, user_id: str | None, target_id: str | None, value: str | None, channel: str, data: dict
+    type_: str,
+    user_id: str | None,
+    target_id: str | None,
+    value: str | None,
+    channel: str,
+    data: dict,
+    ts: datetime | None = None,
 ):
     return {
         "event_id": f"evt_{uuid.uuid4().hex[:16]}",
@@ -60,7 +66,7 @@ def _event(
         "target_id": target_id,
         "value": value,
         "channel": channel,
-        "ts": datetime.now(UTC).isoformat(timespec="milliseconds"),
+        "ts": (ts or datetime.now(UTC)).isoformat(timespec="milliseconds"),
         "data": data,
     }
 
@@ -68,8 +74,18 @@ def _event(
 _FILTERS = ("city", "max_price_tnd", "min_price_tnd", "category", "subcategory", "color", "gender")
 
 
-def log_search(req: dict, out: dict, latency_ms: float, channel: str = "api") -> str:
-    """Write one `local_search` event; returns its id (the `search_id` given back to the caller)."""
+def log_search(
+    req: dict,
+    out: dict,
+    latency_ms: float,
+    channel: str = "api",
+    ts: datetime | None = None,
+    path: Path | None = None,
+) -> str:
+    """Write one `local_search` event; returns its id (the `search_id` given back to the caller).
+
+    `ts` and `path` are for M14's traffic simulator (past dates, its own file); the API never sets them.
+    """
     search_id = f"srch_{uuid.uuid4().hex[:16]}"
     parsed = out.get("parsed") or {}
     data = {
@@ -109,9 +125,9 @@ def log_search(req: dict, out: dict, latency_ms: float, channel: str = "api") ->
         "latency_ms": round(latency_ms, 1),
     }
     value = " ".join(t for t in (req.get("query"), req.get("gap")) if t) or None
-    event = _event("local_search", req.get("user_id"), search_id, value, channel, data)
+    event = _event("local_search", req.get("user_id"), search_id, value, channel, data, ts)
     event["event_id"] = search_id
-    _write(event)
+    _write(event, path)
     return search_id
 
 
@@ -123,14 +139,16 @@ def log_click(
     rank: int | None = None,
     user_id: str | None = None,
     channel: str = "app",
+    ts: datetime | None = None,
+    path: Path | None = None,
 ) -> str:
     """Write one `product_view` / `shop_click` event; returns its id."""
     if type_ not in CLICK_TYPES:
         raise ValueError(f"unknown event type {type_!r}")
     event = _event(
-        type_, user_id, product_id, None, channel, {"search_id": search_id, "shop": shop, "rank": rank}
+        type_, user_id, product_id, None, channel, {"search_id": search_id, "shop": shop, "rank": rank}, ts
     )
-    _write(event)
+    _write(event, path)
     return event["event_id"]
 
 

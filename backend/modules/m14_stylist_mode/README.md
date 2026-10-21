@@ -1,9 +1,48 @@
-# M14 · Stylist / boutique mode — ProAgent
+# M14 · Stylist / boutique mode
 
 **Owner:** BO6 · **Used by:** BO4 BO5 BO6 BO7 BO8 · **Build week:** 4 (needs M1–M10)
 
-> **Status: design only.** This README is the plan, kept until the modules M14 depends on are ready.
-> The router still serves `mock.py`. Nothing below is implemented yet.
+> **Status: implemented (F1–F7), on simulated traffic.** The router serves `service.py`. Other modules
+> are called through `clients.py`: M7 for real, M1 / M2 / M3 / M5 / M6 / M10 on their mock until their
+> branch is merged (`config.yaml -> real: [...]`), and every answer says which one was used (`sources`).
+> F6.e forecast and F8 segments are not done (see Status).
+
+**One agent per BO:** M14 is a skill of the BO6 agent `localshop` (`identity.py`, `GET /m14/identity`);
+the orchestrator calls `localshop`, never M14, so M14 has no `tool.py`.
+
+## Run it
+```bash
+cd backend
+python -m modules.m14_stylist_mode.simulate.pros       # demo stylists + boutique accounts + clients (--reset)
+python -m modules.m14_stylist_mode.simulate.traffic    # 12 weeks of searches through the real M7 search (~2 min)
+uvicorn api.main:app                                    # http://localhost:8000/docs -> "M14 Stylist / boutique mode"
+pytest modules/m14_stylist_mode                         # tiny catalogue + fake encoder, no model needed
+```
+Data (never git): `ml/data/bo6/m14/*.json` (pros, links, reviews, looks, handoffs) and
+`ml/data/logs/m14_simulated_events.jsonl` (simulated searches / views / clicks, separate from M7's real log).
+
+## Endpoints (implemented)
+| Endpoint | Feature | For |
+|---|---|---|
+| `POST /m14/pro` · `GET /m14/pro` · `GET/PATCH /m14/pro/{id}` | F1 accounts (a boutique = an M7 shop, one account per shop) | all |
+| `POST /m14/clients` · `POST /m14/clients/{link}/consent` · `DELETE /m14/clients/{link}` · `GET /m14/clients` | F2 invitation, consent, revoke | all |
+| `GET /m14/clients/{client}/brief?pro_id=` | F2 5-line client brief (403 without consent) | BO4 BO5 BO7 |
+| `GET /m14/clients/{client}/wardrobe?pro_id=` | F2 the client's pieces (M1) to build a look (403 without consent) | BO6 |
+| `GET/POST /m14/chat/{pro}/{client}` · `DELETE …?requester_id=` | F2b private conversation stylist ↔ client: only these two; the stylist only while access is given; the client can delete it | BO6 BO8 |
+| `POST /m14/clients/{client}/review` · `GET /m14/reviews/agreement` | F3 stylist corrections → M5, agreement M5 vs stylists | BO4 |
+| `POST /m14/looks` · `GET /m14/looks` | F4 look = wardrobe items + M7 pieces, M2 score, M10 card | BO7 |
+| `POST /m14/instore/session` | F5 M6 verdict for a boutique piece on the client's wardrobe | BO5 |
+| `GET /m14/dashboard?shop=&days=&source=` · `GET /m14/pro/{id}/dashboard` | F6 demand dashboard | BO6 |
+| `POST /m14/handoff/check` · `POST /m14/handoff` · `GET /m14/handoff/queue?pro_id=` · `GET/PATCH /m14/handoff/{id}` | F7 hand-off (escalate, stylist, summary, queue, accept / decline / close) | BO8 |
+
+Shapes: `contract.py`; fixed answers for offline tests: `mock.py`.
+
+## What the simulated month shows (real M7 search, 300 users, 12 weeks)
+Market, last 30 days: 619 searches, 15 themes (KMeans k by silhouette 0.26), e.g. *Sandales · Doré* 70
+searches, rising (z = 2.5, Sousse / Monastir / Mahdia: the injected wedding wave is found). Manuella's
+dashboard ranks its unmet demand in the categories it sells: *"32 recherches « Colliers · Doré », 0 chez
+vous (90 dans tout le catalogue)"*, *"14 recherches « Baskets · Rose », 0 chez vous, 36 % sans pièce
+exacte"*. Hand-off: *"n7eb nahki m3a bnadem"* escalates (asks_human) and goes to the Sousse wedding stylist.
 
 The professional side of DressMe: human stylists and Tunisian boutiques (persona *Amel*, boutique owner).
 Example: Amel opens her dashboard and reads *"132 searches for gold sandals under 60 TND in Sousse this
@@ -157,39 +196,34 @@ input: the pro's clients: M5 style vectors + budget + city + wear stats (M3)
 ──► output: [{segment: "minimaliste urbain, budget 80–150 TND", n_clients, top_items}]
 ```
 
-## Contract (planned, replaces the placeholder `POST /m14/clients`)
-Write `contract.py` + `mock.py` with these shapes **first**, so BO4/5/7/8 can code against them.
-```
-POST  /m14/pro                       F1  create a pro account
-GET   /m14/pro/{pro_id}              F1
-POST  /m14/clients                   F2  link a client to a pro (invitation + consent)
-GET   /m14/clients/{id}/brief        F2  client brief
-POST  /m14/clients/{id}/review       F3  stylist corrections → M5          (BO4)
-POST  /m14/looks                     F4  send a look to a client           (BO7)
-POST  /m14/instore/session           F5  in-store verdict for a client     (BO5)
-GET   /m14/dashboard/{shop_id}       F6  ?period=30d → themes, unmet, prices, trends, forecast  (BO6)
-POST  /m14/handoff                   F7  create a hand-off                 (BO8)
-GET   /m14/handoff/queue             F7  ?pro_id= → queued hand-offs
-PATCH /m14/handoff/{id}              F7  accept / decline / close
-GET   /m14/pro/{pro_id}/segments     F8
-```
-`tool.py` exposes `handoff` and `dashboard` to the orchestrator (BO8).
-
-## Planned layout (same pattern as M7)
+## Layout
 ```
 m14_stylist_mode/
-  contract.py  mock.py  router.py  service.py  tool.py
-  clients.py          # HTTP calls to M1 M2 M3 M5 M6 M7 M8 M10 (mocked until they exist)
-  config.yaml         # weights F7.b, thresholds F6.b/F6.d, HDBSCAN params
-  accounts/           # F1 pro accounts, F2 consent + links
-  crm/                # F2 brief, F3 review, F4 looks, F8 segments
-  instore/            # F5
-  dashboard/          # F6: events.py themes.py coverage.py prices.py trends.py forecast.py
-  handoff/            # F7: escalate.py match.py summary.py
-  simulate/           # synthetic users, queries, stylists, chats (see Data)
-  tests/
-ml/notebooks/boutique/  # evaluation notebooks (ml/notebooks/stylist/ is M2's)
+  contract.py  mock.py  router.py  service.py  identity.py  (no tool.py: skill of localshop)
+  clients.py          # M7 in-process; M1 M2 M3 M5 M6 M10 over HTTP, mock when not in `real` or failing
+  config.yaml         # privacy min_group, theme range, trend thresholds, escalation signals, stylist weights
+  store.py            # JSON collections in ml/data/bo6/m14/ (swap for Postgres later)
+  dashboard/          # F6: data.py (logs) themes.py (FashionCLIP + KMeans) metrics.py (unmet, prices, trends, funnel)
+  handoff/            # F7: escalate.py (rules, noisy-OR) match.py (weighted score) summary.py (5 lines)
+  simulate/           # traffic.py (synthetic searches through the real M7) pros.py (demo accounts)
+  tests/              # 30 tests: contract, consent, features, dashboard signals, hand-off lifecycle
 ```
+
+## How each block is computed (as implemented)
+- **Themes (F6.a):** each search -> M7's English FashionCLIP prompt (darija already translated) -> text
+  embedding -> KMeans weighted by searches, k in [12, 30] by silhouette (flat from 8 to 40 on the simulated
+  month, so the finer range keeps colours: *Sandales · Doré* apart from *Sandales*); clusters with the same
+  name are merged. Names come from the most frequent type / colour / gender, not from an LLM.
+- **Exact answer:** a search is answered when a shown result has the asked type and colour with match ≥ 0.5;
+  M7 relaxing the colour ("no gold sandals: other sandals") counts as **not** answered (`weak_answer_rate`).
+- **Unmet (F6.b):** for a shop, only the categories it sells; opportunity = searches × (1 − coverage),
+  coverage = ½ × pieces in stock (3 = full) + ½ × best FashionCLIP match of the shop's photos with the theme.
+- **Prices (F6.c):** budgets = parsed max price per type; served = budget ≥ the shop's cheapest piece.
+- **Trends (F6.d):** last 7 days vs the 8 weeks before, z-score (std floored at 1), rising if z ≥ 2 and ≥ 10.
+- **Escalation (F7.a):** lexicons FR / EN / darija / Arabic + assistant confidence + conversation length +
+  repeated request, noisy-OR; "asks for a human" always escalates. **Stylist (F7.b):** speciality
+  (1 − 0.5^matches), city, language, load, style cosine when M5 gives a vector; weights renormalised.
+- **Privacy:** aggregates only, no user id in the dashboard, groups under 10 searches hidden.
 
 ## Data needed
 | Data | Used by | Source | Status |
@@ -258,12 +292,18 @@ cd backend && pytest modules/m14_stylist_mode
 ```
 
 ## Status
-- [ ] contract + mock with the shapes above (unblocks BO4 / BO5 / BO7 / BO8)
-- [x] search and click logging in M7 (`events.py`)
+- [x] contract + mock with the real shapes (unblocks BO4 / BO5 / BO7 / BO8)
+- [x] search and click logging in M7 (`events.py`), with `ts` / `path` for the simulator
+- [x] simulated traffic through the real M7 search + demo pros (`simulate/`)
+- [x] F1 accounts, F2 consent + brief, F3 review + agreement, F4 looks, F5 in-store (on mocks of M1/M2/M3/M5/M6/M10)
+- [x] F6 dashboard: themes, unmet demand, prices, trends, funnel; injected signals found (tests)
+- [x] F7 hand-off: escalate (rules), stylist ranking, 5-line summary, queue accept / decline / close
+- [x] request → accept → help page (app); one open request per client; accepting opens the client file
+- [x] private conversation stylist ↔ client (looks appear in it; revoke closes it; client can delete it)
+- [x] report: `rapport/rapport_M14_stylist_boutique_FR.md` (+ PDF)
+- [ ] switch M1 / M2 / M3 / M5 / M6 / M10 to `real` once their branches are merged (no code change)
+- [ ] `localshop` next_action "talk to a stylist" -> `POST /m14/handoff` (orchestrator flow)
+- [ ] BO6 Flutter screens: boutique dashboard, stylist queue
 - [ ] new event types in the shared schema (PR reviewed by M6)
-- [ ] simulated traffic (`simulate/`)
-- [ ] F6 dashboard: themes, unmet demand, prices, trends
-- [ ] F7 hand-off: escalate, match, summary
-- [ ] F2 / F3 / F4 / F5 once M1, M2, M5, M6 are real
-- [ ] F6.e forecast, F8 segments
-- [ ] evaluated (`ml/notebooks/boutique/`)
+- [ ] F6.e forecast, F8 segments, escalation classifier (stage 2)
+- [ ] evaluation notebooks (`ml/notebooks/boutique/`)

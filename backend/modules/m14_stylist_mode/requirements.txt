@@ -1,0 +1,4 @@
+# Extra dependencies for M14 (Stylist / boutique mode), on top of backend/requirements.txt
+# and of M7's requirements.txt (the dashboard uses M7's catalogue and FashionCLIP encoder).
+numpy
+scikit-learn   # dashboard themes: KMeans + silhouette

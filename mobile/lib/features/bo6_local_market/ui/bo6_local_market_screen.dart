@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design/dressme_design.dart';
@@ -240,6 +241,25 @@ class _Hero extends StatelessWidget {
                           ],
                         ),
                       ),
+                      Tooltip(
+                        message: 'Espace pro (boutiques et stylistes)',
+                        child: InkResponse(
+                          onTap: () => context.go('/bo6_boutique'),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.1),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2)),
+                            ),
+                            child: const Icon(Icons.insights_outlined,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Tooltip(
                         message: 'Boutiques du catalogue',
                         child: InkResponse(

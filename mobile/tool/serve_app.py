@@ -1,7 +1,7 @@
 """Serve the built Flutter web app and the DressMe API from ONE address, so any browser works (no CORS).
 
     http://localhost:8090/            -> mobile/build/web (flutter build web)
-    http://localhost:8090/m07/...     -> forwarded to the API on http://127.0.0.1:8010
+    http://localhost:8090/m07/...     -> forwarded to the API on http://127.0.0.1:8010 (same for /m14/...)
 
 usage (from mobile/):
     flutter build web --dart-define=API_URL=http://localhost:8090
@@ -18,7 +18,7 @@ import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-API_PREFIXES = ("/m07/",)
+API_PREFIXES = ("/m07/", "/m14/")
 HOP_HEADERS = {"connection", "keep-alive", "transfer-encoding", "content-length", "host"}
 
 
@@ -55,6 +55,8 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith(API_PREFIXES):
             return self._forward()
         self.send_error(405)
+
+    do_PATCH = do_DELETE = do_POST  # M14: accept / decline a hand-off, revoke a client's consent
 
     def end_headers(self):
         if not self.path.startswith(API_PREFIXES):
