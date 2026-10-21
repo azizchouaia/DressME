@@ -232,7 +232,10 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             cost_per_outfit_tnd=d["cost_per_outfit"], reasons=rs, explanation=expl,
             size_advice=size, buy_links=links, sources={**getattr(cl, "sources", {}), "explanation": expl_src}, piece=cand["label"],
             decision_mode="learned" if self.model else "rules", probabilities=d["probabilities"],
-            contributions=contrib, what_if=wi, uncertain=unc["uncertain"], question=unc["question"],
+            contributions=contrib, uncertain=unc["uncertain"],
+            # `question` = something the user can ANSWER (the orchestrator stops and asks it); a tip is a what-if line
+            question=unc["question"] if unc["question_key"] else None,
+            what_if=wi + ([unc["question"]] if unc["question"] and not unc["question_key"] else []),
             question_key=unc["question_key"], predicted_wears=wp["predicted_wears"],
             cost_per_wear_tnd=wp["cost_per_wear"], threshold_offset=offset,
             goal_fit=round(f["goal"]["score"], 2) if f["goals"].get("templates") else None,

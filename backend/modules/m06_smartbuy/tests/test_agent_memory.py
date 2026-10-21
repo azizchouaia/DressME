@@ -73,3 +73,9 @@ def test_app_endpoints_meta_and_cors():
     assert m["users"] and "blazer" in m["types"] and m["brands"]
     r = c.options("/m06/meta", headers={"Origin": "http://localhost:5555", "Access-Control-Request-Method": "GET"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5555"
+
+
+def test_question_is_only_set_when_it_can_be_answered(agent):
+    for probe, price in [("custom:shirt:navy", 60), ("custom:jeans:blue", 80), ("custom:blazer:navy", 150), ("custom:t-shirt:white", 30)]:
+        out = run(agent, probe_image=probe, price_tnd=price, session_id=probe)
+        assert (out["question"] is None) or bool(out["question_key"])
