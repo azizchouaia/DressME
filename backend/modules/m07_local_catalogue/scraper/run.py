@@ -97,7 +97,8 @@ def scrape_shop(
         if not p.price_tnd or p.price_tnd <= 0 or not p.name or not p.product_url:
             stats["no_price"] += 1
             continue
-        category = categorize(p.name, *p.category_texts, p.tags) or shop.options.get("default_category")
+        texts = [] if shop.options.get("name_only") else [*p.category_texts, p.tags]
+        category = categorize(p.name, *texts) or shop.options.get("default_category")
         exclude = shop.options.get("exclude")
         if exclude and re.search(exclude, fold(" ".join([p.name, *p.category_texts]))):
             stats["not_fashion"] += 1

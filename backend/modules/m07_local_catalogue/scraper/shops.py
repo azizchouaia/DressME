@@ -19,9 +19,14 @@ class Shop:
     city: str = ""
     # default_category: used when no keyword matches;
     # exclude: regex (on folded name + categories) of items to drop;
-    # max_products: lower cap than --max-per-shop (e.g. for single-category shops)
+    # max_products: lower cap than --max-per-shop (e.g. for single-category shops);
+    # name_only: the type must come from the product name, never from the shop's categories
     options: dict = field(default_factory=dict)
 
+
+# Artisan marketplaces also sell home decor, furniture and food, filed under misleading shop categories:
+# a piece is kept only when its own name says what it is ("Couffin macramé" yes, "Console en bois" no).
+MARKETPLACE = {"name_only": True}
 
 SHOPS: list[Shop] = [
     # Shopify
@@ -102,13 +107,17 @@ SHOPS: list[Shop] = [
     Shop("lunar", "Lunar", "https://lunar.tn", "woocommerce", origin="local_retailer"),
     Shop("admakeba", "AD Makeba", "https://ad-makeba.tn", "woocommerce", city="Tunis, Ariana"),
     Shop("opierre", "Opierre", "https://opierre.tn", "woocommerce"),
-    Shop("hraier", "Hraier", "https://hraier.com", "woocommerce", origin="local_retailer"),
+    Shop(
+        "hraier", "Hraier", "https://hraier.com", "woocommerce", origin="local_retailer", options=MARKETPLACE
+    ),
     # Shopify
     Shop("kontakt", "Kontakt", "https://kontakt.com.tn", "shopify"),
     Shop("seaside", "SeaSide", "https://seasidecollection.store", "shopify", city="Sfax"),
     Shop("emraa", "Emraa (ex-Iuma)", "https://www.emraabags.com", "shopify"),
     Shop("gaya", "Gaya", "https://gaya.com.tn", "shopify", origin="local_retailer"),
-    Shop("ileycom", "Iley'com", "https://ileycom.tn", "shopify", origin="local_retailer"),
+    Shop(
+        "ileycom", "Iley'com", "https://ileycom.tn", "shopify", origin="local_retailer", options=MARKETPLACE
+    ),
     # PrestaShop 1.7+
     Shop("chillandlit", "Chill&Lit", "https://chillandlit.tn", "prestashop", origin="local_retailer"),
     Shop(
@@ -143,8 +152,17 @@ SHOPS: list[Shop] = [
     Shop("exclusive", "Exclusive", "https://exclusive.tn", "woocommerce", origin="local_retailer"),
     Shop("intimate", "Intimate", "https://intimate.tn", "woocommerce", origin="local_retailer"),
     Shop("lingerietn", "Lingerie.tn", "https://lingerie.tn", "woocommerce", origin="local_retailer"),
-    Shop("patrinova", "Patrinova", "https://patrinova.shop", "woocommerce", origin="local_retailer"),
-    Shop("sougui", "Sougui", "https://sougui.tn", "woocommerce", origin="local_retailer"),
+    Shop(
+        "patrinova",
+        "Patrinova",
+        "https://patrinova.shop",
+        "woocommerce",
+        origin="local_retailer",
+        options=MARKETPLACE,
+    ),
+    Shop(
+        "sougui", "Sougui", "https://sougui.tn", "woocommerce", origin="local_retailer", options=MARKETPLACE
+    ),
 ]
 
 # Shops from the source list that are not scraped, and why (kept for the README / report).

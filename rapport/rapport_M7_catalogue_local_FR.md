@@ -1,9 +1,11 @@
 # DressMe — Module M7 « Catalogue local »
 
 **Rapport technique · BO6 Marché tunisien · ESPRIT 2026**
-Collecte des données (scraping), nettoyage, et moteur de recherche de vêtements dans les boutiques tunisiennes.
+Collecte des données (scraping), nettoyage, moteur de recherche de vêtements dans les boutiques tunisiennes,
+et évaluation.
 
-*Mis à jour le 14/10/2026 : 15 boutiques, 2 471 produits.*
+*Mis à jour le 16/10/2026 : 43 boutiques, 6 375 produits. Première version le 14/10/2026 (15 boutiques,
+2 471 produits).*
 
 ---
 
@@ -14,9 +16,10 @@ Collecte des données (scraping), nettoyage, et moteur de recherche de vêtement
 3. [Collecte des données : le scraping](#3-collecte-des-données--le-scraping)
 4. [Nettoyage des données](#4-nettoyage-des-données)
 5. [Le module M7](#5-le-module-m7)
-6. [Comment tester le module](#6-comment-tester-le-module)
-7. [Limites et pistes d'amélioration](#7-limites-et-pistes-damélioration)
-8. [Annexe : fichiers du module](#8-annexe--fichiers-du-module)
+6. [Évaluation](#6-évaluation)
+7. [Comment tester le module](#7-comment-tester-le-module)
+8. [Limites et pistes d'amélioration](#8-limites-et-pistes-damélioration)
+9. [Annexe : fichiers du module](#9-annexe--fichiers-du-module)
 
 ---
 
@@ -25,7 +28,8 @@ Collecte des données (scraping), nettoyage, et moteur de recherche de vêtement
 DressMe est un assistant de mode personnel. Le module **M7 « Catalogue local »** répond à un besoin
 précis du marché tunisien : une utilisatrice cherche par exemple *des baskets blanches à Tunis pour un
 budget de 80 TND*. Aujourd'hui elle doit parcourir des dizaines de pages Instagram et de sites. M7 lui
-propose directement des articles de boutiques tunisiennes adaptés à son style, à son budget et à sa ville.
+propose directement des articles de boutiques tunisiennes adaptés à sa demande, à son budget et à sa ville,
+qu'elle écrive en français, en anglais, en darija ou en arabe.
 
 Exemple de résultat obtenu par le module :
 
@@ -38,14 +42,15 @@ BO5, BO7, BO8, BO9). Il doit donc exposer une API stable. Le document d'architec
 
 | Élément | Exigence de l'architecture | Ce qui a été réalisé |
 |---|---|---|
-| Base de connaissances | CSV/JSON de boutiques et de pièces, sans scraping en direct | CSV nettoyé de 2 471 produits + index d'images, dans `ml/data/shops/` (DVC) |
+| Base de connaissances | CSV/JSON de boutiques et de pièces, sans scraping en direct | CSV nettoyé de 6 375 produits (43 boutiques) + index d'images, dans `ml/data/shops/` |
 | Recherche | Embeddings + BM25 (hybride) | FashionCLIP (image + texte) + BM25 |
-| Filtres | Prix (TND), ville, catégorie, style | Prix, ville/gouvernorat, catégorie, stock, vecteur de style |
+| Filtres | Prix (TND), ville, catégorie, style | Prix, ville/gouvernorat, catégorie, **couleur**, **genre**, stock, vecteur de style |
 | Intégration | Outil appelable par l'orchestrateur (LangGraph) | Outil `localshop` + API REST `/m07/*` + écran BO6 Flutter |
-| Entrée / sortie | `query, gap, style_vector` → `shop, area, item, price_tnd, match` | Mêmes champs, enrichis (liens, photo, raisons) |
+| Entrée / sortie | `query, gap, style_vector` → `shop, area, item, price_tnd, match` | Mêmes champs, enrichis (liens, photo, genre, raisons, pagination) |
 
 La demande complémentaire était d'utiliser **FashionCLIP en local en Python**, ce qui a été fait (§5.2).
-Ce choix a ensuite été comparé à deux modèles plus récents sur notre catalogue (§5.10).
+Ce choix a ensuite été comparé à deux modèles plus récents sur notre catalogue (§5.12), et le module a été
+**évalué** sur 72 requêtes écrites à la main (§6).
 
 ---
 
@@ -55,25 +60,27 @@ Le travail se fait en deux temps : une préparation des données **hors ligne** 
 temps pour mettre à jour prix et stocks), puis une recherche **en ligne** très rapide.
 
 ```
-HORS LIGNE (préparation)                                     EN LIGNE (chaque recherche, ~40 ms)
+HORS LIGNE (préparation)                     EN LIGNE (chaque recherche, ~40 ms)
 
- Sites des boutiques                                          « baskets blanches à Tunis 80 TND »
-        │  1. scraper/run.py                                            │
-        ▼                                                               ▼
- local_catalogue.csv + images/   (2 578 produits)               parse    → baskets · blanc · Tunis · ≤ 80 TND
-        │  2. scraper/clean.py                                          │
-        ▼                                                               ▼
- local_catalogue_clean.csv       (2 471 produits)               retrieve → FashionCLIP + BM25
-        │  3. pipeline/ingest.py                                        │
-        ▼                                                               ▼
- index/ (1 vecteur FashionCLIP par photo)  ───────────────────►  filter   → prix, ville, catégorie, stock
-                                                                        │
-                                                                        ▼
-                                                                 rerank   → score, style, diversité, raisons
+ Sites des boutiques (43)                     « baskets blanches à Tunis 80 TND »
+    │ 1. scraper/run.py                                 │
+    ▼                                                   ▼
+ local_catalogue.csv + images/ (6 760)        parse    -> baskets, blanc, Tunis, ≤ 80 TND
+    │ 2. scraper/clean.py                               │    (darija et arabe traduits avant)
+    ▼                                                   ▼
+ local_catalogue_clean.csv (6 375)            retrieve -> FashionCLIP + BM25
+    │ 3. pipeline/ingest.py                             │
+    ▼                                                   ▼
+ index/ (1 vecteur par photo)  ─────────────► filter   -> prix, ville, type, couleur, genre
+    │ 4. pipeline/attributes.py                         │
+    ▼                                                   ▼
+ genre estimé d'après la photo                rerank   -> score, style, diversité, raisons
 ```
 
-Toutes les données (CSV, photos, index) sont dans `ml/data/shops/`. Comme toutes les données du projet,
-elles ne sont pas dans git mais partagées avec DVC (`ml/README.md`).
+Toutes les données (CSV, photos, index, rapports) sont dans `ml/data/shops/` et sont **versionnées dans
+git** sur la branche `BO6/local_catalogue` (≈ 340 Mo, dont 327 Mo de photos), pour que l'équipe les
+récupère avec un simple `git pull`. Le README du projet prévoit DVC pour les données : la bascule vers DVC
+ou Git LFS reste possible si le dépôt devient trop lourd (§8).
 
 ### 2.1 Input → modèle → output
 
@@ -83,14 +90,15 @@ sortie (*output*) qui devient l'entrée de l'étape suivante.
 | Étape | Input | Modèle / méthode | Output |
 |---|---|---|---|
 | 1. Scraping | Données d'une boutique (ex. JSON Shopify de Manuella) | Adaptateur de plateforme + règles de normalisation | 1 ligne CSV brute + 1 photo JPEG |
-| 2. Nettoyage | Ligne brute | Règles, empreinte d'image *dHash*, vérification HTTP | 1 ligne propre (26 colonnes) |
+| 2. Nettoyage | Ligne brute | Règles, empreinte d'image *dHash*, vérification HTTP | 1 ligne propre (28 colonnes) |
 | 3. Indexation | Photo JPEG (800 px) | **FashionCLIP — encodeur d'image** (réseau de neurones pré-entraîné) | Vecteur de 512 nombres |
-| 4. Compréhension | Phrase de l'utilisatrice (français) | Règles `parse.py` | Critères + phrase en anglais |
-| 5. Encodage de la requête | Phrase en anglais | **FashionCLIP — encodeur de texte** | Vecteur de 512 nombres |
-| 6. Recherche | Vecteur de la requête + 2 471 vecteurs de photos + mots | Similarité cosinus + BM25 | 2 scores par produit |
-| 7. Filtres et classement | Scores + critères | Filtres, somme pondérée, diversité (MMR) | Les k meilleurs produits, avec `match` et raisons |
+| 4. Genre d'après la photo | Vecteur de la photo | **FashionCLIP zero-shot** (« women's … » contre « men's … ») | `gender` + `gender_source = photo`, si le modèle est assez sûr |
+| 5. Compréhension | Phrase de l'utilisatrice (FR, EN, darija, arabe) | Lexique darija + règles `parse.py` | Critères + phrase en anglais |
+| 6. Encodage de la requête | Phrase en anglais | **FashionCLIP — encodeur de texte** | Vecteur de 512 nombres |
+| 7. Recherche | Vecteur de la requête + 6 375 vecteurs de photos + mots | Similarité cosinus + BM25 | 2 scores par produit |
+| 8. Filtres et classement | Scores + critères | Filtres, somme pondérée, diversité (MMR) | Les k meilleurs produits, avec `match` et raisons |
 
-**Seules les étapes 3 et 5 utilisent un modèle d'intelligence artificielle (FashionCLIP).** Les autres
+**Seules les étapes 3, 4 et 6 utilisent un modèle d'intelligence artificielle (FashionCLIP).** Les autres
 sont des règles et des calculs : elles sont rapides, gratuites et explicables.
 
 #### Exemple réel de bout en bout
@@ -113,16 +121,19 @@ Le produit suivi est la **« Basket à plateforme femme » de Manuella** ; la re
 *Output* : une ligne brute du fichier `local_catalogue.csv` (et la photo `images/2b7db627f328cf6a.jpg`).
 
 ```
-Manuella | Basket à plateforme femme | Sneakers | Blanc | 41, 40, 39, 38, 37, 36 | 69.3 TND | Tunis | true
+Manuella | Basket à plateforme femme | Sneakers | Blanc | 41, 40, 39, 38, 37, 36 | 69.3 TND
+         | Tunis | true
 ```
 
-**Étape 2 · Nettoyage.** *Input* : la ligne brute. *Output* : la ligne propre (extrait).
+**Étape 2 · Nettoyage.** *Input* : la ligne brute. *Output* : la ligne propre (extrait). Le genre est lu
+dans le nom (« femme »).
 
 ```json
-{"product_id": "prd_2b7db627f3", "category": "shoes", "subcategory": "sneakers", "label_fr": "Baskets",
- "color": "white", "color_fr": "Blanc", "color_hex": "#FFFFFF",
- "size": "36, 37, 38, 39, 40, 41", "size_type": "numeric", "price_tnd": 69.3, "currency": "TND",
- "city": "Tunis", "governorate": "Tunis", "product_url_status": "ok", "missing_fields": ""}
+{"product_id": "prd_2b7db627f3", "category": "shoes", "subcategory": "sneakers",
+ "label_fr": "Baskets", "color": "white", "color_fr": "Blanc", "color_hex": "#FFFFFF",
+ "gender": "women", "gender_source": "text", "size": "36, 37, 38, 39, 40, 41",
+ "size_type": "numeric", "price_tnd": 69.3, "currency": "TND", "city": "Tunis",
+ "governorate": "Tunis", "product_url_status": "ok", "missing_fields": ""}
 ```
 
 **Étape 3 · Indexation (FashionCLIP).** *Input* : la photo ci-dessus. *Output* : un vecteur de 512
@@ -140,43 +151,38 @@ nombres qui décrit son contenu visuel.
 {"query": "baskets blanches à Tunis pour un budget de 80 TND", "k": 3}
 ```
 
-**Étape 4 · Compréhension.** *Output* :
+**Étape 5 · Compréhension.** *Output* :
 
 ```json
 {"category": "shoes", "subcategory": "sneakers", "color": "white", "max_price_tnd": 80.0,
  "city": "Tunis", "governorate": "Tunis", "terms": ["basket", "blanche"],
- "prompt_en": "a photo of white sneakers", "corrected": null}
+ "prompt_en": "a photo of white sneakers", "translated": null, "corrected": null}
 ```
 
-**Étape 5 · Encodage de la requête (FashionCLIP).** *Input* : `"a photo of white sneakers"`.
+**Étape 6 · Encodage de la requête (FashionCLIP).** *Input* : `"a photo of white sneakers"`.
 *Output* : `[-0.047, 0.004, -0.097, -0.006, 0.003, … 507 autres nombres]`.
 
-**Étape 6 · Recherche.** Pour notre basket :
+**Étape 7 · Recherche.** Pour notre basket :
 - similarité cosinus entre le vecteur de la requête et celui de la photo : **0,289** (le meilleur score
   du catalogue est 0,342) ;
-- score BM25 des mots « basket » et « blanche » dans sa fiche : **3,91**.
+- score BM25 des mots « basket » et « blanche » dans sa fiche : **3,99**.
 
-**Étape 7 · Filtres et classement.**
-- Filtres (baskets, prix ≤ 80 TND, gouvernorat de Tunis, en stock) : **2 471 → 16 produits**.
+**Étape 8 · Filtres et classement.**
+- Filtres (baskets, prix ≤ 80 TND, gouvernorat de Tunis, **blanc**, en stock) : **6 375 → 1 produit**.
+  Sans le filtre de couleur, 28 baskets de 11 couleurs différentes passeraient (§5.5).
 - Composantes du score de notre basket :
   - visuel = (0,289 − 0,15) / (0,33 − 0,15) = **0,772** ;
-  - texte = **0,974** ;
+  - texte = **1,0** (c'est le meilleur candidat) ;
   - attributs (baskets + blanc) = **1,0** ;
-  - pas de vecteur de style dans cette requête.
-- `match` = (0,45 × 0,772 + 0,20 × 0,974 + 0,20 × 1,0) / (0,45 + 0,20 + 0,20) = **0,874**.
+  - pas de genre ni de vecteur de style dans cette requête.
+- `match` = (0,45 × 0,772 + 0,20 × 1,0 + 0,20 × 1,0) / (0,45 + 0,20 + 0,20) = **0,880**.
 
-*Output* de l'API (extrait, les 3 premiers résultats) :
-
-| match | Boutique | Article | Prix | Raisons |
-|---:|---|---|---:|---|
-| 0,882 | Manuella · Tunis | Basket femme | 62,65 TND | Baskets · Autre couleur : gris · 62.65 TND (budget 80 TND) · Boutique à Tunis · Ressemble visuellement à la demande · Marque tunisienne |
-| **0,874** | **Manuella · Tunis** | **Basket à plateforme femme** | **69,3 TND** | Baskets · Couleur : blanc · 69.3 TND (budget 80 TND) · Boutique à Tunis · Ressemble visuellement à la demande · Marque tunisienne |
-| 0,761 | Joliesse · Tunis… | Baskets Basses Effet Serpent à Détails Dorés | 79,99 TND | Baskets · Autre couleur : doré · 79.99 TND (budget 80 TND) · Boutique à Tunis · Ressemble visuellement à la demande · Marque tunisienne |
+*Output* de l'API (extrait) :
 
 ```json
 {"shop": "Manuella", "area": "Tunis", "item": "Basket à plateforme femme", "price_tnd": 69.3,
- "match": 0.874, "product_id": "prd_2b7db627f3", "category": "shoes", "subcategory": "sneakers",
- "color": "white", "size": "36, 37, 38, 39, 40, 41", "available": true,
+ "match": 0.88, "product_id": "prd_2b7db627f3", "category": "shoes", "subcategory": "sneakers",
+ "color": "white", "gender": "women", "size": "36, 37, 38, 39, 40, 41", "available": true,
  "image_path": "images/2b7db627f328cf6a.jpg",
  "product_url": "https://manuella.com.tn/products/basket-a-plateforme-femme",
  "reasons": ["Baskets", "Couleur : blanc", "69.3 TND (budget 80 TND)", "Boutique à Tunis",
@@ -189,72 +195,91 @@ nombres qui décrit son contenu visuel.
 
 ### 3.1 Choix des sources
 
-Le point de départ était une liste de **28 sources** : 5 places de marché ou annuaires (Ad. Mall, Moudda,
-Lofa, Hawwini, Boutique.tn), 7 enseignes de prêt-à-porter (VOG, HA, Apparel, Celina Fashion, MAGIC,
-UNJA, Corella) et 16 boutiques citées dans l'annuaire Hawwini. **9 sources** ont été ajoutées ensuite,
-surtout pour les bijoux, accessoires et chaussures (Strass Accessoires, HK-STORE, GAŸA, The Queen
-Accessories, SKILA, Joliesse, Azar Shoes, Chaussures Pitillos, Shoes Center), soit **37 sources**.
+La collecte s'est faite en **deux campagnes**.
 
-**Trouver les vraies adresses.** Pour les boutiques de l'annuaire, seules les marques étaient connues.
-Les adresses des sites ont été retrouvées sur les fiches « retailer » de Hawwini (par exemple NOON →
-`noonclo.com`, Manuella → `manuella.com.tn`), puis par recherche web pour les ajouts.
-*Pourquoi :* deviner les domaines aurait donné de faux sites.
+**Campagne 1 (14/10/2026) : 37 sources, 15 boutiques retenues.** Le point de départ était une liste de
+28 sources : 5 places de marché ou annuaires (Ad. Mall, Moudda, Lofa, Hawwini, Boutique.tn),
+7 enseignes de prêt-à-porter (VOG, HA, Apparel, Celina Fashion, MAGIC, UNJA, Corella) et 16 boutiques
+citées dans l'annuaire Hawwini. 9 sources ont été ajoutées pour les bijoux, accessoires et chaussures
+(Strass Accessoires, HK-STORE, GAŸA, The Queen Accessories, SKILA, Joliesse, Azar Shoes, Chaussures
+Pitillos, Shoes Center). Les adresses des sites ont été retrouvées sur les fiches « retailer » de Hawwini
+puis par recherche web. *Pourquoi :* deviner les domaines aurait donné de faux sites.
 
-**Sources écartées, avec la raison** (la liste est aussi dans `scraper/shops.py`) :
+**Campagne 2 (15/10/2026) : recherche ville par ville, 28 boutiques ajoutées.** Objectif : couvrir plus de
+villes et les catégories pauvres (tenues traditionnelles, mode homme, maillots de bain, lingerie, bijoux).
+Méthode :
+1. recherches web par ville (Tunis, Ariana, Ben Arous, Sousse, Monastir, Mahdia, Sfax, Nabeul, Bizerte,
+   Kairouan, Gabès, Djerba, Gafsa) et par catégorie (chaussures en cuir, sacs, bijoux, jebba et caftan,
+   hijab et burkini, lingerie, homme, couffins) ; listes de marques tunisiennes de *L'Instant M* et
+   *Marhba* ;
+2. **sonde automatique** de chaque candidate : site joignable ? plateforme (Shopify, WooCommerce,
+   PrestaShop, JSON-LD) ? prix en TND ? `robots.txt` autorise-t-il la collecte ?
+3. exclusion des enseignes étrangères (Celio, Kiabi), des revendeurs de marques étrangères (Le Sportif,
+   Super Sport, DREST), de la seconde main (Sou9 Finds) et des vêtements importés (New Collection, Mahdia).
+
+**Sources écartées, avec la raison** (la liste est aussi dans `scraper/shops.py`, `SKIPPED`) :
 
 | Source | Raison |
 |---|---|
-| JENNAH Boutique, Ayada Boutique | Boutiques **françaises** (prix en euros, adresses à Pantin et Aulnay-sous-Bois) |
-| Scarpa Store, Sneakers Tunisie, Sneakers Outlet | Ne revendent **que des marques étrangères** (Nike, Adidas, Saucony, Givenchy…) : il ne restait rien après le filtre « local uniquement » |
-| Chaussures Pitillos | Marque **espagnole** (Arnedo, calzadospitillos.com) : pas une marque locale |
-| Lofa | Catalogue de démonstration (14 produits avec des photos de banque d'images) |
-| Celina Fashion, SKILA | Sites vitrines : pas de catalogue en ligne ni de prix |
-| Dabchy | Seconde main entre particuliers, pas des boutiques |
+| **ZEN, Souk El Kahina** | Leur `robots.txt` **interdit la collecte** : ce choix est respecté |
+| **Mabrouk** (Tunis, Nabeul, Sousse) | Flux WooCommerce lisible, mais chaque photo tourne en boucle de redirections puis le site ne répond plus ; à retenter |
+| **HKEYA** (Ariana), Bassamet, HK-Store | Répondent « 429 Too Many Requests » même avec 3 s entre deux requêtes |
+| Kastelo, El Khomssa | Sites sur mesure, fiches produit absentes du sitemap : analyseur HTML dédié nécessaire |
+| Barsha, Rosace, Fedia Fashion | Sites entièrement en JavaScript, ou JSON-LD sans nom ni photo |
+| Diamelle | Joaillerie de luxe et montres d'occasion de marques étrangères (Rolex…) |
+| JENNAH Boutique, Ayada Boutique | Boutiques **françaises** (prix en euros) |
+| Scarpa Store, Sneakers Tunisie, Sneakers Outlet, Le Sportif, Super Sport, DREST | Revendent **surtout des marques étrangères** |
+| Celio, Kiabi, Chaussures Pitillos | Enseignes ou marques étrangères |
+| Lofa | Catalogue de démonstration (photos de banque d'images) |
+| Celina Fashion, SKILA | Sites vitrines sans catalogue ni prix |
+| Dabchy, Sou9 Finds | Seconde main |
 | Hawwini | Comparateur de prix : utilisé seulement pour trouver les adresses |
-| Shoes Center | `shoescenter.tn` est un domaine « parqué » (aucune boutique), `shoescenter.com.tn` a un certificat invalide |
-| HK-STORE, GAŸA, The Queen Accessories, Azar Shoes | Aucun site trouvé (vente en magasin ou sur les réseaux sociaux) |
-| Fripup, MODECO, Spadri, Goat Sneakers | Site en panne (erreur 520), injoignable ou introuvable |
-| Ad. Mall, boutique.tn, D'Stock | Pas de données structurées ; nécessiteraient un analyseur HTML dédié (piste future) |
+| GAŸA, The Queen Accessories, Azar Shoes | Aucun site trouvé |
+| Modeco, Fripup, Spadri, Unill (Gafsa), Lascarfa (Sousse), Lunja, Angel (Mahdia), 100 % Tounsi | Site injoignable, en panne ou certificat invalide |
+| Ad. Mall, boutique.tn, D'Stock, Pink and Grey, Folla Création (Nabeul) | Pas de données structurées : analyseur HTML dédié nécessaire |
 
-**Résultat : 15 boutiques dans le catalogue final.**
+**Résultat : 43 boutiques dans le catalogue final.**
 
 ### 3.2 Détection de la plateforme de chaque site
 
 Avant d'écrire le moindre code de scraping, chaque site a été analysé : quelle plateforme e-commerce
-utilise-t-il ? Pour cela, on a examiné la page d'accueil (balise `generator`, signatures comme
-`cdn.shopify.com` ou `wp-content`) et testé les adresses de données connues de chaque plateforme.
+utilise-t-il ? On examine la page d'accueil (balise `generator`, signatures comme `cdn.shopify.com` ou
+`wp-content`) et on teste les adresses de données connues de chaque plateforme. Pour la campagne 2, cette
+analyse a été automatisée (sonde de 48 sites).
 
 | Plateforme | Boutiques | Méthode de récupération |
 |---|---|---|
-| **Shopify** | Moudda, NOON, Manuella | Flux public `/products.json` |
-| **WooCommerce** | VOG, Corella, Apparel | API publique *Store API* `?rest_route=/wc/store/v1/products` |
-| **PrestaShop 1.7+** | Exist, FEModest, Shoes Mall, Strass Accessoires, Joliesse | Pages catégories demandées en JSON (en-tête `X-Requested-With`), tailles lues sur la fiche produit |
+| **Shopify** | Moudda, NOON, Manuella, Kontakt, SeaSide, Emraa, Gaya, Iley'com | Flux public `/products.json` |
+| **WooCommerce** | VOG, Corella, Apparel, KAI Signature, Wivine, Lunar, AD Makeba, Opierre, Hraier, Caprice, Exclusive, Intimate, Lingerie.tn, Patrinova, Sougui | *Store API* publique `?rest_route=/wc/store/v1/products` |
+| **PrestaShop 1.7+** | Exist, FEModest, Shoes Mall, Strass, Joliesse, Chill&Lit, Ultima, Baletto, Carolie, Cravate, CityMode, Hijabella, Lyséa, Ms. Marion, Maison ARA | Pages catégories demandées en JSON (en-tête `X-Requested-With`), tailles lues sur la fiche produit |
 | **PrestaShop 1.6** | LYOUM | Lecture des « cartes produit » HTML (thème personnalisé) |
-| **Pages avec JSON-LD** | MAGIC, UNJA | Données `schema.org/Product` présentes dans chaque fiche produit |
-| **API privée** | HA | API JSON utilisée par leur propre site (`/api/items/list`) |
+| **Pages avec JSON-LD** | MAGIC, UNJA, GET | Données `schema.org/Product` de chaque fiche (listées par le sitemap ou les pages catégories) |
+| **API privée** | HA | API JSON utilisée par leur propre site |
 
 *Pourquoi cette approche :* les plateformes exposent déjà leurs produits sous forme de **données
-structurées** (JSON). C'est beaucoup plus fiable que d'extraire du texte depuis le HTML : le prix, la
-devise, les variantes (couleurs, tailles), le stock et les photos arrivent déjà séparés. On a écrit
-**un adaptateur par plateforme** (`scraper/sources.py`) plutôt qu'un code par site : Strass et Joliesse
-ont été ajoutées en quelques lignes de configuration. Seul le thème de Joliesse (Creative Elements) a
-demandé d'adapter la lecture des pointures.
+structurées** (JSON). C'est beaucoup plus fiable que d'extraire du texte depuis le HTML : prix, devise,
+variantes, stock et photos arrivent déjà séparés. On a écrit **un adaptateur par plateforme**
+(`scraper/sources.py`) plutôt qu'un code par site : les 28 boutiques de la campagne 2 ont été ajoutées en
+une ligne de configuration chacune.
+
+**Correction de l'adaptateur PrestaShop.** Baletto nomme ses produits par modèle (« Cinzia Noir Daim ») :
+seule la catégorie du site dit qu'il s'agit de sandales. L'adaptateur visitait d'abord la catégorie
+générale « femme » et ignorait ensuite le même produit dans « sandales ». Il **ajoute désormais** chaque
+catégorie rencontrée : Baletto passe de **2 à 162 produits**.
 
 ### 3.3 Un scraping respectueux des sites
 
 | Règle | Mise en œuvre | Raison |
 |---|---|---|
-| Respect du `robots.txt` | Chaque URL est vérifiée avant d'être demandée | Les sites indiquent ce qu'ils autorisent |
-| Pas de surcharge | 0,5 s minimum entre deux requêtes vers un même site (1 s pour la vérification des URL) | Ne pas gêner les boutiques |
+| Respect du `robots.txt` | Chaque URL est vérifiée avant d'être demandée ; ZEN et Souk El Kahina, qui l'interdisent, ne sont pas collectés | Les sites indiquent ce qu'ils autorisent |
+| Pas de surcharge | 0,5 s minimum entre deux requêtes vers un même site (1 s pour la vérification des URL) ; un site qui répond 429 avec 3 s d'écart est abandonné | Ne pas gêner les boutiques |
 | Robot identifiable | User-Agent `DressMeCatalogueBot/0.1 (student project, ESPRIT)` | Transparence |
 | Erreurs temporaires | Jusqu'à 6 nouvelles tentatives avec attente croissante (429, 5xx) | Robustesse |
 | Pas de cookies | Client « sans état » | Voir ci-dessous |
 
-**Problème rencontré : erreurs 429 sur Shopify.** Les boutiques Shopify répondaient « 429 Too Many
-Requests » alors qu'une simple requête fonctionnait. L'analyse a montré que Shopify bloque le flux
-`/products.json` **dès que ses cookies de session sont présents** (posés lors de la lecture du
-`robots.txt`). Solution : un client qui refuse tous les cookies, dont les sites n'ont pas besoin pour
-afficher un catalogue public.
+**Problème rencontré : erreurs 429 sur Shopify.** Shopify bloque le flux `/products.json` **dès que ses
+cookies de session sont présents** (posés lors de la lecture du `robots.txt`). Solution : un client qui
+refuse tous les cookies, dont les sites n'ont pas besoin pour afficher un catalogue public.
 
 ### 3.4 Normalisation pendant la collecte
 
@@ -263,44 +288,54 @@ règles par mots-clés (`scraper/normalize.py`) :
 
 - **Catégorie** à partir du nom du produit, puis de la catégorie de la boutique. Les règles couvrent le
   français, l'anglais, les mots tunisiens et l'arabe : *dengri* (jean), *pul* (pull), *joking*
-  (jogging), *jebba*, *jelbeb*, *كسوة*, *جلباب*… L'**ordre des règles compte** : « veste en jean » doit
-  être une veste, « short en jean » un short, « chaussettes pour sneakers » ou « portefeuille jean » un
-  accessoire, et « short basket » un short (basket-ball), pas une paire de baskets.
+  (jogging), *jebba*, *jelbeb*, *tabdila*, *كسوة*, *جلباب*… L'**ordre des règles compte** : « veste en
+  jean » est une veste, « short basket » un short (basket-ball), « haut de gamme » n'est **pas** un haut.
+- **Orthographes des boutiques** : « Colier », « Gillet », « Boucles d’oreilles » avec une apostrophe
+  typographique (’) sont reconnus.
 - **Couleur principale** : couleur citée dans le nom, sinon la première variante de couleur. Des codes
-  comme `T00849-NOIRDEL` sont aussi reconnus. Le mot « jean » ne sert de couleur (bleu) qu'en dernier
-  recours, car un « Jean » vendu en variante NOIR est noir.
+  comme `T00849-NOIRDEL` sont aussi reconnus.
 - **Tailles** : seulement les tailles **en stock** quand la boutique donne le stock par taille.
 - **Prix** : seuls les prix **en TND** sont conservés (la devise est vérifiée pour chaque plateforme).
-- **Ville** : vérifiée sur le site (page contact, page « nos magasins », fiche Shopify), par exemple
-  VOG → Bizerte, LYOUM → La Marsa, UNJA → Sfax, MAGIC → 9 villes, Joliesse → 10 villes (20 magasins),
-  Strass → 7 villes (13 magasins). **Laissée vide** quand le site ne donne pas d'adresse.
+- **Ville** : vérifiée sur le site ou dans une source (page « nos magasins », presse), par exemple
+  VOG → Bizerte, LYOUM → La Marsa, Carolie et SeaSide → Sfax, Ultima → Nabeul, Lyséa → Tunis,
+  GET → Tunis, Sfax, Sousse, Gabès. **Laissée vide** quand aucune source ne donne d'adresse.
 
 ### 3.5 Filtres appliqués pendant la collecte
 
 | Filtre | Exemples retirés | Raison |
 |---|---|---|
-| Hors mode | Livres et chapelets (FEModest), valises (Joliesse), coussins | Ce ne sont pas des vêtements |
-| Enfants / bébés | « Sandale fillette », « Sortie naissance », « Baskets Garçonnet » | DressMe s'adresse à la garde-robe d'adultes |
-| **Marques étrangères** | Nike, Adidas, UGG, Saucony, Moncler… et les noms de modèles (Air Force, Samba…) | Objectif BO6 : promouvoir les marques et boutiques **locales** |
-| Produit sans prix ou sans photo | Photos impossibles à télécharger | Un produit sans photo ne peut pas être affiché ni encodé |
+| Hors mode | Livres, chapelets, valises, coussins ; **décoration, meubles et nourriture** des places de marché (vases, miroirs, consoles, tabourets, gâteaux, sculptures…) | Ce ne sont pas des vêtements |
+| Enfants / bébés | « Sandale fillette », « Baskets Garçonnet » | DressMe s'adresse à la garde-robe d'adultes |
+| **Marques étrangères** | Nike, Adidas, UGG, Moncler… ; montres et bijoux (Bigotti, Rolex, Swarovski…) ; lingerie (Simone Pérèle, Triumph…) | Objectif BO6 : promouvoir les marques et boutiques **locales** |
+| Produit sans prix ou sans photo | Kontakt publie 237 produits sur 250 sans photo | Un produit sans photo ne peut pas être affiché ni encodé |
 
-Le filtre des marques étrangères est appliqué **avant** le quota par boutique. *Pourquoi :* sinon une
-boutique comme Moudda aurait perdu une partie de ses 300 places au lieu de les remplir avec des pièces
-locales.
+Le filtre hors mode a **deux niveaux**. Les mots sans ambiguïté (« vase », « console », « gâteau »)
+excluent toujours. Les mots ambigus (« décoratif », « corbeille », « miroir », « porte-clés », « panier »)
+n'excluent que si le nom ne désigne **aucune pièce** : « Sac avec charm décoratif », « Soutien-gorge
+corbeille » et « Ceinture et porte-clés » restent ; « Cœur décoratif » et « Miroir soleil en rotin »
+partent. Une première version trop stricte retirait à tort 28 vrais articles (sacs « avec charm
+décoratif », soutiens-gorge « corbeille », bottines « à boucle décorative »…) : ils ont été retrouvés en
+comparant les produits retirés boutique par boutique, et un test les protège désormais.
+
+**Places de marché artisanales** (Iley'com, Hraier, Patrinova, Sougui). Elles vendent aussi de la
+décoration et des produits alimentaires, classés sous des catégories trompeuses (« Haut-parleur » rangé
+avec les hauts). Pour elles (`name_only` dans `shops.py`), un produit n'est gardé que si **son nom**
+désigne un vêtement ou un accessoire.
 
 **Équilibre du catalogue.** On garde au maximum **300 produits par boutique**, choisis à tour de rôle
-dans chaque catégorie. *Pourquoi :* sans cela, une grande boutique remplirait le catalogue avec un seul
-type de produit.
+dans chaque catégorie, et le filtre des marques étrangères est appliqué **avant** ce quota.
 
 ### 3.6 Photos des produits
 
 Une photo est téléchargée pour chaque produit dans `ml/data/shops/images/`, convertie en JPEG de 800 px
-maximum (**2 578 photos, 94 Mo**). Le nom du fichier est dérivé de l'URL du produit, il ne change donc pas
-d'une mise à jour à l'autre, et une photo déjà présente n'est pas retéléchargée.
-*Pourquoi :* FashionCLIP a besoin des images en local, et l'application les affiche sans dépendre des
-sites des boutiques (route `/m07/images/…`).
+maximum (**6 760 photos, 327 Mo, environ 45 Ko chacune**). Le nom du fichier est dérivé de l'URL du
+produit : il ne change pas d'une mise à jour à l'autre, et une photo déjà présente n'est pas
+retéléchargée. *Pourquoi :* FashionCLIP a besoin des images en local, et l'application les affiche sans
+dépendre des sites des boutiques (route `/m07/images/…`).
 
 ### 3.7 Résultat du scraping
+
+Campagne 1 (15 boutiques) :
 
 | Boutique | Produits lus | Retenus | Principales exclusions |
 |---|---:|---:|---|
@@ -309,18 +344,24 @@ sites des boutiques (route `/m07/images/…`).
 | VOG | 1 200 | 300 | — |
 | Exist | 1 163 | 300 | 12 hors mode |
 | HA | 791 | 300 | 29 enfants |
-| **Strass Accessoires** | 825 | 300 | 30 hors mode, 9 enfants |
-| **Joliesse** | 357 | 300 | 18 hors mode (valises), 20 enfants |
-| MAGIC | 94 | 92 | 2 enfants |
-| NOON Clothing | 90 | 90 | — |
-| LYOUM | 115 | 80 | 33 hors mode (maison, foutas) |
-| Apparel | 83 | 51 | 17 hors mode, 12 enfants |
-| Corella Store | 56 | 48 | 6 enfants |
-| UNJA | 36 | 36 | — |
-| FEModest | 97 | 27 | 70 hors mode (livres, chapelets) |
-| Shoes Mall | 10 | 9 | — |
-| Scarpa, Sneakers Tunisie, Sneakers Outlet | 739 | 47 | 687 marques étrangères (les 47 restants aussi, retirés au nettoyage) |
-| **Total** | | **2 578 avec photo** | |
+| Strass Accessoires | 825 | 300 | 30 hors mode, 9 enfants |
+| Joliesse | 357 | 300 | 18 hors mode (valises), 20 enfants |
+| MAGIC, NOON, LYOUM, Apparel, Corella, UNJA, FEModest, Shoes Mall | 581 | 433 | livres, maison, enfants |
+
+Campagne 2 (28 boutiques) :
+
+| Boutique | Produits lus | Retenus | Principales exclusions |
+|---|---:|---:|---|
+| CityMode | 1 200 | 300 | **524 marques étrangères**, 88 enfants |
+| Iley'com | 1 250 | 300 | 505 hors mode (décoration) |
+| Chill&Lit | 1 246 | 300 | 237 hors mode, 161 enfants |
+| Hraier | 1 200 | 300 | 384 hors mode (pâtisseries…), 241 sans prix |
+| Kontakt | 1 250 | 300 | 254 enfants (puis 221 sans photo) |
+| Gaya | 853 | 300 | 260 hors mode, 14 marques étrangères |
+| SeaSide, Exclusive, Intimate, Cravate | 1 605 | 1 199 | — |
+| AD Makeba, GET, Baletto, Ms. Marion, Maison ARA | 923 | 900 | quelques hors mode |
+| Caprice, Lyséa, Carolie, Lingerie.tn, Patrinova, Opierre, Sougui, Lunar, Wivine, Ultima, Hijabella, KAI, Emraa | 741 | 539 | Sougui : 103 hors mode sur 129 |
+| **Total (2 campagnes)** | | **6 760 avec photo** | 256 produits sans photo utilisable |
 
 ### 3.8 Ajouter ou mettre à jour des boutiques
 
@@ -328,130 +369,152 @@ L'option `--merge` scrape seulement les boutiques demandées et garde les autres
 leurs photos :
 
 ```bash
-python -m modules.m07_local_catalogue.scraper.run --shops strass joliesse --merge
+python -m modules.m07_local_catalogue.scraper.run --shops baletto --merge
+# site sensible au débit : 3 s entre deux requêtes
+python -m modules.m07_local_catalogue.scraper.run --shops hkeya --merge --delay 3
 ```
 
-*Pourquoi :* ajouter Strass et Joliesse n'a demandé que ces deux boutiques (environ 15 minutes), au lieu
-de relancer les 13 autres.
+*Pourquoi :* corriger Baletto n'a demandé que cette boutique (environ 5 minutes), au lieu de relancer les
+42 autres.
 
 ---
 
 ## 4. Nettoyage des données
 
-Le script `scraper/clean.py` transforme `local_catalogue.csv` (2 578 produits) en
-`local_catalogue_clean.csv` (**2 471 produits**). Chaque étape est comptée dans
+Le script `scraper/clean.py` transforme `local_catalogue.csv` (6 760 produits) en
+`local_catalogue_clean.csv` (**6 375 produits**). Chaque étape est comptée dans
 `ml/data/shops/cleaning_report.md`. Les règles de catégories sont réappliquées au nom de chaque produit :
 une correction de règle profite au catalogue sans refaire le scraping.
 
+| Étape | Produits retirés |
+|---|---:|
+| Doublons (63 dans une même boutique, 32 entre boutiques) | 95 |
+| Hors mode (décoration, meubles, nourriture, porte-clés, valises…) | 111 |
+| Places de marché : nom qui ne désigne aucune pièce | 109 |
+| Marques étrangères (noms de modèles vendus sans la marque) | 58 |
+| Enfants | 6 |
+| Fiches mortes (404 ou redirection vers l'accueil) | 6 |
+| **Total** | **385** |
+
 ### 4.1 Prix convertis en nombres et vérifiés en TND
 
-Tous les prix sont des nombres décimaux, strictement positifs. La devise est garantie à la source : les
-adaptateurs ne gardent que les prix en TND (devise Shopify, champ `currency_code` de WooCommerce,
-`priceCurrency` du JSON-LD). Une colonne `currency = TND` est ajoutée.
-Les prix très éloignés de la médiane de leur sous-catégorie (moins d'un cinquième ou plus de cinq fois)
-sont **signalés** dans `quality_flags` (20 très bas, 5 très hauts) mais **jamais modifiés**.
-*Pourquoi :* un prix inhabituel n'est pas forcément faux (une épingle de hijab à 0,5 TND est réelle).
+Tous les prix sont des nombres décimaux, strictement positifs, en TND (garanti à la source par chaque
+adaptateur). Les prix très éloignés de la médiane de leur sous-catégorie (moins d'un cinquième ou plus de
+cinq fois) sont **signalés** dans `quality_flags` (51 très bas, 122 très hauts) mais **jamais modifiés**.
+*Pourquoi :* un prix inhabituel n'est pas forcément faux (une épingle de hijab à 0,5 TND est réelle). En
+revanche, deux sacs Hraier affichés à **14 900 TND** sont très probablement une erreur de saisie de la
+boutique : ils restent signalés, et c'est un point à vérifier à la main (§8).
 
 ### 4.2 Dernier contrôle « local uniquement »
 
 Le nettoyage repasse le filtre des marques étrangères avec une liste enrichie de noms de modèles vendus
-sans la marque dans le titre (« AIR FORCE 1 '07 », « BASKET BOY AIR-FORCES », « On Cloudtilt »…).
-**58 produits retirés**, ainsi que 3 articles enfants et 1 valise.
+sans la marque dans le titre (« AIR FORCE 1 '07 », « On Cloudtilt »…) : **58 produits retirés**.
 
 ### 4.3 Nomenclature commune des catégories
 
 Les catégories sont alignées sur le **contrat de données partagé** du projet (`GarmentCategory` :
 `top`, `bottom`, `dress`, `outerwear`, `shoes`, `accessory`, `traditional`), avec une
-**sous-catégorie** précise et un **libellé français** pour l'affichage :
+**sous-catégorie** précise et un **libellé français** :
 
 | Avant (texte des boutiques) | `category` | `subcategory` | `label_fr` |
 |---|---|---|---|
-| sneakers, baskets, basket, Samba… | shoes | sneakers | Baskets |
+| sneakers, baskets, basket, *sbadri* | shoes | sneakers | Baskets |
 | chaussures, mocassins, derbies | shoes | shoes | Chaussures |
 | costume, tailleur, smoking | dress | suit | Costumes |
-| collier, pendentif, chaîne | accessory | necklace | Colliers |
-| bracelet, gourmette | accessory | bracelet | Bracelets |
+| collier, colier, pendentif, chaîne | accessory | necklace | Colliers |
+| bracelet, gourmette, manchette | accessory | bracelet | Bracelets |
 | bague, alliance | accessory | ring | Bagues |
 | boucles / puces d'oreilles | accessory | earrings | Boucles d'oreilles |
-| jebba, kaftan, جلباب | traditional | traditional | Tenues traditionnelles |
+| jebba, kaftan, tabdila, جلباب | traditional | traditional | Tenues traditionnelles |
 
 *Pourquoi :* le module Vision (M1) classe la garde-robe avec ces mêmes catégories : M7 et M1 « parlent la
-même langue ». Les bijoux sont séparés par type pour qu'une recherche « bracelet » ne renvoie pas de
-bagues.
-Répartition finale : chaussures 688, accessoires 673, hauts 408, bas 353, robes/ensembles/costumes 205,
-vestes/manteaux 131, tenues traditionnelles 13.
+même langue ». Répartition finale : accessoires 1 706, chaussures 1 655, hauts 1 400, robes / ensembles /
+costumes / maillots 695, bas 598, vestes et manteaux 242, tenues traditionnelles 79.
 
-### 4.4 Couleurs, tailles et villes uniformisées
+### 4.4 Couleurs, tailles, villes et genre uniformisés
 
 - **Couleurs** : un code anglais (`white`, `navy`…) identique à celui du module Vision, plus le nom
   français (`Blanc`) et un code hexadécimal (`#FFFFFF`).
-- **Tailles** : une seule notation, triée. `2XL` devient `XXL`, `ST` devient `Taille unique`, les tailles
-  sont dans l'ordre (`S, M, L, XL`, `38, 39, 40`). Une colonne `size_type` indique le système (`letter`,
-  `numeric`, `one_size`, `bra`…). On partait de **94 notations différentes**.
-- **Villes** : nom officiel (`Béja`, `La Marsa`) et **gouvernorat** (`La Marsa` → `Tunis`).
-  *Pourquoi :* une utilisatrice qui cherche « à Tunis » doit aussi voir les boutiques de La Marsa.
+- **Tailles** : une seule notation, triée (`2XL` → `XXL`, `ST` → `Taille unique`), et une colonne
+  `size_type` (`letter`, `numeric`, `one_size`, `bra`…).
+- **Villes** : nom officiel et **gouvernorat** (`La Marsa` → `Tunis`). *Pourquoi :* une utilisatrice qui
+  cherche « à Tunis » doit aussi voir les boutiques de La Marsa.
+- **Genre** (nouveau) : `women`, `men` ou `unisex` quand le nom ou l'URL le dit (« Basket femme »,
+  `/collections/homme`), avec `gender_source = text`. Si les deux genres sont cités, ou aucun, le genre
+  reste vide ; l'étape 4 (§5.7) le complète ensuite d'après la photo.
 
 ### 4.5 Suppression des doublons
 
-Comparer seulement le nom et le prix aurait été une erreur : des produits différents portent souvent le
-même nom générique (« Basket Homme » à 59,5 TND existe en 4 couleurs avec 4 photos différentes). Deux
-produits sont donc des doublons s'ils ont **le même nom, le même prix et une photo quasi identique**,
-comparée avec une **empreinte perceptuelle** (*dHash* sur 64 bits). On garde l'exemplaire en stock avec
-le plus de tailles.
-**45 doublons retirés** : 13 dans une même boutique et 32 entre deux boutiques (par exemple Corella et
-Apparel vendent les mêmes articles au même prix).
+Deux produits sont des doublons s'ils ont **le même nom, le même prix et une photo quasi identique**,
+comparée avec une **empreinte perceptuelle** (*dHash* sur 64 bits). Comparer seulement le nom et le prix
+aurait été une erreur : « Basket Homme » à 59,5 TND existe en 4 couleurs avec 4 photos différentes.
+**95 doublons retirés** (63 dans une même boutique, 32 entre deux boutiques).
 
 ### 4.6 Vérification des URL
 
-Chaque URL de fiche produit et de photo a été vérifiée par une requête HTTP (**4 944 URL**).
+Chaque URL de fiche produit et de photo a été vérifiée par une requête HTTP (**13 202 URL**).
 - Une fiche qui renvoie 404/410, ou qui redirige vers la page d'accueil, est **morte** : le produit est
-  retiré.
-- Les autres échecs sont **signalés** sans retirer le produit.
-- Les résultats sont mis en cache (`url_checks.json`) : une relance ne vérifie que les nouvelles URL.
-
-Au premier passage, 625 fiches Shopify ont répondu « 429 » (limite de débit). Ce n'est pas une page
-morte : elles ont été revérifiées plus lentement (1 requête/s, en respectant l'en-tête `Retry-After`).
-**Résultat : 4 944 URL sur 4 944 répondent correctement (200), aucun produit mort.**
+  retiré (**6**).
+- Les autres échecs sont **signalés** sans retirer le produit (38 fiches encore en « 429 »).
+- Les résultats sont mis en cache (`url_checks.json`) et **réutilisés pendant 7 jours**. *Pourquoi :* le
+  premier contrôle a pris environ 55 minutes ; une relance le lendemain (nouvelles règles) n'a revérifié
+  que les 302 URL en échec, en quelques minutes, sans resolliciter les 43 boutiques.
 
 ### 4.7 Informations manquantes marquées, jamais inventées
 
-Une valeur absente reste **vide** et le nom du champ est listé dans la colonne `missing_fields`. Aucune
-valeur n'est devinée.
+Une valeur absente reste **vide** et le nom du champ est listé dans `missing_fields`.
 
 | Champ | Renseigné | Pourquoi il manque parfois |
 |---|---:|---|
-| Couleur | 85,6 % | Nom du produit sans couleur et pas de variante de couleur (bijoux, accessoires…) |
-| Taille | 62,1 % | Accessoires et bijoux (sans taille), ou boutique qui ne publie pas les tailles |
-| Ville | 68,6 % | Boutiques en ligne sans adresse publiée (NOON, Exist, HA…) |
+| Couleur | 85,5 % | Nom sans couleur et pas de variante de couleur (bijoux, accessoires…) |
+| Taille | 64,5 % | Accessoires et bijoux, ou boutique qui ne publie pas les tailles |
+| Ville | 43,1 % | Boutiques en ligne sans adresse publiée (3 625 produits) |
+| Genre | 92,0 % | Écrit dans le nom (1 834) ou estimé d'après la photo (4 033) ; 508 inconnus |
 
 *Pourquoi :* une couleur ou une ville inventée pourrait envoyer l'utilisatrice dans une boutique qui n'a
 pas l'article. Le moteur en tient compte (§5.5) et le dit (« Couleur non précisée par la boutique »,
-« Ville non précisée »).
+« Genre non précisé par la boutique »).
 
 ### 4.8 Identifiants stables
 
 Chaque produit reçoit un identifiant `prd_` + empreinte de son URL (par exemple `prd_2b7db627f3`).
-*Pourquoi :* la numérotation P0001… change à chaque scraping, alors que d'autres modules (favoris,
-liens partenaires M13, partage M10) ont besoin d'une référence durable.
+*Pourquoi :* d'autres modules (favoris, liens partenaires M13, partage M10) ont besoin d'une référence
+durable, et l'index FashionCLIP réutilise les vecteurs déjà calculés grâce à cet identifiant.
 
 ### 4.9 Le catalogue final
 
 | Indicateur | Valeur |
 |---|---|
-| Produits | **2 471** |
-| Boutiques | **15** |
-| Marques tunisiennes / boutiques locales multimarques | 2 153 / 318 |
-| En stock | 2 060 |
-| Prix médian | 69,9 TND (de 0,5 à 399,99 TND) |
-| Bijoux | 38 colliers, 27 bagues, 12 bracelets, 10 paires de boucles d'oreilles |
+| Produits | **6 375** (2 471 le 14/10) |
+| Boutiques | **43** (15 le 14/10) |
+| Marques tunisiennes / boutiques locales multimarques | 3 627 / 2 748 |
+| En stock | 5 393 |
+| Prix médian | 78 TND |
+| Genre | 4 218 femme, 1 641 homme, 8 mixte, 508 inconnu |
+| Sélection | 771 sacs, 606 pièces de lingerie, 416 sandales, 403 baskets, 291 chemises, 253 robes, 243 colliers, 174 escarpins, 111 bagues, 79 tenues traditionnelles, 40 robes noires (contre 10) |
+
+Produits par gouvernorat (une chaîne compte dans chaque ville) : Tunis 2 027, Sfax 1 450, Sousse 879,
+Nabeul 695, Bizerte 685, Ariana 631, Ben Arous 590, Monastir 590, Gabès 495, Médenine 296, Béja 90,
+Le Kef 90 ; 3 625 produits de boutiques en ligne sans ville.
 
 | Boutique | Produits | Boutique | Produits | Boutique | Produits |
 |---|---:|---|---:|---|---:|
-| Manuella | 300 | Moudda | 282 | Corella Store | 48 |
-| HA | 299 | MAGIC | 90 | UNJA | 36 |
-| Joliesse | 299 | NOON Clothing | 90 | FEModest | 27 |
-| Strass Accessoires | 299 | LYOUM | 80 | Apparel | 18 |
-| VOG | 299 | Exist | 295 | Shoes Mall | 9 |
+| Cravate | 300 | Hraier | 220 | Lyséa | 79 |
+| Exclusive | 300 | GET | 199 | Kontakt | 76 |
+| Manuella | 300 | Iley'com | 181 | Carolie | 65 |
+| Intimate | 299 | Baletto | 162 | Lingerie.tn | 49 |
+| SeaSide | 299 | Ms. Marion | 151 | Corella Store | 48 |
+| HA | 299 | Maison ARA | 112 | Opierre | 36 |
+| VOG | 299 | Patrinova | 98 | UNJA | 36 |
+| Joliesse | 296 | MAGIC | 90 | FEModest | 27 |
+| Strass Accessoires | 294 | NOON Clothing | 90 | Lunar | 24 |
+| Exist | 294 | Caprice Lingerie | 83 | Wivine | 23 |
+| Gaya | 293 | LYOUM | 80 | Apparel, Sougui | 18 |
+| Chill&Lit | 282 | | | Ultima Boutique | 15 |
+| Moudda | 280 | | | Hijabella | 14 |
+| CityMode | 274 | | | KAI Signature | 11 |
+| AD Makeba | 247 | | | Shoes Mall | 9 |
+| | | | | Emraa (ex-Iuma) | 5 |
 
 ---
 
@@ -460,104 +523,115 @@ liens partenaires M13, partage M10) ont besoin d'une référence durable.
 ### 5.0 Input → modèle → output de M7
 
 Le §2.1 suit tout le parcours, du scraping à la recherche. Ici on ne regarde que **le module M7 lui-même**,
-c'est-à-dire ce qui se passe à chaque appel de `POST /m07/search` (ou de l'outil `localshop`) : le
-catalogue et l'index sont déjà prêts.
+c'est-à-dire ce qui se passe à chaque appel de `POST /m07/search` (ou de l'outil `localshop`).
+
+**Deux formats, deux rôles.** L'**entrée et la sortie** sont en **JSON** : c'est le format des messages
+de l'API, ce que l'application, l'assistant (M8) ou un autre module envoie à M7 et reçoit en retour. Les
+**données** dans lesquelles M7 cherche sont la **base de connaissances** : le CSV nettoyé, l'index
+FashionCLIP et les photos. Elles sont lues **une seule fois**, au démarrage de l'API (`Catalogue.load`),
+puis gardées en mémoire ; le CSV n'est jamais relu pendant une recherche, d'où les ~40 ms par requête.
 
 ```
-INPUT (JSON)                       MODÈLE M7 (agent.py, ~40 ms)                         OUTPUT (JSON)
+INPUT (JSON, requête)     MODÈLE M7 (agent.py, ~40 ms)              OUTPUT (JSON, réponse)
 
-{"query": "robe blanche",     ┌──────────────────────────────────────────────┐     {"results": [
- "city": "Sousse",            │ 1. parse      règles FR/EN/tunisien/arabe    │       {"shop", "area", "item",
- "max_price_tnd": …,          │               → critères + phrase anglaise   │        "price_tnd", "match",
- "gap": …,                    │ 2. encodage   FashionCLIP (texte → 512 nb)   │        "image_path",
- "style_vector": …,     ───►  │ 3. retrieve   cosinus avec 2 471 photos      │ ───►   "product_url",
- "image_embedding": …,        │               + BM25 sur les mots            │        "reasons", …}, …],
- "k": 3}                      │ 4. filter     prix, ville, type, stock       │      "parsed": {critères},
-                              │ 5. rerank     score pondéré, style, MMR,     │      "total_matches": 20,
-                              │               raisons                        │      "note": "…"}
-                              └──────────────────────────────────────────────┘
+{"query": "robe noire",   ┌─────────────────────────────────────┐   {"results": [
+ "city": "Sousse",        │ 1. parse    FR / EN / darija / arabe│     {"shop", "area",
+ "max_price_tnd": …,  ──► │             -> type, couleur, genre │ ──►  "item", "price_tnd",
+ "gender": …,             │ 2. encodage FashionCLIP (512 nb)    │      "match", "gender",
+ "style_vector": …,       │ 3. retrieve cosinus + BM25          │      "reasons", …}, …],
+ "image_embedding": …,    │ 4. filter   prix, ville, type,      │   "parsed": {…},
+ "k": 24, "offset": 0}    │             couleur, genre, stock   │   "total_matches": 27,
+                          │ 5. rerank   score, style, MMR       │   "note": "…",
+                          └──────────────────┬──────────────────┘   "search_id": "…"}
+                                             │ chargés une fois au démarrage
+                          BASE DE CONNAISSANCES (ml/data/shops/)
+                          local_catalogue_clean.csv    6 375 produits, 43 boutiques
+                          index/image_embeddings.npy   6 375 × 512 (FashionCLIP)
+                          images/                      photos JPEG servies à l'app
 ```
 
 | Partie | Ce qu'elle reçoit | Ce qu'elle fait | Ce qu'elle produit |
 |---|---|---|---|
-| **Input** | Une phrase (`query`), un manque de la garde-robe (`gap`), des filtres explicites (`city`, `max_price_tnd`, `subcategory`, `color`…), éventuellement un vecteur de style (M5) ou d'image (M1) | Validation Pydantic (`LocalShopInput`) : au moins un critère de recherche | Une demande valide, sinon erreur 422 |
-| **Modèle** | La demande + le catalogue + l'index | Règles (compréhension, filtres) + **FashionCLIP** (seule partie apprise) + BM25 + score pondéré | Les produits classés |
-| **Output** | Les k meilleurs produits | `LocalShopOutput` | `results` (boutique, ville, article, prix, `match`, photo, lien, raisons), `parsed` (ce qui a été compris), `total_matches`, `note` |
+| **Input** | Une phrase (`query`), un manque de la garde-robe (`gap`), des filtres explicites (`city`, `max_price_tnd`, `subcategory`, `color`, `gender`…), éventuellement un vecteur de style (M5) ou d'image (M1), la page (`k`, `offset`) | Validation Pydantic (`LocalShopInput`) : au moins un critère de recherche | Une demande valide, sinon erreur 422 |
+| **Modèle** | La demande + la base de connaissances en mémoire | Règles (compréhension, filtres) + **FashionCLIP** (seule partie apprise) + BM25 + score pondéré | Les produits classés |
+| **Output** | La page demandée | `LocalShopOutput` | `results`, `parsed` (ce qui a été compris, y compris la traduction darija), `total_matches`, `note`, `search_id` |
 
-#### Exemples réels (catalogue actuel, 15 boutiques)
+#### Exemples réels (catalogue du 16/10, 43 boutiques)
 
 Chaque ligne est une vraie réponse de l'API, avec `k = 3` (les 3 premiers résultats).
 
 | Input envoyé à M7 | Ce que M7 a compris (`parsed`) | Output (`total_matches` puis résultats) |
 |---|---|---|
-| `{"query": "baskets blanches à Tunis pour un budget de 80 TND"}` | baskets · blanc · Tunis · ≤ 80 TND ; prompt « a photo of white sneakers » | **16** — Manuella · Tunis · Basket femme · 62,65 TND (0,882) ; Manuella · Tunis · Basket à plateforme femme · 69,3 TND (0,874) ; Joliesse · Tunis · Baskets Basses Effet Serpent · 79,99 TND (0,761) |
-| `{"query": "robe blanche", "city": "Sousse"}` | robe · blanc · Sousse | **20** — MAGIC · Sousse · Robe longue plissée · 57 TND (0,853) ; Robe midi sans manches · 39 TND (0,803) ; Robe Longue Fleurie · 57 TND (0,715). *note* : « Aucun article de couleur blanc parmi les robes à Sousse : voici les autres robes disponibles. 6 existent ailleurs (Bizerte, Tunis, boutiques en ligne) : retire le filtre de ville pour les voir. » |
-| `{"query": "colier"}` (faute de frappe) | collier ; `corrected` = « collier » | **37** — Strass · Collier avec Pendentifs Trèfles · 22,9 TND (0,944) ; Collier avec Étoile de Mer · 39,9 TND (0,94) ; Collier Sautoir · 79,9 TND (0,93) |
-| `{"gap": "white shirt", "city": "Tunis"}` (Smart Buy) | chemise · blanc · Tunis | **13** — Moudda · Chemise Satin · 69,9 TND (0,771) ; MAGIC · Chemise brodée · 50 TND (0,696) ; CHEMISE W RRAYE · 59,99 TND (0,619). *note* : aucune chemise blanche à Tunis, 11 ailleurs (Bizerte, boutiques en ligne) |
-| `{"subcategory": "bag", "color": "camel", "max_price_tnd": 150}` (champs seuls, sans phrase) | sac · camel · ≤ 150 TND ; prompt « a photo of camel handbag » | **343** — Manuella · Sac à main minimaliste · 129 TND (0,955) ; Joliesse · Sac à Main Structuré · 139,99 TND (0,923) ; Manuella · Sac pochette · 69,3 TND (0,9) |
+| `{"query": "baskets blanches à Tunis pour un budget de 80 TND"}` | baskets · blanc · Tunis · ≤ 80 TND | **1** — Manuella · Tunis · Basket à plateforme femme · 69,3 TND (0,880) |
+| `{"query": "robe noire", "city": "Sousse"}` | robe · noir · Sousse | **27** — Ms. Marion · Robe longue en maille noir · 92 TND (0,865) ; Maison ARA · Robe Bretelle Gaga · 119 TND (0,861) ; Hraier · Robe jerbia haiek laine noir · 225 TND (0,821). *note* : « Rien trouvé à Sousse : résultats d'autres villes ou de boutiques en ligne. » |
+| `{"query": "sbadri kahla a9al men 150 alf"}` (darija) | `translated` = « baskets noir moins de 150 alf » → baskets · noir · ≤ 150 TND | **47** — Exist · Baskets · 119,99 TND (1,0) ; HA · Basket Femme · 129,99 TND (0,963) ; Carolie · Sfax · Baskets Chics · 89,9 TND (0,956) |
+| `{"query": "سروال رجالي"}` (arabe) | « pantalon homme » → pantalon · homme | **83** — NOON · Pantalon habillé fuselé · 39,9 TND (0,941) ; GET · Pantalon jogger · 64,95 TND (0,926) ; GET · Pantalon jogg avec zip · 71,92 TND (0,902) |
+| `{"query": "chemise homme blanche"}` | chemise · blanc · homme | **25** — Cravate · Chemise col ouvert popeline · 89 TND (0,968) ; Chemise popeline col mao · 59,43 TND (0,954) ; Chemise col mao aspect lin · 55,3 TND (0,906) |
+| `{"query": "chemize blanche"}` (faute) | `corrected` = « chemise blanche » | **42** — Cravate · 89 TND (0,951) ; Ms. Marion · Dalya Shirt · 34,5 TND (0,929) ; Cravate · 55,3 TND (0,896) |
+| `{"subcategory": "bag", "color": "camel", "max_price_tnd": 150}` (champs seuls) | sac · camel · ≤ 150 TND | **19** — Carolie · Sfax · Sac à bandoulière en vrai cuir · 79,5 TND (1,0) ; Hraier · Sac cabas crochet caramel · 99 TND (1,0) ; SeaSide · Sfax · Sac Medium Camel · 119,9 TND (0,984) |
 | `{"query": "zorglub"}` (mot inconnu) | rien | **0** — *note* : « Je n'ai trouvé aucun article correspondant à « zorglub » dans les boutiques locales. » |
+| `{"query": "robe", "k": 24, "offset": 24}` (page 2) | robe | **193** — les 24 robes suivantes, sans répéter la page 1 |
 | `{"city": "Tunis"}` (rien à chercher) | — | Erreur **422** : l'entrée est refusée avant le modèle |
 
 **À retenir.**
-- La **couleur** est un critère souple : si aucune pièce de la bonne couleur n'existe dans la ville
-  demandée, M7 montre les autres pièces du bon type **et le dit** dans `note`, au lieu d'inventer ou de
-  renvoyer une page vide.
-- Le champ `area` donne **la ville du magasin qui correspond au filtre**. Pour une chaîne présente dans
-  plusieurs villes (MAGIC : Tunis, Sousse, Sfax…), une recherche à Sousse affiche « MAGIC · Sousse ».
+- Une **couleur demandée est stricte** : « robe noire » ne montre que des robes noires. Si la couleur
+  n'existe nulle part, M7 le dit dans `note` et montre les autres couleurs (§5.5).
+- Le champ `area` donne **la ville du magasin qui correspond au filtre** ; pour une chaîne sans filtre,
+  « Chaîne présente dans 4 villes (Tunis, Sfax, Sousse…) ».
 - Le `match` (0 à 1) et les `reasons` sont calculés uniquement à partir des données et des scores.
-
-![Recherche « robe blanche » avec le filtre Sousse dans l'écran BO6](images/bo6_robe_blanche_sousse.png)
 
 ### 5.1 Architecture et contrat
 
 Le module suit la structure des modules partagés (`backend/modules/m07_local_catalogue/` avec
-`contract.py`, `router.py`, `service.py`, `mock.py`, `tool.py`, `tests/`), plus `agent.py` et `pipeline/`,
-et le pipeline prévu par l'architecture : **parse → retrieve → filter → rerank**.
+`contract.py`, `router.py`, `service.py`, `mock.py`, `tool.py`, `tests/`), plus `agent.py`, `darija.py`,
+`events.py`, `pipeline/` et `evaluation/`, et le pipeline prévu par l'architecture : **parse → retrieve →
+filter → rerank**.
 
 **Entrée** (`LocalShopInput`) — au moins un des champs `query`, `gap`, `category`/`subcategory` ou
 `image_embedding` :
 
 | Champ | Exemple | Utilisé par |
 |---|---|---|
-| `query` | « baskets blanches à Tunis pour 80 TND » | Chat (BO8), écrans de recherche |
+| `query` | « baskets blanches à Tunis pour 80 TND », « sbadri kahla » | Chat (BO8), écrans de recherche |
 | `gap` | « white shirt » | Smart Buy (BO5), analyse de la garde-robe |
 | `city`, `max_price_tnd`, `min_price_tnd` | « Tunis », 80 | Filtres explicites |
-| `category`, `subcategory`, `color` | shoes, sneakers, white | Filtres explicites |
-| `user_id`, `style_vector` | « usr_042 », « vec_u042 » (ou 512 nombres) | Profil de style (M5) : l'identifiant est demandé à M5, comme dans l'architecture |
+| `category`, `subcategory`, `color`, `gender` | shoes, sneakers, white, women | Filtres explicites |
+| `user_id`, `style_vector` | « usr_042 », « vec_u042 » (ou 512 nombres) | Profil de style (M5) |
 | `image_embedding` | 512 nombres | Photo d'une pièce (Vision M1 / Smart Buy) |
-| `include_unavailable`, `k` | false, 10 | Options |
-
-Les champs explicites ont priorité sur ce qui est lu dans le texte, et le prompt FashionCLIP est
-reconstruit à partir des critères finaux.
+| `include_unavailable`, `k` (≤ 100), `offset` | false, 24, 24 | Options et pagination |
 
 **Sortie** (`LocalShopOutput`) : la liste `results` reprend les champs prévus par l'architecture
 (`shop`, `area`, `item`, `price_tnd`, `match`), enrichis de l'identifiant, des liens, de la photo, des
-tailles, du stock et des **raisons**. S'y ajoutent `parsed` (les filtres réellement appliqués et la
-requête corrigée), `total_matches` et `note` (ville relâchée, articles en rupture, rien trouvé…).
+tailles, du genre, du stock et des **raisons**. S'y ajoutent `parsed` (filtres appliqués, requête
+traduite ou corrigée), `total_matches`, `note` et `search_id` (identifiant de la recherche dans le journal,
+§5.8).
 
 ### 5.2 Index FashionCLIP (base de connaissances)
 
-**FashionCLIP** (`patrickjohncyh/fashion-clip`) est un modèle d'intelligence artificielle : un réseau de
-neurones (architecture CLIP) entraîné par des chercheurs sur environ 800 000 photos de mode avec leur
-description. Il transforme **une photo en une liste de 512 nombres** (un « vecteur ») et **une phrase en
-anglais en une autre liste de 512 nombres**, de sorte qu'une photo et sa bonne description aient des
-vecteurs proches : *« a photo of white dress »* est proche des photos de robes blanches. Nous ne l'avons
-pas réentraîné : il est utilisé tel quel (*zero-shot*).
+**FashionCLIP** (`patrickjohncyh/fashion-clip`) est un réseau de neurones (architecture CLIP) entraîné
+par des chercheurs sur environ 800 000 photos de mode avec leur description. Il transforme **une photo en
+une liste de 512 nombres** (un « vecteur ») et **une phrase en anglais en une autre liste de 512
+nombres**, de sorte qu'une photo et sa bonne description aient des vecteurs proches. Il est utilisé tel
+quel (*zero-shot*), sans réentraînement.
 
-*Pourquoi FashionCLIP :*
-- il comprend le **contenu visuel** (forme, couleur, motif) même quand la description est pauvre ou
-  fausse ;
-- l'architecture le recommande pour le module Vision : M7, M1 (garde-robe) et M5 (vecteur de style)
-  partagent le même espace ;
-- il tourne **en local** sur CPU, sans service payant.
+*Pourquoi FashionCLIP :* il comprend le **contenu visuel** même quand la description est pauvre ;
+l'architecture le recommande pour le module Vision, donc M7, M1 et M5 partagent le même espace ; il tourne
+**en local** sur CPU.
 
-Le script `pipeline/ingest.py` encode chaque photo du catalogue (`ml/data/shops/index/`, 512 nombres par
-photo). La première construction a pris **3 min 42 s pour 1 874 photos** sur CPU. L'index est
-**incrémental** : à l'ajout de Strass et Joliesse, seules les **599 nouvelles photos** ont été encodées,
-en **35 s**. Le modèle (581 Mo) est téléchargé au premier lancement, ou lu depuis `ml/models/fashion-clip/`
-s'il y est (DVC).
+Le dossier `ml/data/shops/index/` contient trois fichiers :
 
-### 5.3 Compréhension de la requête (`pipeline/parse.py`)
+| Fichier | Contenu |
+|---|---|
+| `image_embeddings.npy` | Tableau de **6 375 × 512 nombres** (float32, 13 Mo), un vecteur normalisé par photo |
+| `ids.json` | Le `product_id` de chaque ligne du tableau, dans le même ordre |
+| `meta.json` | Modèle utilisé, dimension, nombre de produits, date et durée de construction |
+
+`pipeline/ingest.py` construit l'index de façon **incrémentale** : un produit déjà présent (même
+identifiant, donc même photo) est réutilisé. Pour la campagne 2, **4 129 nouvelles photos ont été encodées
+en 12 min 28 s** sur CPU, et les 2 465 anciennes réutilisées. Si le modèle change, `meta.json` empêche de
+mélanger des vecteurs de deux modèles (`--full` ré-encode tout).
+
+### 5.3 Compréhension de la requête (`pipeline/parse.py`, `darija.py`)
 
 La phrase de l'utilisatrice est transformée en critères :
 
@@ -567,33 +641,46 @@ La phrase de l'utilisatrice est transformée en critères :
   → prompt FashionCLIP : « a photo of white linen shirt »
 ```
 
-Il reconnaît les budgets (« moins de 80 dt », « entre 50 et 120 dinars »), les villes tunisiennes, les
-couleurs, les catégories et des attributs (lin → linen, cuir → leather, fleuri → floral…).
+Il reconnaît les budgets (« moins de 80 dt », « entre 50 et 120 dinars », « 80 alf »), les villes
+tunisiennes, les couleurs, les catégories et des attributs (lin → linen, cuir → leather, soirée → evening…).
 
-**Correction des fautes de frappe.** Un mot inconnu mais très proche d'un mot connu est corrigé
-(« colier » → « collier »). Le vocabulaire de référence réunit les mots-clés des règles et les mots
-réellement utilisés par les boutiques. L'application affiche « Recherche corrigée : « collier » ».
+**Darija.** Beaucoup de demandes sont écrites en darija, en lettres latines avec des chiffres pour les sons
+arabes (« a7mar », « 5adhra », « 9ahwi ») ou en alphabet arabe (« صباط أحمر »). Un **lexique** d'environ
+40 entrées (`darija.py`) remplace chaque mot darija par le mot français que les règles connaissent déjà,
+**avant** tout le reste : vêtements (*sabbat*, *sbadri*, *sorya*, *sarwel*, *kabbout*, *chkara*…),
+couleurs (*ahmar*, *kahla*, *bidha*, *azra9*, *dhahbi*…, avec leurs formes féminines en arabe comme
+*ذهبية*), genre (*rjel*, *nsa*, *رجالي*, *نسائية*), occasion (*3ers* = mariage) et budget (*a9al men* =
+moins de). L'article ou la préposition collés aux mots arabes sont gérés (« بالأسود »). Le champ
+`parsed.translated` montre comment la demande a été lue, et l'application l'affiche (« Darija comprise :
+« baskets noir moins de 150 alf » »). Seuls les mots au sens clair sont listés : « jupe » n'a pas d'entrée,
+ses graphies darija étant trop proches de « jebba ».
+
+**Genre.** « homme », « femme », « women's », mais aussi « pour mon mari » ou « lel nsa » donnent le
+critère `gender`, et le prompt devient « a photo of men's white shirt ».
+
+**Fautes de frappe.** Un mot inconnu mais très proche d'un mot connu est corrigé (« chemize » →
+« chemise »). Les **mots-clés des règles passent en priorité** : une boutique qui écrit elle-même une faute
+ne la rend pas « valide ». Un mot déjà compris (« noires », « dorée ») n'est jamais touché.
 
 *Pourquoi un analyseur à règles et non un LLM :* il utilise **exactement les mêmes listes de mots** que
-le nettoyage (« baskets » dans une requête et dans un produit tombent toujours dans la même
-sous-catégorie), il est instantané, gratuit, déterministe et testable.
+le nettoyage, il est instantané, gratuit, déterministe et testable ; et il est mesuré (§6 : 100 % des
+72 requêtes comprises).
 
-*Pourquoi un prompt en anglais :* FashionCLIP n'a été entraîné que sur de l'anglais (§5.10). La requête
-française est reformulée en anglais à partir des critères compris. **Les autres langues (français,
-tunisien, arabe) sont donc gérées par nos règles, pas par FashionCLIP.**
+*Pourquoi un prompt en anglais :* FashionCLIP n'a été entraîné que sur de l'anglais (§5.12). Les autres
+langues (français, darija, arabe) sont donc gérées par nos règles, pas par FashionCLIP.
 
 ### 5.4 Recherche hybride (`pipeline/retrieve.py`)
 
 Deux scores sont calculés pour **chaque** produit :
 - **Visuel (FashionCLIP)** : similarité cosinus entre le prompt (ou la photo envoyée) et la photo du
   produit ;
-- **Texte (BM25)** : algorithme classique de recherche par mots (statistiques, sans apprentissage) sur le
-  nom, la catégorie, la couleur, la boutique et la ville.
+- **Texte (BM25)** : algorithme classique de recherche par mots sur le nom, la catégorie, la couleur, la
+  boutique et la ville. Les mots de genre en sont retirés : un modèle « homme » reconnu d'après sa photo n'a
+  pas forcément « homme » dans son nom.
 
 *Pourquoi hybride :* le visuel trouve des pièces même mal décrites ; le texte capte les mots précis (un
-nom de boutique, « jebba ») que l'image ne contient pas.
-*Pourquoi un calcul exact :* avec ~2 500 produits, comparer à tous prend quelques millisecondes ; une base
-vectorielle (pgvector, Qdrant) n'est utile qu'à plus grande échelle.
+nom de boutique, « jebba ») que l'image ne contient pas. *Pourquoi un calcul exact :* avec ~6 400 produits,
+comparer à tous prend quelques millisecondes ; une base vectorielle n'est utile qu'à plus grande échelle.
 
 ### 5.5 Filtres (`pipeline/filter.py`)
 
@@ -602,18 +689,27 @@ vectorielle (pgvector, Qdrant) n'est utile qu'à plus grande échelle.
 | Prix ≤ budget, prix ≥ minimum | Strict | Le budget en TND est une contrainte de l'utilisatrice |
 | Ville **ou son gouvernorat** | Strict | « Tunis » inclut La Marsa ; une boutique sans adresse n'est pas mise dans une ville au hasard |
 | Catégorie / sous-catégorie | Strict | Une demande de baskets ne doit pas renvoyer de sandales |
+| **Couleur** | **Strict** | « robe noire » = seulement des robes noires ; les produits de couleur inconnue sont écartés |
+| **Genre** | Strict pour l'autre genre | Une demande « homme » retire les pièces femme ; les pièces mixtes et de genre inconnu restent, classées plus bas |
 | En stock | Strict (désactivable) | Ne pas proposer ce qu'on ne peut pas acheter |
-| Couleur | **Souple** (dans le score) | 14 % des produits n'ont pas de couleur connue : un filtre strict les éliminerait à tort |
 
-Trois garde-fous complètent ces filtres :
-- **Rien de compris** (ni type, ni couleur, ni photo) : on ne garde que les produits qui contiennent les
-  mots cherchés, sinon le moteur répond « Je n'ai trouvé aucun article correspondant à … ». Il ne remplit
-  plus la liste avec des pièces sans rapport.
-- **Ville sans résultat** : le filtre de ville est relâché et `note` l'indique.
-- **Rien en stock** : les articles en rupture sont montrés avec la mention « Rupture de stock », plutôt
-  qu'une page vide.
+**Pourquoi la couleur est devenue stricte.** Dans la première version, la couleur n'était qu'un critère de
+score. Avec 7 robes noires en stock et 24 résultats affichés, « robe noire » montrait aussi des robes
+bleues, et une « Robe Nejma » d'UNJA (robe bleu marine de style jebba, sans couleur indiquée par la
+boutique). L'utilisatrice a demandé « seulement cette couleur ». L'évaluation (§6) a mesuré l'effet : les
+résultats faux dans le top 5 passent de **8,1 % à 1,1 %**.
 
-### 5.6 Score, style, diversité et explications (`pipeline/rerank.py`)
+**Quand rien ne correspond, un critère est relâché à la fois**, et `note` le dit :
+1. d'abord la **ville** (« robe noire à Sousse » montre des robes noires d'autres villes, pas des robes
+   bleues de Sousse) ;
+2. puis le **stock** (articles en rupture, avec la mention « Rupture de stock ») ;
+3. en dernier la **couleur**, seulement si elle n'existe nulle part (« Aucun article de couleur rouge
+   parmi les baskets : voici les autres baskets disponibles. »).
+
+**Rien de compris** (ni type, ni couleur, ni photo) : on ne garde que les produits qui contiennent les
+mots cherchés, sinon le moteur répond « Je n'ai trouvé aucun article correspondant à … ».
+
+### 5.6 Score, style, diversité, pagination et explications (`pipeline/rerank.py`)
 
 Le score `match` (entre 0 et 1) est une moyenne pondérée des éléments qui s'appliquent :
 
@@ -621,86 +717,126 @@ Le score `match` (entre 0 et 1) est une moyenne pondérée des éléments qui s'
 |---|---:|---|
 | Visuel | 0,45 | FashionCLIP requête ↔ photo, ramené sur 0–1 |
 | Texte | 0,20 | BM25, relatif au meilleur candidat |
-| Attributs | 0,20 | Sous-catégorie demandée ; couleur : identique = 1, inconnue = 0,5, autre = 0 |
+| Attributs | 0,20 | Sous-catégorie, couleur et genre demandés (genre : identique ou mixte = 1, inconnu = 0,5) |
 | Style | 0,15 | Vecteur de style de l'utilisatrice ↔ photo du produit |
 
 Les poids sont **renormalisés** selon les composantes disponibles.
 
-**Calibration.** Les similarités FashionCLIP sont faibles en valeur absolue. On a mesuré leur
-distribution sur le vrai catalogue : texte → photo (médiane ≈ 0,11, 99e centile ≈ 0,30), d'où la plage
-[0,15 ; 0,33] ; photo → photo (médiane ≈ 0,42, 99e centile ≈ 0,66), d'où la plage [0,40 ; 0,85].
+**Calibration.** Les similarités FashionCLIP sont faibles en valeur absolue : texte → photo (médiane
+≈ 0,11, 99e centile ≈ 0,30), d'où la plage [0,15 ; 0,33] ; photo → photo, plage [0,40 ; 0,85].
 
-**Diversité (MMR).** On évite de renvoyer 5 photos presque identiques (le même modèle en 5 coloris).
+**Diversité (MMR) et pagination.** On évite de renvoyer 5 photos presque identiques (le même modèle en
+5 coloris). Le MMR choisit les résultats un par un parmi les **2 000 meilleurs candidats**, un nombre fixe :
+ses n premiers choix ne dépendent donc pas de la taille de la page. La page 2 (`offset = 24`) prolonge
+exactement la page 1, sans répéter ni oublier d'article. Vérifié sur « robe » : les 193 robes s'affichent
+toutes, chacune une seule fois, en moins de 120 ms par page.
 
 **Explications sans invention.** Chaque résultat a des raisons construites uniquement à partir des
-données et des scores : « Baskets », « Couleur : blanc », « 69.3 TND (budget 80 TND) », « Boutique à
-Tunis (près de La Marsa) », « Ressemble visuellement à la demande », « Marque tunisienne ». Elles
-alimentent l'écran « Pourquoi cette pièce locale » (BO6) et le module LLM (M8) sans qu'un modèle puisse
-inventer un fait.
+données et des scores : « Baskets », « Couleur : blanc », « Modèle homme (estimé d'après la photo) »,
+« 69.3 TND (budget 80 TND) », « Boutique à Tunis (près de La Marsa) », « Ressemble visuellement à la
+demande », « Marque tunisienne ». Elles alimentent l'écran BO6 et le module LLM (M8) sans qu'un modèle
+puisse inventer un fait.
 
-### 5.7 Intégration dans le projet
+### 5.7 Genre estimé d'après la photo (`pipeline/attributes.py`)
 
-- **Outil de l'orchestrateur** : `tool.py` expose l'agent sous le nom `localshop`. Il est découvert
-  automatiquement par `orchestrator/registry.py`.
-- **API REST** (`router.py`, inclus automatiquement par `api/main.py` sous le préfixe `/m07`) :
-  - `POST /m07/search` : recherche ;
+Les boutiques n'écrivent le genre que pour 1 834 produits sur 6 375. Pour les autres, FashionCLIP compare
+la photo à des phrases comme « women's shirt », « a man wearing a shirt »… (4 formulations par genre et
+par type de pièce, moyennées). La **marge** = 100 × (similarité « femme » − similarité « homme »). Le
+genre n'est retenu que si la marge dépasse **1,5** (`config.yaml`) ; sinon il reste inconnu.
+
+*Pourquoi un seuil :* un faux « homme » cacherait une pièce à une recherche « femme », alors qu'un genre
+inconnu ne fait que la classer un peu plus bas.
+
+**Évaluation.** Les produits dont le nom donne le genre servent de jeu de test : on compare la prédiction
+d'après la photo avec ce qui est écrit.
+
+| Marge minimale | Produits couverts | Prédictions justes |
+|---:|---:|---:|
+| 0 | 100 % | 93,3 % |
+| 1 | 92,2 % | 95,6 % |
+| **1,5 (retenue)** | **88,5 %** | **96,7 %** |
+| 3 | 72,8 % | 98,8 % |
+
+Mesuré sur 1 828 produits (`ml/data/shops/attributes_report.md`). Les prédictions sont cohérentes boutique
+par boutique : Exist, marque homme, sort à 266 « homme » sur 267.
+
+**Couleur d'après la photo : essayée, non retenue.** La même méthode ne retrouve la couleur écrite que
+dans **47 % des cas** (57 % en regroupant les nuances proches comme bleu et marine) : trop peu fiable pour
+remplir les 15 % de couleurs manquantes. Cela reste une piste (§8).
+
+### 5.8 Journal des recherches et des clics (`events.py`)
+
+Chaque vraie recherche (API ou assistant, pas le mock) et chaque clic sont ajoutés à
+`ml/data/logs/m07_events.jsonl` (hors git). Une ligne par événement, avec les champs du schéma `Event`
+partagé du projet (`event_id`, `user_id`, `type`, `target_id`, `value`, `channel`, `ts`) et un objet
+`data` :
+- `local_search` : la demande, les filtres, ce qui a été compris, le nombre de résultats, les produits
+  affichés (boutique, `match`, prix), la note et la latence ;
+- `product_view` (fiche ouverte) et `shop_click` (« Voir sur le site de la boutique ») : produit, boutique,
+  `search_id` et rang, envoyés par l'application via `POST /m07/events`.
+
+Aucune adresse IP ni donnée d'appareil n'est gardée ; `user_id` seulement s'il est fourni.
+`python -m modules.m07_local_catalogue.events` en fait le résumé : volume, part de darija, demandes sans
+résultat (la **demande non satisfaite**), et impressions, vues et clics par boutique. C'est la donnée de
+départ du **tableau de bord des boutiques** du module M14.
+
+### 5.9 Intégration dans le projet
+
+- **Outil de l'orchestrateur** : `tool.py` expose l'agent sous le nom `localshop` (découvert
+  automatiquement) ; ses recherches sont journalisées avec `channel = orchestrator`.
+- **API REST** (`router.py`, préfixe `/m07`) :
+  - `POST /m07/search` : recherche (avec `k` et `offset` pour paginer) ;
+  - `POST /m07/events` : clics de l'application ;
   - `GET /m07/shops` : liste des boutiques ;
   - `GET /m07/products/{product_id}` : fiche d'un produit ;
   - `GET /m07/images/{nom}` : photo locale d'un produit.
-- **Sans les données** sur la machine (clone sans `dvc pull`), le service répond avec `mock.py` au lieu
-  d'échouer : les modules qui appellent M7 ne sont jamais bloqués.
+- **Sans les données** sur la machine, le service répond avec `mock.py` au lieu d'échouer.
 - **Écran BO6** (`mobile/lib/features/bo6_local_market/`) : recherche, filtres ville et budget, critères
-  compris, grille de photos, fiche produit, liste des boutiques (§6.4).
+  compris (dont darija et genre), grille de photos avec « Voir 24 de plus » et « Tout afficher », fiche
+  produit avec « Voir sur le site de la boutique » (ouvre la page) et « Copier le lien ».
 - Le modèle est chargé à la première recherche (environ 12 s), puis **chaque recherche prend environ
-  40 ms**.
+  40 ms** (médiane 37 ms, 95e centile 42 ms).
 
-### 5.8 Exemples de résultats réels
-
-**« baskets blanches à Tunis pour un budget de 80 TND »** → 16 produits (Manuella et Joliesse) :
-
-| match | Boutique | Ville | Article | Prix |
-|---:|---|---|---|---:|
-| 0,88 | Manuella | Tunis | Basket femme | 62,65 TND |
-| 0,87 | Manuella | Tunis | Basket à plateforme femme | 69,3 TND |
-| 0,76 | Joliesse | Tunis | Baskets Basses Effet Serpent à Détails Dorés | 79,99 TND |
-
-Le premier produit est étiqueté « gris » par la boutique, mais sa photo montre une basket crème/blanche :
-FashionCLIP le classe donc haut, et la raison affichée signale l'étiquette de la boutique.
+### 5.10 Exemples de résultats réels
 
 | Requête | Résultat |
 |---|---|
-| « une robe blanche » | 78 robes, robes blanches en premier (HA 41,99 TND, Moudda 45,43 TND…) |
-| « collier doré » | 37 colliers, surtout Strass Accessoires (34,9 – 39,9 TND) |
-| « bracelet » | 12 bracelets (Strass, Exist) |
-| « sandales à Sfax » | 97 sandales, Joliesse en premier (2 magasins à Sfax) |
-| « costume » | 6 costumes complets (Exist, 249,99 – 399,99 TND) |
-| « jebba brodée » | 13 tenues traditionnelles (UNJA, Corella, FEModest) |
+| « robe noire » | 27 robes noires de 12 boutiques (Ms. Marion, Maison ARA, Hraier…) ; 7 avant la campagne 2 |
+| « jebba » | 73 tenues traditionnelles (Hraier en tête : jebba moderne 120 TND) ; 13 avant |
+| « maillot de bain » | 29 maillots (Lyséa · Tunis en tête) ; 5 avant |
+| « collier doré » | 90 colliers dorés (Gaya en tête, 29,9 – 34,9 TND) |
+| « bracelet » | 56 bracelets (Iley'com, Strass, Hraier) |
+| « costume » | 26 costumes (Exist, GET) |
+| « sandales à Sfax » | 245 sandales (SeaSide, Carolie, Baletto · Sfax) |
+| « escarpins rouges » | 2 escarpins rouges (SeaSide · Sfax) |
 
-### 5.9 Corrections après les premiers tests dans l'application
+### 5.11 Corrections après les tests dans l'application
 
-Les tests dans l'application ont révélé trois problèmes, venant tous de la compréhension de la requête
-(et non de FashionCLIP) :
+Premier retour (14/10) :
 
 | Recherche | Avant | Cause | Après |
 |---|---|---|---|
-| « costume » | Costumes puis bracelets, casquettes, pulls | Mot inconnu + liste toujours remplie, même sans rapport | 6 costumes seulement |
-| « colier » (faute) | Liste au hasard | Pas de tolérance aux fautes | Corrigé en « collier » : 37 colliers |
-| « bracelet » | 1 bracelet + 4 bagues | Tous les bijoux dans une seule catégorie | 12 bracelets seulement |
+| « costume » | Costumes puis bracelets, casquettes, pulls | Mot inconnu + liste toujours remplie | Costumes seulement |
+| « colier » (faute) | Liste au hasard | Pas de tolérance aux fautes | Colliers |
+| « bracelet » | 1 bracelet + 4 bagues | Tous les bijoux dans une seule catégorie | Bracelets seulement |
+| « robe blanche » + Sousse | « MAGIC · Tunis » affiché | La carte montrait la première ville de la chaîne | `area` = ville qui correspond au filtre |
 
-Corrections : vocabulaire des costumes, bijoux séparés par type, correction des fautes, garde-fou
-« rien compris », articles en rupture montrés avec mention. Chaque cas a un test automatique.
+Deuxième retour (15–16/10) :
 
-Un deuxième retour a porté sur le **filtre des villes** et l'affichage :
+| Recherche ou problème | Avant | Cause | Après |
+|---|---|---|---|
+| « chemise homme blanche » | Des « Chemise Femme » dans le top 5 | Genre ignoré | 5 chemises homme sur 5 (genre lu dans le nom, sinon estimé d'après la photo) |
+| « sabbat ahmar », « سروال رجالي » | 0 résultat | Darija et arabe non compris | Lexique darija : chaussures rouges, pantalons homme |
+| « robe noire » | Robes bleues et une jebba bleue parmi les 24 | Couleur seulement dans le score | Couleur stricte : uniquement des robes noires |
+| « bague argentée », « leather handbag », « سنسلة ذهبية » | Couleur ou type manqués | Formes féminines et mots anglais absents | Trouvés par le jeu de test (§6), règles corrigées |
+| 195 robes, 24 affichées | Pas moyen de voir les autres | Pas de pagination | `offset` + boutons « Voir 24 de plus » / « Tout afficher » |
+| Lien de la boutique | Copié seulement | Pas d'ouverture d'URL dans l'app | « Voir sur le site de la boutique » ouvre la page |
+| App lente (≈ 2 s par appel) | Serveur de l'app vers `localhost` | Windows essaie d'abord IPv6 | Serveur de l'app vers `127.0.0.1` : 20 à 60 ms |
 
-| Problème signalé | Cause | Correction |
-|---|---|---|
-| « robe blanche » + ville Sousse affichait « MAGIC · Tunis » : le filtre semblait ne pas marcher | Le filtre fonctionnait (seuls les magasins de Sousse étaient gardés), mais la carte affichait la **première** ville de la chaîne (Tunis) ; et il n'existe aucune robe blanche à Sousse | `area` ne contient plus que les villes qui correspondent au filtre (« MAGIC · Sousse ») ; sans filtre, la carte affiche « Tunis +8 » ; `note` explique qu'aucune robe blanche n'est à Sousse et où il y en a |
-| Bandeau « DEBUG » en haut à droite | Bandeau affiché par défaut par Flutter en mode développement | `debugShowCheckedModeBanner: false` dans `mobile/lib/main.dart` |
+### 5.12 FashionCLIP est-il le meilleur choix ?
 
-### 5.10 FashionCLIP est-il le meilleur choix ?
-
-**Comparaison sur notre catalogue.** Trois modèles de mode ont été évalués sur nos 1 873 photos de
-l'époque, avec les étiquettes des boutiques comme référence (105 recherches « couleur + type ») :
+**Comparaison sur notre catalogue (campagne 1).** Trois modèles de mode ont été évalués sur 1 873 photos,
+avec les étiquettes des boutiques comme référence (105 recherches « couleur + type ») :
 
 | Mesure | **FashionCLIP** (retenu) | Marqo-FashionSigLIP | Marqo-FashionCLIP |
 |---|---:|---:|---:|
@@ -711,37 +847,110 @@ l'époque, avec les étiquettes des boutiques comme référence (105 recherches 
 | Vitesse sur CPU | **96 ms/photo** | 234 ms/photo | 236 ms/photo |
 | Taille du vecteur | **512** | 768 | **512** |
 
-**Décision : garder FashionCLIP pour l'instant.** Les modèles récents gagnent seulement 1 à 3 points en
-recherche (proche du bruit de mesure, avec des étiquettes imparfaites) ; dans M7 le visuel ne pèse que
-45 % du score et les filtres garantissent l'essentiel ; FashionCLIP est 2,4 fois plus rapide et respecte
-la convention de 512 du projet. Marqo-FashionSigLIP (768) imposerait de changer aussi M1 et M5 : c'est
-une décision d'équipe.
+**Décision : garder FashionCLIP pour l'instant.** Les modèles récents gagnent 1 à 3 points (proche du
+bruit de mesure) ; FashionCLIP est 2,4 fois plus rapide et respecte la convention de 512 du projet.
+Marqo-FashionSigLIP (768) imposerait de changer aussi M1 et M5 : c'est une décision d'équipe.
 
-**Langues.** FashionCLIP ne comprend vraiment que l'anglais. Sur 12 recherches envoyées directement au
-modèle, le bon type apparaît dans le top 10 pour 77 % des requêtes en anglais (« black skirt ») contre
-58 % en français (« jupe noire » : 0 %). C'est pourquoi le français, le tunisien et l'arabe passent par
-nos règles, qui reformulent en anglais.
-
-**Faut-il réentraîner (fine-tuning) ?** Pas en premier : les erreurs observées venaient de la
-compréhension de la requête. Ordre recommandé : (1) un jeu de test de 50 à 100 requêtes réelles annotées
-pour mesurer ; (2) la compréhension par le LLM de M8 pour les phrases inhabituelles ; (3) les photos
-détourées de M1 ; (4) seulement ensuite un fine-tuning léger (dernières couches ou LoRA, sur GPU Colab)
-avec nos paires photo + nom français et des données tunisiennes étiquetées, en partageant le modèle
-obtenu avec M1 et M5.
+**Langues.** FashionCLIP ne comprend vraiment que l'anglais (77 % de bons types dans le top 10 en anglais
+contre 58 % en français sur 12 recherches directes). C'est pourquoi le français, la darija et l'arabe
+passent par nos règles. L'évaluation du §6 le confirme à plus grande échelle : FashionCLIP seul sur la
+requête brute obtient 0,03 de nDCG sur la darija, contre 0,97 pour le pipeline.
 
 ---
 
-## 6. Comment tester le module
+## 6. Évaluation
+
+### 6.1 Jeu de test
+
+`evaluation/queries.yaml` contient **72 requêtes** écrites comme les utilisatrices les tapent :
+28 en français, 12 en anglais, 18 en darija (lettres latines) et 14 en alphabet arabe, avec des fautes,
+des budgets, des villes, des couleurs, des genres et des matières. Pour chacune, **l'intention est écrite à
+la main** : type, couleur, genre, budget, ville, et éventuellement des mots de matière ou d'occasion
+attendus dans le nom (« cuir », « soirée »). Exemple :
+
+```yaml
+- {id: dj01, lang: darija, query: "sbadri kahla a9al men 150 alf",
+   expect: {type: sneakers, color: black, max_price: 150}}
+```
+
+Une commande produit le rapport `evaluation/RESULTS.md` :
+
+```bash
+python -m modules.m07_local_catalogue.evaluation.run
+```
+
+### 6.2 Deux niveaux de mesure
+
+| Niveau | Référence | Mesures |
+|---|---|---|
+| **Compréhension** | Intention écrite à la main (*gold*) | Part des requêtes dont chaque champ (type, couleur, genre, budget, ville) est bien lu ; « exact » = tous les champs justes |
+| **Classement** | Note de chaque produit calculée à partir de l'intention et de ses attributs (*silver*) : 2 = bon type et tous les critères, 1 = bon type mais un critère manquant ou inconnu, 0 = mauvais type, hors budget, autre genre ou autre couleur | nDCG@10, P@5 (notes 2 dans les 5 premiers), MRR, résultats faux dans le top 5, requêtes sans résultat, latence |
+
+### 6.3 Résultats (catalogue du 16/10, 6 375 produits)
+
+**Compréhension :** **100 %** des 72 requêtes sont lues exactement (tous les champs justes), dans les
+quatre langues. Sans le lexique darija : 56,9 % (0 % en darija, 7,1 % en arabe).
+
+**Classement — comparaison des variantes (ablation) :**
+
+| Variante | nDCG@10 | P@5 | MRR | Faux dans le top 5 | Sans résultat |
+|---|---:|---:|---:|---:|---:|
+| BM25 seul, requête brute | 0,329 | 27,2 % | 0,331 | 41,4 % | 38,9 % |
+| FashionCLIP seul, requête brute | 0,281 | 23,1 % | 0,346 | 66,7 % | 0 % |
+| Pipeline sans FashionCLIP | 0,935 | 84,2 % | 0,928 | 0,8 % | 0 % |
+| Pipeline, score visuel seul | 0,917 | 82,5 % | 0,903 | 1,1 % | 0 % |
+| Pipeline sans lexique darija | 0,521 | 43,6 % | 0,507 | 6,0 % | 40,3 % |
+| Pipeline sans genre | 0,832 | 74,4 % | 0,845 | 12,8 % | 0 % |
+| Pipeline, couleur souple (avant) | 0,906 | 82,2 % | 0,912 | 8,1 % | 0 % |
+| **Pipeline complet** | **0,934** | **84,4 %** | **0,938** | **1,1 %** | **0 %** |
+
+Par langue (nDCG@10) : français 0,908, anglais 0,905, darija 0,974, arabe 0,962. Latence : médiane 37 ms,
+95e centile 42 ms.
+
+### 6.4 Ce que ces chiffres montrent
+
+- **Comprendre la demande est l'essentiel.** Une recherche par mots (BM25) ou FashionCLIP seuls sur la
+  phrase brute plafonnent à 0,33 de nDCG ; le pipeline atteint 0,93.
+- **Le lexique darija est indispensable** : sans lui, le nDCG tombe à 0,52 et 40 % des requêtes ne
+  donnent rien.
+- **Le genre et la couleur stricte éliminent les erreurs visibles** : sans genre, 12,8 % de faux dans le
+  top 5 ; avec la couleur souple, 8,1 % ; pipeline complet : 1,1 %.
+- **Le jeu de test a trouvé de vrais défauts.** Au premier passage, 4 requêtes étaient mal comprises
+  (« argentée », « handbag », نسائية, ذهبية), puis « colier dorée » après l'ajout d'une boutique qui écrit
+  elle-même « colier ». Les règles ont été corrigées, et un test protège chaque cas.
+
+### 6.5 Limites de l'évaluation
+
+- **Les notes *silver* utilisent les mêmes attributs que les filtres** (type, prix, couleur, genre, ville).
+  Elles favorisent donc le pipeline sur ces critères ; elles montrent surtout l'apport de la compréhension
+  par rapport aux méthodes brutes, et le classement de ce qui passe les filtres.
+- **Elles ne regardent pas les photos.** C'est pourquoi « sans FashionCLIP » obtient un score presque
+  identique au pipeline complet (0,935 contre 0,934) : l'apport visuel (ressemblance, style) n'est pas
+  mesurable avec ces notes. Seules des **notes humaines** peuvent trancher.
+- **Le 100 % de compréhension est optimiste** : les défauts trouvés par le jeu de test ont été corrigés
+  sur ce même jeu. Des requêtes écrites par d'autres personnes donneraient un chiffre non biaisé.
+- 63 % des genres sont estimés d'après la photo (96,7 % justes, §5.7).
+
+**Notes humaines.** `ml/data/shops/eval/judgments_todo.csv` liste les 1 533 produits affichés par le
+pipeline et les deux méthodes brutes (top 10 de chacune). Il suffit de noter une vingtaine de requêtes
+(`human_rel` = 0, 1 ou 2, en regardant la photo et le lien), d'enregistrer le fichier sous
+`judgments.csv` et de relancer : `RESULTS.md` ajoute alors le nDCG@10 et le P@5 humains, et l'accord avec
+les notes automatiques (kappa de Cohen).
+
+---
+
+## 7. Comment tester le module
 
 Les commandes backend se lancent depuis `backend/`, celles de l'application depuis `mobile/`.
 
-### 6.1 Tests automatiques (sans modèle ni internet)
+### 7.1 Tests automatiques (sans modèle ni internet)
 
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest modules/m07_local_catalogue -q     # résultat attendu : 54 passed
-pytest -q                                 # tout le backend : 79 passed
+pytest modules/m07_local_catalogue -q     # résultat attendu : 128 passed
+pytest -q                                 # tout le backend : 153 passed
+cd ../mobile && flutter test              # écran BO6 : 5 tests
 ```
 
 Ces tests utilisent un mini-catalogue et un faux encodeur : ils n'ont besoin ni de `torch`, ni du modèle,
@@ -749,43 +958,42 @@ ni des données.
 
 | Fichier | Ce qui est vérifié |
 |---|---|
-| `test_contract.py` | Validation des entrées, agent léger à la création |
-| `test_mock.py` | La réponse fixe de `mock.py` respecte le contrat |
+| `test_search.py` | Exemple « baskets blanches à Tunis 80 TND », gouvernorat, couleur stricte et ordre des assouplissements, pagination sans répétition, fautes de frappe, bijoux et costumes, mots inconnus, articles en rupture |
+| `test_darija_gender.py` | Darija en lettres latines et en arabe, budget en « alf », genre dans la requête et dans le nom, filtre et raisons de genre, genre d'après la photo |
+| `test_evaluation.py` | Notes de pertinence, nDCG / P@5 / MRR, compréhension par champ, exécution complète sur un mini-catalogue |
+| `test_events.py` | Journal des recherches et des clics, `search_id`, route `/m07/events`, résumé pour M14 |
 | `test_router.py` | Routes `/m07/*`, repli sur le mock sans données, photos protégées, vecteur de style demandé à M5 |
-| `test_search.py` | Exemple « baskets blanches à Tunis 80 TND », gouvernorat, ville relâchée, champs explicites, couleur inconnue non devinée, style et photo, fautes de frappe, bijoux et costumes, mots inconnus, articles en rupture, ville affichée selon le filtre et note de couleur absente |
-| `test_ingest.py` | Index incrémental : seules les nouvelles photos sont encodées |
-| `test_clean.py` | Tailles, doublons, statut des URL, nomenclature commune, villes |
-| `test_scraper_normalize.py` | Catégories (FR/EN/tunisien/arabe), couleurs, tailles, marques, équilibrage |
+| `test_scraper_normalize.py` | Catégories (FR/EN/tunisien/arabe), apostrophes typographiques, « haut de gamme », hors mode à deux niveaux, marques étrangères |
+| `test_clean.py`, `test_ingest.py`, `test_contract.py`, `test_mock.py` | Nettoyage, index incrémental, contrat, mock |
+| `mobile/test/bo6_local_market_test.dart` | Écran BO6 : recherche, critères compris, prix en TND, bouton « Voir plus » |
 
-Front : `cd mobile && flutter test` → **4 tests**.
-
-### 6.2 Prérequis pour une recherche réelle
+### 7.2 Prérequis pour une recherche réelle
 
 ```bash
-pip install -r modules/m07_local_catalogue/requirements.txt   # torch, transformers, requests, pillow...
+pip install -r modules/m07_local_catalogue/requirements.txt   # torch, transformers...
 ```
 
-Les données du module sont dans `ml/data/shops/` et partagées avec DVC (`dvc pull`). Sans DVC, on les
-reconstruit :
+Les données sont dans `ml/data/shops/` (récupérées avec `git pull`). Pour les reconstruire :
 
 ```bash
-python -m modules.m07_local_catalogue.scraper.run      # 1. scraping + photos          (~30 min)
-python -m modules.m07_local_catalogue.scraper.clean    # 2. nettoyage + vérif. des URL (~15 min la 1re fois)
-python -m modules.m07_local_catalogue.pipeline.ingest  # 3. index FashionCLIP          (~5 min la 1re fois, puis incrémental)
+python -m modules.m07_local_catalogue.scraper.run          # 1. scraping, photos (~1 h)
+python -m modules.m07_local_catalogue.scraper.clean        # 2. nettoyage, URL (~55 min)
+python -m modules.m07_local_catalogue.pipeline.ingest      # 3. index (incrémental)
+python -m modules.m07_local_catalogue.pipeline.attributes  # 4. genre d'après la photo
+python -m modules.m07_local_catalogue.evaluation.run       # 5. évaluation (~3 min)
 ```
 
-### 6.3 Tester par l'API (Swagger)
+### 7.3 Tester par l'API (Swagger)
 
 ```bash
 cd backend
-uvicorn api.main:app --port 8010
+uvicorn api.main:app --host 127.0.0.1 --port 8010
 ```
 
 Ouvrir **http://127.0.0.1:8010/docs**, choisir `POST /m07/search`, **Try it out**, coller un corps JSON
-(voir le tableau du §6.4), **Execute**. Le port 8000 est déjà utilisé par une autre application sur la
-machine de développement ; n'importe quel port libre convient.
+(voir le tableau du §7.4), **Execute**.
 
-### 6.4 Tester dans l'application (front Flutter)
+### 7.4 Tester dans l'application (front Flutter)
 
 L'écran BO6 « Boutiques locales » (`mobile/lib/features/bo6_local_market/`) appelle M7 par l'API, comme
 le fera l'application finale.
@@ -796,116 +1004,118 @@ le fera l'application finale.
 | **Fiche produit** | **Boutiques** |
 | ![](images/bo6_fiche_produit.png) | ![](images/bo6_boutiques.png) |
 
-1. **Lancer l'API** (terminal 1) : `cd backend` puis `uvicorn api.main:app --port 8010`
-2. **Lancer l'application** (terminal 2) :
+*Captures de la première version de l'écran (14/10).*
+
+1. **Lancer l'API** (terminal 1) : `cd backend` puis `uvicorn api.main:app --host 127.0.0.1 --port 8010`
+2. **Construire l'application web** (une fois, puis après chaque modification du code Dart) :
    ```powershell
-   $env:Path += ";C:\Users\Kinza\flutter\bin"
    cd mobile
    flutter pub get
-   flutter create . --platforms=web     # une seule fois : génère web/ (ne pas le commiter, c'est M6 qui génère les plateformes)
-   flutter run -d web-server --web-port 8081 --dart-define=API_URL=http://localhost:8010
+   flutter build web --dart-define=API_URL=http://localhost:8090
    ```
-3. **Ouvrir Chrome** sur l'écran BO6 (terminal 3) :
-   ```powershell
-   & "C:\Program Files\Google\Chrome\Application\chrome.exe" --disable-web-security --user-data-dir="$env:TEMP\chrome-dressme-test" "http://localhost:8081/#/bo6_local_market"
-   ```
-4. Taper une demande (ou cliquer sur un exemple), puis toucher un article pour ouvrir sa fiche.
+3. **Servir l'application et l'API à la même adresse** (terminal 2) : `python tool/serve_app.py`.
+   *Pourquoi :* le navigateur bloque les appels vers un autre port (règle CORS). `serve_app.py` sert
+   l'application et transmet les appels `/m07/...` à l'API : n'importe quel navigateur fonctionne, sans
+   drapeau spécial.
+4. Ouvrir **http://localhost:8090/#/bo6_local_market**. Sur un téléphone :
+   `flutter run --dart-define=API_URL=http://<IP-du-PC>:8010` (l'API lancée avec `--host 0.0.0.0`).
 
 | Action | Résultat attendu |
 |---|---|
-| « baskets blanches à Tunis pour 80 TND » | 16 baskets (Manuella, Joliesse) ≤ 80 TND ; « Compris : Baskets · blanc · ≤ 80 TND · Tunis » |
-| « une robe blanche » | 78 robes, 24 affichées, robes blanches en premier, avec boutique, ville et prix |
-| « robe blanche » + Ville : Sousse | 20 robes « MAGIC · Sousse » et la note « Aucun article de couleur blanc parmi les robes à Sousse… 6 existent ailleurs » |
-| « colier » (avec la faute) | « Recherche corrigée : « collier » », 37 colliers |
-| « bracelet » / « costume » | 12 bracelets / 6 costumes, sans autre type d'article |
-| `{"subcategory": "bag", "color": "camel", "max_price_tnd": 150}` (API) | Sacs, camel en premier |
-| `{"gap": "white shirt", "city": "Tunis"}` (API) | Chemises de boutiques à Tunis, classées par ressemblance avec une chemise blanche |
-| Toucher un article | Photo, prix, correspondance, tailles, raisons, lien de la fiche produit à copier |
-| Icône boutique (en haut à droite) | Les 15 boutiques avec leurs villes et leur site |
+| « baskets blanches à Tunis pour 80 TND » | 1 basket blanche (Manuella) ; « Compris : Baskets · Blanc · ≤ 80 TND · Tunis » |
+| « robe noire » | 27 robes, **toutes noires** |
+| « robe » | 193 articles, 24 affichés, puis « Voir 24 de plus » et « Tout afficher (169 restants) » |
+| « sbadri kahla a9al men 150 alf » | « Darija comprise : « baskets noir moins de 150 alf » », 47 baskets noires ≤ 150 TND |
+| « chemise homme blanche » | Pastille « Homme », chemises homme blanches (Cravate) |
+| « chemize » (avec la faute) | « Recherche corrigée : « chemise » » |
+| Toucher un article | Photo, prix, correspondance, tailles, raisons (dont « Modèle homme (estimé d'après la photo) »), boutons « Voir sur le site de la boutique » et « Copier le lien » |
+| Icône boutique (en haut à droite) | Les 43 boutiques avec leurs villes et leur site |
 | `{"city": "Tunis"}` (API) | Erreur **422** (rien à chercher) |
 
-**Points d'attention :**
-- **Ne pas utiliser le Chrome habituel** : la page s'affiche, mais les recherches échouent (« Serveur
-  injoignable ») car le navigateur bloque les appels vers un autre port (règle CORS) et l'API n'a pas
-  encore de configuration CORS (`api/main.py`, fichier du responsable). Le drapeau
-  `--disable-web-security`, réservé aux tests en local, lève ce blocage. Sur téléphone ou émulateur, il
-  n'est pas nécessaire : `flutter run --dart-define=API_URL=http://<IP-du-PC>:8010`.
-- **Éviter le port 5060** pour l'application : Chrome le refuse (`ERR_UNSAFE_PORT`, port réservé à la
-  téléphonie SIP).
+L'application démarre sur l'écran BO2 (squelette partagé, `mobile/lib/app/router.dart`) : il faut ouvrir
+l'adresse avec `#/bo6_local_market`.
 
-### 6.5 Tester directement en Python
+### 7.5 Tester directement en Python
 
 ```python
 import asyncio
 from modules.m07_local_catalogue.agent import LocalShopAgent
 
 agent = LocalShopAgent()
-out = asyncio.run(agent({"query": "baskets blanches à Tunis pour un budget de 80 TND", "k": 5}))
-print(out["parsed"])              # critères compris
+out = asyncio.run(agent({"query": "sbadri kahla a9al men 150 alf", "k": 5}))
+print(out["parsed"])              # critères compris, dont "translated"
 for r in out["results"]:
     print(r["match"], r["shop"], r["area"], r["item"], r["price_tnd"], r["reasons"])
 ```
 
-### 6.6 Vérifier les données
+### 7.6 Vérifier les données
 
 - Ouvrir `ml/data/shops/local_catalogue_clean.csv` dans Excel (encodage UTF-8).
-- Lire `ml/data/shops/cleaning_report.md` pour le détail de chaque étape du nettoyage.
+- Lire `cleaning_report.md` (nettoyage) et `attributes_report.md` (genre d'après la photo).
 - Filtrer la colonne `quality_flags` pour voir les prix à contrôler.
 
 ---
 
-## 7. Limites et pistes d'amélioration
+## 8. Limites et pistes d'amélioration
 
 | Limite | Piste |
 |---|---|
-| 31 % des produits sans ville (boutiques en ligne sans adresse) | Contacter les boutiques ; ajouter une notion de « livraison partout » |
-| Boutiques sans site (HK-STORE, GAŸA, The Queen Accessories, Azar Shoes…) | Fichier partenaire (CSV) rempli à la main ou par la boutique, comme le prévoit l'architecture |
-| Mots absents du vocabulaire non compris (le moteur le dit au lieu d'inventer) | Compréhension par le LLM de M8 pour les phrases inhabituelles |
-| FashionCLIP ne comprend que l'anglais | Règles actuelles ; tester un modèle multilingue (jina-clip-v2) avec le script de comparaison |
-| Pas encore d'évaluation sur de vraies requêtes annotées | Créer 50 à 100 requêtes annotées et mesurer dans `ml/notebooks/localcatalogue/` |
-| Recherche par photo influencée par le style de photo (même studio) | Préciser `subcategory` ; utiliser l'image détourée de M1 |
-| Plage du vecteur de style non calibrée (pas encore de profils M5) | La recalibrer quand M5 fournira des vecteurs réels |
-| Ad. Mall, boutique.tn, D'Stock non couverts | Écrire des analyseurs HTML dédiés |
-| Données figées entre deux scrapings | Planifier la relance (Celery beat, M4) avec `--merge` |
+| 57 % des produits sans ville (boutiques en ligne sans adresse) | Contacter les boutiques ; notion de « livraison partout » |
+| Les produits sans couleur sont exclus d'une recherche par couleur (ex. une robe noire de MAGIC) | Couleur d'après la photo plus fiable : couleur dominante du vêtement détouré (M1), mesurée avec le jeu de test |
+| Occasion et matière seulement lues dans le texte (« robe de soirée » renvoie aussi des robes de jour) | Attributs zero-shot « soirée », « cuir », « lin »… sur les photos, évalués |
+| Prix aberrants signalés mais gardés (sacs Hraier à 14 900 TND) | Revue manuelle des `price_very_high` |
+| Boutiques non couvertes : ZEN et Souk El Kahina (robots.txt), Mabrouk et HKEYA (refus techniques), Kastelo, Barsha… | Demander un fichier partenaire (CSV) ou l'accord des boutiques, comme le prévoit l'architecture ; analyseurs HTML dédiés |
+| Lingerie très représentée (606 produits, 4 boutiques) | Plafond par catégorie lors de l'équilibrage |
+| Évaluation du classement sans notes humaines ; compréhension mesurée sur le jeu qui a servi à corriger | Remplir `judgments.csv` ; 50 requêtes écrites par d'autres personnes |
+| Poids du score fixés à la main | Les apprendre sur les notes humaines puis sur les clics du journal (*learning to rank*) |
+| Mots absents du lexique non compris (le moteur le dit) | Signal texte multilingue (bge-m3, e5) sur les noms de produits ; LLM de M8 pour les phrases inhabituelles |
+| Photos dans git (≈ 330 Mo) | Passer `ml/data/shops/images/` sous DVC ou Git LFS si le dépôt devient trop lourd |
+| Données figées entre deux scrapings | Relance planifiée (M4) avec `--merge` ; cache des URL de 7 jours |
 
 ---
 
-## 8. Annexe : fichiers du module
+## 9. Annexe : fichiers du module
 
 ```
 backend/modules/m07_local_catalogue/
-├── agent.py            agent M7 : parse → retrieve → filter → rerank
-├── contract.py         entrée / sortie (Pydantic)
-├── taxonomy.py         vocabulaire commun : catégories, bijoux, couleurs, villes et gouvernorats
-├── config.yaml         modèle, poids du score, plages de calibration, emplacement des données
-├── paths.py            emplacement des données (ml/data/shops) et du modèle
-├── clients.py          appels aux autres modules (M5 : vecteur de style)
-├── router.py           routes /m07/* (incluses automatiquement par api/main.py)
-├── service.py          implémentation réelle partagée par l'API et l'outil
-├── mock.py             réponse fixe au même format, pour les tests des autres modules
-├── tool.py             outil pour l'orchestrateur (découvert automatiquement)
+├── agent.py            agent M7 : parse → retrieve → filter → rerank, assouplissements, pagination
+├── contract.py         entrée / sortie (Pydantic), ClickEvent
+├── darija.py           lexique darija (lettres latines et arabe) → français
+├── events.py           journal des recherches et des clics + résumé pour M14
+├── taxonomy.py         vocabulaire : catégories, bijoux, couleurs, genres, villes, gouvernorats
+├── config.yaml         modèle, poids, calibration, seuil du genre, journal, emplacement des données
+├── paths.py, clients.py, router.py, service.py, mock.py, tool.py
 ├── pipeline/
-│   ├── parse.py        compréhension de la requête + correction des fautes
+│   ├── parse.py        compréhension (darija, genre, fautes de frappe) + prompt anglais
 │   ├── retrieve.py     FashionCLIP + BM25
-│   ├── filter.py       prix, ville, catégorie, stock
-│   ├── rerank.py       score, style, diversité, raisons
+│   ├── filter.py       prix, ville, catégorie, couleur, genre, stock
+│   ├── rerank.py       score, style, diversité (MMR), raisons
 │   ├── encoder.py      FashionCLIP en local
 │   ├── catalogue.py    chargement de la base + index + vocabulaire
-│   └── ingest.py       construction incrémentale de l'index (hors ligne)
+│   ├── ingest.py       construction incrémentale de l'index (hors ligne)
+│   └── attributes.py   genre d'après la photo + évaluation (hors ligne)
 ├── scraper/
-│   ├── shops.py        boutiques retenues et écartées (avec raisons)
+│   ├── shops.py        43 boutiques retenues, boutiques écartées (avec raisons)
 │   ├── sources.py      un adaptateur par plateforme
 │   ├── client.py       client HTTP respectueux (robots.txt, délais, sans cookies)
-│   ├── normalize.py    règles de catégories, couleurs, tailles, marques, enfants
+│   ├── normalize.py    catégories, couleurs, tailles, marques, hors mode, enfants
 │   ├── images.py       téléchargement des photos
-│   ├── run.py          lancement du scraping (--shops, --merge)
-│   └── clean.py        nettoyage + vérification des URL
-└── tests/              53 tests
-ml/data/shops/          données du module (DVC, hors git)
-├── local_catalogue.csv / .xlsx   données brutes du scraping
-├── local_catalogue_clean.csv     base de connaissances nettoyée
-├── cleaning_report.md            compte rendu du nettoyage
-└── images/  index/  url_checks.json
+│   ├── run.py          lancement du scraping (--shops, --merge, --delay)
+│   └── clean.py        nettoyage + vérification des URL (cache 7 jours)
+├── evaluation/
+│   ├── queries.yaml    72 requêtes avec leur intention écrite à la main
+│   ├── run.py          compréhension, classement, ablation, notes humaines
+│   └── RESULTS.md      résultats générés
+└── tests/              128 tests
+ml/data/shops/          données du module (dans git, branche BO6/local_catalogue)
+├── local_catalogue.csv / .xlsx   données brutes du scraping (6 760 produits)
+├── local_catalogue_clean.csv     base de connaissances nettoyée (6 375 produits)
+├── cleaning_report.md, attributes_report.md
+├── images/ (6 760 photos)  index/ (FashionCLIP)  url_checks.json
+└── eval/judgments_todo.csv       produits à noter à la main
+ml/data/logs/m07_events.jsonl     journal des recherches (hors git)
 mobile/lib/features/bo6_local_market/   écran BO6 « Boutiques locales » (Flutter)
-mobile/test/bo6_local_market_test.dart  tests de l'écran
+mobile/test/bo6_local_market_test.dart  tests de l'écran (5)
+mobile/tool/serve_app.py                application web + API à la même adresse
+rapport/build_pdf.py                    génération des PDF de ce rapport
 ```

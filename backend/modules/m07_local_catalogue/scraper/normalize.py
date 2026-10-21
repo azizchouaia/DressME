@@ -10,6 +10,9 @@ def fold(text: str) -> str:
     text = html.unescape(re.sub(r"<[^>]+>", " ", text or ""))
     # Drop accents but keep non-Latin letters (Arabic product names are common on Tunisian shops).
     text = "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
+    text = text.replace("’", "'").replace(
+        "‘", "'"
+    )  # "Boucles d’oreilles" written with a typographic apostrophe
     return re.sub(r"\s+", " ", text.lower()).strip()
 
 
@@ -29,7 +32,8 @@ CATEGORY_RULES: list[tuple[str, str]] = [
     (
         "Traditionnel",
         r"jebba|jbba|jebbet|kaftan|caftan|takchita|jelbeb|jellaba|djellaba|abaya|kachabia|"
-        r"sefsari|blouza|keswa|gandoura|qamis|kamis|jalabiya|burnous|kadroun|"
+        r"sefsari|blouza|keswa|gandoura|qamis|kamis|jalabiya|burnous|kadroun|tabdila|"
+        r"tenues? traditionnelles?|"
         r"جلباب|جبة|جبه|قفطان|عباية|عباءة|كاشابية|بلوزة|سفساري|قندورة|برنس",
     ),
     ("Hijab", r"hijab|khimar|jilbab|turban|sous[- ]hijab|bonnet hijab|niqab"),
@@ -71,7 +75,7 @@ CATEGORY_RULES: list[tuple[str, str]] = [
     ("Manteau", r"manteaux?|manteau|trench|doudounes?|parkas?|caban|coats?|puffer"),
     (
         "Veste",
-        r"vestes?|blousons?|blazers?|perfectos?|surchemises?|bombers?|jackets?|windbreakers?|coupe-vent|kimonos?|gilets?|cardigans?|overshirt",
+        r"vestes?|blousons?|blazers?|perfectos?|surchemises?|bombers?|jackets?|windbreakers?|coupe-vent|kimonos?|gilets?|gillets?|cardigans?|overshirt",
     ),
     (
         "Pull",
@@ -80,7 +84,7 @@ CATEGORY_RULES: list[tuple[str, str]] = [
     (
         "T-shirt & top",
         r"t-?shirts?|t-loose|t-classic|maillots? de (?:basket|foot|sport)|jerseys?|tee-?shirts?|tees?|"
-        r"polos?|debardeurs?|tops?|bodys?|crop|camisoles?|caracos?|tank|hauts?",
+        r"polos?|debardeurs?|tops?|bodys?|crop|camisoles?|caracos?|tank|hauts?(?! de gamme)",
     ),
     ("Chemise", r"chemises?|chemisiers?|blouses?|liquettes?|tuniques?|shirts?"),
     ("Short", r"shorts?|bermudas?"),
@@ -91,7 +95,8 @@ CATEGORY_RULES: list[tuple[str, str]] = [
     ),
     (
         "Accessoire",
-        r"ceintures?|casquettes?|chapeaux?|chapeau|bonnets?|echarpes?|foulards?|bijoux|bijou|colliers?|"
+        r"ceintures?|casquettes?|chapeaux?|chapeau|bonnets?|echarpes?|foulards?|bijoux|bijou|colliers?|coliers?|"
+        r"manchettes?|"
         r"bracelets?|boucles? d'oreilles?|puces? d'oreilles?|bagues?|montres?|lunettes?|montures?|berets?|"
         r"parures?|portefeuilles?|porte[- ]feuilles?|"
         r"porte[- ]cartes?|chaussettes?|gants?|cravates?|accessoires?|barrettes?|chouchous?|pinces?|"
@@ -107,15 +112,28 @@ NON_FASHION = re.compile(
     r"decorations?|cuisine|creatine|whey|proteines?|gourde|coffret cadeau|carte cadeau|gift ?card|"
     r"emballage|packaging|mug|serviettes?|draps?|coussins?|parure de lit|jouets?|valises?|"
     # home decor and stationery sold by artisan marketplaces (Iley'com, Hraier, Patrinova...)
-    r"bougeoirs?|vases?|miroirs?|tasses?|assiettes?|plateaux?|porte[- ]manteaux?|carnets?|cahiers?|"
+    r"bougeoirs?|vases?|tasses?|assiettes?|plateaux?|porte[- ]manteaux?|carnets?|cahiers?|"
     r"stickers?|autocollants?|magnets?|poteries?|lampes?|lanternes?|photophores?|sous[- ]verres?|"
     r"dessous d'?assiettes?|boites? a bijoux|figurines?|tableaux?|"
+    # furniture and home objects (not "bateau": "col bateau" is a neckline; not "telephone": phone pouches)
+    r"consoles?|chaises?|tabourets?|etageres?|meubles?|abat[- ]?jours?|abajours?|portemanteaux?|"
+    r"porte[- ]bouteilles?|support plante|mortiers?|cuilleres?|fourchettes?|spatules?|"
+    r"corbeilles? artisanales?|coffrets? de maquillage|coffres?|pots? (?:en )?ceramique|cache[- ]pots?|"
+    r"pour un sommeil|"
+    r"paniers?(?: de)? rangement|sculptures?|statuettes?|art mural|art abstrait|oeuvres?|œuvres?|"
+    r"suspension murale|montres? murales?|horloges?|haut[- ]parleurs?|standard telephonique|"
+    r"centre (?:de )?table|sous[- ]?plats?|pots? a miel|misbaha|dressage de table|maquettes?|"
+    r"modeles? de bateau|(?:ensembles?|elements?|objets?|boites?) decorati\w*|"
     # food (not "chocolat", "miel", "beurre": shops use them as colour names)
     r"cakes?|kaak|gateaux?|petits? fours|biscuits?|patisseries?|confitures?|huile d'?olive|zbib|"
     r"makroudh?|baklawa|bsissa)\b"
 )
 # Not fashion unless the name also names a piece: "Porte clé" goes, "Ceinture et porte clé" stays.
-WEAK_NON_FASHION = re.compile(r"\b(?:porte[- ]?cles?|cadres?|tortues?)\b")
+# "Sac avec charm décoratif", "soutien-gorge corbeille", "boucles effet miroir" are pieces: these words
+# only exclude a product whose name names no piece ("Cœur décoratif", "Miroir soleil en rotin").
+WEAK_NON_FASHION = re.compile(
+    r"\b(?:porte[- ]?cles?|cadres?|tortues?|paniers?|decorati\w*|corbeilles?|miroirs?)\b"
+)
 KIDS = re.compile(
     r"\b(?:bebes?|baby|babies|enfants?|kids?|junior|fillettes?|garcons?|garconnets?|premiers? pas|layette|"
     r"naissance|nourrissons?|"

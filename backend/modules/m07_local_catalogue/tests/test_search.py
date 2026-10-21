@@ -174,18 +174,19 @@ def test_explicit_fields_only_still_use_the_visual_search(agent):
 
 def test_typo_is_corrected_towards_known_words():
     parsed = parse(
-        "colier doré",
-        vocabulary={"collier"}
+        "chemize doré",
+        vocabulary={"chemise"}
         | __import__("modules.m07_local_catalogue.pipeline.parse", fromlist=["KEYWORDS"]).KEYWORDS,
     )
-    assert parsed.corrected == "collier doré"  # only the misspelt word changes
-    assert parsed.subcategory == "necklace"
+    assert parsed.corrected == "chemise doré"  # only the misspelt word changes
+    assert parsed.subcategory == "shirt"
+    assert parse("colier doré").subcategory == "necklace"  # frequent shop spelling: a rule word itself
 
 
 def test_typo_also_written_by_a_shop_is_still_corrected():
-    # a shop writes "Colier": the catalogue vocabulary contains the typo, the keyword still wins
-    parsed = parse("colier dorée", vocabulary={"colier"})
-    assert parsed.subcategory == "necklace" and parsed.color == "gold"
+    # a shop writes "Chemize": the catalogue vocabulary contains the typo, the keyword still wins
+    parsed = parse("chemize blanche", vocabulary={"chemize"})
+    assert parsed.subcategory == "shirt" and parsed.color == "white"
     assert parse("robes noires", vocabulary={"robe"}).corrected is None  # understood words stay
 
 

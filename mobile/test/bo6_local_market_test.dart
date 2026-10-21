@@ -15,7 +15,8 @@ class _FakeRepository extends LocalMarketRepository {
       {required String query,
       String? city,
       double? maxPriceTnd,
-      int k = 24}) async {
+      int k = 24,
+      int offset = 0}) async {
     lastQuery = query;
     lastCity = city;
     return const LocalSearchResult(
@@ -47,6 +48,43 @@ class _FakeRepository extends LocalMarketRepository {
             'Boutique à Tunis'
           ],
         ),
+      ],
+    );
+  }
+}
+
+/// 30 dresses served page by page, like M7 with `offset`.
+class _PagedRepository extends LocalMarketRepository {
+  final offsets = <int>[];
+
+  @override
+  Future<LocalSearchResult> search(
+      {required String query,
+      String? city,
+      double? maxPriceTnd,
+      int k = 24,
+      int offset = 0}) async {
+    offsets.add(offset);
+    final end = (offset + k) > 30 ? 30 : offset + k;
+    return LocalSearchResult(
+      totalMatches: 30,
+      parsed: const ParsedQuery(subcategory: 'dress'),
+      results: [
+        for (var i = offset; i < end; i++)
+          LocalProduct(
+            productId: 'prd_$i',
+            shop: 'HA',
+            item: 'Robe $i',
+            priceTnd: 49.99,
+            match: 0.9,
+            category: 'dress',
+            subcategory: 'dress',
+            imageUrl: 'https://example.invalid/$i.jpg',
+            productUrl: 'https://ha.com.tn/p/$i',
+            shopUrl: 'https://ha.com.tn',
+            originType: 'local_brand',
+            available: true,
+          ),
       ],
     );
   }
@@ -87,5 +125,31 @@ void main() {
     expect(find.text('Basket à plateforme femme'), findsOneWidget);
     expect(find.text('69,3 TND'), findsOneWidget);
     expect(find.text('87 %'), findsOneWidget);
+    expect(find.textContaining('de plus'), findsNothing); // everything shown
+  });
+
+  testWidgets('"Voir plus" loads the next page of the same search',
+      (tester) async {
+    final repo = _PagedRepository();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [localMarketRepositoryProvider.overrideWithValue(repo)],
+      child: const MaterialApp(home: LocalMarketScreen()),
+    ));
+    await tester.enterText(find.byKey(const Key('bo6-query')), 'robe');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(find.text('30 articles trouvés · 24 affichés'), findsOneWidget);
+
+    final more = find.text('Voir 6 de plus');
+    await tester.scrollUntilVisible(more, 300,
+        scrollable: find.byType(Scrollable).last);
+    await tester.tap(more);
+    await tester.pumpAndSettle();
+
+    expect(repo.offsets, [0, 24]); // second call starts after the first page
+    expect(find.textContaining('de plus'), findsNothing); // all 30 are shown
+    await tester.scrollUntilVisible(find.text('Robe 29'), 300,
+        scrollable: find.byType(Scrollable).last);
+    expect(find.text('Robe 29'), findsOneWidget); // last piece of page 2
   });
 }

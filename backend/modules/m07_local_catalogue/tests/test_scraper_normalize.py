@@ -77,10 +77,34 @@ def test_kids_and_origin():
         ("Ceinture et porte clé en cuir marron grainé", False),  # a piece + a key ring: kept
         ("Collier a pendentif de cadre de photo doré", False),
         ("Sandales couleur chocolat", False),  # colour names are not food
+        ("Console en bois élégante 187 x 71 x 34 cm", True),  # furniture
+        ("Haut-parleur Gramophone éco en bois", True),  # "haut" is not a top here
+        ("Ensemble Cuillère, Fourchette et Spatule en Bois", True),
+        ("Pull col bateau", False),  # boat neckline, not a boat model
+        ("Panier bois pour un rangement élégant", True),
+        ("Sac panier en osier", False),
+        ("Sac Cabas avec Charm Décoratif", False),  # false positives of a first, stricter version
+        ("Soutien-gorge corbeille en dentelle", False),
+        ("Boucles d’Oreilles Cœur Effet Miroir", False),
+        ("Ensemble Décoratif 3 Pièces en Jute Naturel", True),
+        ("Cœur décoratif artisanal unique", True),
+        ("Coffret de Maquillage avec Miroir LED", True),
     ],
 )
 def test_non_fashion(name, dropped):
     assert is_non_fashion(name) is dropped
+
+
+def test_haut_de_gamme_is_not_a_top():
+    assert categorize("Collier haut de gamme en argent") == "Accessoire"
+    assert categorize("Haut fluide à manches longues") == "T-shirt & top"
+
+
+def test_typographic_apostrophe_and_shop_spellings():
+    assert categorize("Boucles d’Oreilles Médaillons en Cuivre") == "Accessoire"
+    assert categorize("Colier en argent") == "Accessoire"
+    assert categorize("Tenue traditionnelle en velours de soie (tabdila)") == "Traditionnel"
+    assert categorize("Gillet Handmade laine") == "Veste"
 
 
 def test_foreign_watch_and_lingerie_labels():

@@ -25,7 +25,7 @@ import re
 import statistics
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -35,6 +35,9 @@ from ..paths import DATA_DIR as DATA
 from ..taxonomy import COLORS, canonical_city, classify, gender_from_text, governorate
 from .client import Http
 from .normalize import KIDS, categorize, fold, is_non_fashion, origin_type
+from .shops import SHOPS
+
+NAME_ONLY_SHOPS = {shop.name for shop in SHOPS if shop.options.get("name_only")}
 
 COLUMNS = [
     "product_id",
@@ -182,14 +185,16 @@ def url_status(code: int, requested: str, final: str) -> str:
     return f"http_{code}"
 
 
-def check_urls(urls: list[str], http: Http, cache_file: Path) -> dict[str, str]:
-    """Status of each URL. Conclusive checks (ok/dead) from today are reused so a re-run is fast."""
+def check_urls(urls: list[str], http: Http, cache_file: Path, max_age_days: int = 7) -> dict[str, str]:
+    """Status of each URL. Conclusive checks (ok/dead) younger than `max_age_days` are reused, so a re-run
+    (new rules, next day) does not request 13,000 URLs again; failed or old checks are redone."""
     today = date.today().isoformat()
+    oldest = (date.today() - timedelta(days=max_age_days)).isoformat()
     cache: dict = json.loads(cache_file.read_text(encoding="utf-8")) if cache_file.exists() else {}
     todo = [
         u
         for u in dict.fromkeys(urls)
-        if cache.get(u, {}).get("date") != today or cache[u]["status"] not in ("ok", "dead")
+        if cache.get(u, {}).get("date", "") < oldest or cache[u]["status"] not in ("ok", "dead")
     ]
     by_host: dict[str, list[str]] = defaultdict(list)
     for url in todo:
@@ -241,7 +246,9 @@ def clean(
             continue
         # Current keyword rules on the name first, so rule fixes apply without re-scraping;
         # the scraper's label (built from the shop's own categories) when the name says nothing.
-        taxonomy = classify(categorize(name) or row["category"], name)
+        # Marketplaces (shops.py, name_only): the name alone must say it is a piece of clothing.
+        label = categorize(name) or ("" if row["shop_name"] in NAME_ONLY_SHOPS else row["category"])
+        taxonomy = classify(label, name)
         if taxonomy is None:
             report["dropped_unknown_category"] += 1
             continue
