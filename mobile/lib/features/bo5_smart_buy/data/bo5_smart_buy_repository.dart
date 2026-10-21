@@ -221,7 +221,7 @@ class SmartBuyRepository {
     double? priceTnd,
     String? shopBrand,
     String? fitText,
-    String language = 'fr',
+    String language = 'en',
     double? aiConfidence,
   }) async {
     final r = await _dio.post<Map<String, dynamic>>('/m06/verdict', data: {

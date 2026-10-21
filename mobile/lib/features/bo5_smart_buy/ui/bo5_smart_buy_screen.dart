@@ -12,22 +12,13 @@ import '../../../core/widgets/dm_widgets.dart';
 import '../data/bo5_smart_buy_repository.dart';
 import '../logic/bo5_smart_buy_provider.dart';
 
-const _typeFr = {
-  'shirt': 'Chemise', 't-shirt': 'T-shirt', 'sweater': 'Pull', 'blouse': 'Blouse', 'jeans': 'Jean', 'chinos': 'Chino',
-  'trousers': 'Pantalon', 'skirt': 'Jupe', 'sneakers': 'Baskets', 'loafers': 'Mocassins', 'boots': 'Bottes',
-  'sandals': 'Sandales', 'jacket': 'Veste', 'coat': 'Manteau', 'blazer': 'Blazer', 'dress': 'Robe', 'jebba': 'Jebba',
-};
-const _colourFr = {
-  'white': 'blanc', 'black': 'noir', 'grey': 'gris', 'navy': 'marine', 'beige': 'beige', 'brown': 'marron',
-  'camel': 'camel', 'blue': 'bleu', 'olive': 'olive', 'red': 'rouge', 'pink': 'rose', 'green': 'vert',
-  'burgundy': 'bordeaux', 'mustard': 'moutarde',
-};
+String _cap(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 const _critical = Color(0xFFA2453A); // SKIP (not in the kit: verdict colour of BO5 only)
 
 ({String word, String sub, Color color}) _verdictStyle(String v) => switch (v) {
-      'buy' => (word: 'Achète-la', sub: 'Bon achat pour ta garde-robe', color: DmColors.success),
-      'think' => (word: 'Réfléchis', sub: 'À peser avant de payer', color: DmColors.warning),
-      _ => (word: 'Passe ton tour', sub: 'Tu as déjà ce qu’il faut', color: _critical),
+      'buy' => (word: 'BUY', sub: 'A good buy for your wardrobe', color: DmColors.success),
+      'think' => (word: 'THINK', sub: 'Think twice before paying', color: DmColors.warning),
+      _ => (word: 'SKIP', sub: 'You already have what you need', color: _critical),
     };
 
 Color _hex(String h) => Color(int.parse('FF${h.replaceFirst('#', '')}', radix: 16));
@@ -46,7 +37,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
   String _colour = 'navy';
   String? _brand;
   String _user = 'usr_demo';
-  String _lang = 'fr';
+  String _lang = 'en';
   Uint8List? _photo;
   PhotoGuess? _guess;
   bool _reading = false;
@@ -77,7 +68,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
         _colour = g.colour;
       });
     } catch (_) {
-      setState(() => _photoError = 'Je n’ai pas pu lire la photo. Choisis le type et la couleur toi-même.');
+      setState(() => _photoError = 'I could not read the photo. Pick the type and colour yourself.');
     } finally {
       if (mounted) setState(() => _reading = false);
     }
@@ -106,37 +97,35 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
         error: (e, _) => Center(
           child: DmEmptyState(
             icon: Icons.wifi_off_rounded,
-            title: 'Le serveur ne répond pas',
-            message: 'Lance l’API (uvicorn api.main:app) puis réessaie.\n${smartBuyApiUrl()}',
-            action: DmButton('Réessayer', onPressed: () => ref.invalidate(smartBuyMetaProvider)),
+            title: 'The server is not answering',
+            message: 'Start the API (uvicorn api.main:app), then try again.\n${smartBuyApiUrl()}',
+            action: DmButton('Try again', onPressed: () => ref.invalidate(smartBuyMetaProvider)),
           ),
         ),
         data: (m) => ListView(
           padding: EdgeInsets.zero,
           children: [
             DmHero(
-              eyebrow: 'Smart Buy · avant de payer',
-              title: 'Dois-je l’acheter ?',
+              eyebrow: 'Smart Buy · before you pay',
+              title: 'Should I buy it?',
               trailing: IconButton(
-                tooltip: 'Ma liste d’achats',
+                tooltip: 'My shopping list',
                 onPressed: () => _showShoppingList(context),
                 icon: const Icon(Icons.checklist_rounded, color: Colors.white),
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  for (final u in m.users)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: DmChoiceChip(
-                        label: '${u.id.replaceFirst('usr_', '')} · ${u.items}',
-                        selected: _user == u.id,
-                        onDark: true,
-                        onTap: () => setState(() => _user = u.id),
-                      ),
-                    ),
-                ]),
-              ),
+              child: Row(children: [
+                Text('Wardrobe'.toUpperCase(), style: DmText.eyebrow.copyWith(color: const Color(0xFFCDB18D))),
+                const SizedBox(width: 10),
+                DropdownButton<String>(
+                  value: _user,
+                  dropdownColor: DmColors.inkDeep,
+                  underline: const SizedBox.shrink(),
+                  iconEnabledColor: DmColors.gold,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  items: [for (final u in m.users) DropdownMenuItem(value: u.id, child: Text(u.id.replaceFirst('usr_', '')))],
+                  onChanged: (v) => setState(() => _user = v ?? _user),
+                ),
+              ]),
             ),
             Center(
               child: ConstrainedBox(
@@ -147,7 +136,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
                     _pieceCard(m),
                     const SizedBox(height: 16),
                     DmButton(
-                      result.isLoading ? 'Analyse en cours…' : 'Dois-je l’acheter ?',
+                      result.isLoading ? 'Thinking…' : 'Should I buy it?',
                       kind: DmButtonKind.gold,
                       icon: Icons.auto_awesome,
                       onPressed: result.isLoading ? null : _judge,
@@ -155,13 +144,13 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
                     const SizedBox(height: 20),
                     result.when(
                       loading: () => const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())),
-                      error: (e, _) => DmCard(child: DmEmptyState(icon: Icons.error_outline, title: 'Oups', message: '$e')),
+                      error: (e, _) => DmCard(child: DmEmptyState(icon: Icons.error_outline, title: 'Something went wrong', message: '$e')),
                       data: (r) => r == null
                           ? const DmCard(
                               child: DmEmptyState(
                                 icon: Icons.shopping_bag_outlined,
-                                title: 'Montre-moi la pièce',
-                                message: 'Une photo ou un exemple, son prix, et je te dis si elle vaut le coup avec ce que tu as déjà.',
+                                title: 'Show me the piece',
+                                message: 'Take a photo or pick a piece, add its price, and I tell you if it is worth it with what you already own.',
                               ),
                             )
                           : _ResultView(result: r, userId: _user),
@@ -183,12 +172,12 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
       big: true,
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const DmSectionHeader(eyebrow: 'La pièce en boutique', title: 'Photo ou exemple'),
+        const DmSectionHeader(eyebrow: 'The piece in the shop', title: 'Photo or pick one'),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: DmButton('Photo', icon: Icons.photo_camera_outlined, onPressed: () => _pickPhoto(ImageSource.camera))),
           const SizedBox(width: 8),
-          Expanded(child: DmButton('Galerie', kind: DmButtonKind.outline, icon: Icons.image_outlined, onPressed: () => _pickPhoto(ImageSource.gallery))),
+          Expanded(child: DmButton('Gallery', kind: DmButtonKind.outline, icon: Icons.image_outlined, onPressed: () => _pickPhoto(ImageSource.gallery))),
         ]),
         if (_photo != null) ...[
           const SizedBox(height: 14),
@@ -200,14 +189,14 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: _reading
-                  ? const Padding(padding: EdgeInsets.only(top: 12), child: Text('L’IA regarde la pièce…', style: DmText.body))
+                  ? const Padding(padding: EdgeInsets.only(top: 12), child: Text('The AI is looking at the piece…', style: DmText.body))
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('L’IA a vu — corrige si besoin'.toUpperCase(), style: DmText.eyebrow),
+                      Text('AI saw — fix it if wrong'.toUpperCase(), style: DmText.eyebrow),
                       const SizedBox(height: 6),
                       if (_guess != null)
                         Wrap(spacing: 6, runSpacing: 6, children: [
-                          DmPill('${_typeFr[_guess!.subcategory] ?? _guess!.subcategory} · ${(_guess!.typeConfidence * 100).round()} %'),
-                          DmPill('${_colourFr[_guess!.colour] ?? _guess!.colour} · ${(_guess!.colourConfidence * 100).round()} %'),
+                          DmPill('${_cap(_guess!.subcategory)} · ${(_guess!.typeConfidence * 100).round()} %'),
+                          DmPill('${_guess!.colour} · ${(_guess!.colourConfidence * 100).round()} %'),
                         ]),
                       if (_photoError != null) Text(_photoError!, style: DmText.body.copyWith(color: DmColors.warning)),
                     ]),
@@ -221,7 +210,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
               key: ValueKey('type-$_type'),
               initialValue: _type,
               decoration: const InputDecoration(labelText: 'Type'),
-              items: [for (final t in m.types.keys) DropdownMenuItem(value: t, child: Text(_typeFr[t] ?? t))],
+              items: [for (final t in m.types.keys) DropdownMenuItem(value: t, child: Text(_cap(t)))],
               onChanged: (v) => setState(() => _type = v ?? _type),
             ),
           ),
@@ -230,7 +219,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
             child: DropdownButtonFormField<String>(
               key: ValueKey('colour-$_type-$_colour'),
               initialValue: colours.contains(_colour) ? _colour : null,
-              decoration: const InputDecoration(labelText: 'Couleur'),
+              decoration: const InputDecoration(labelText: 'Colour'),
               items: [
                 for (final c in colours)
                   DropdownMenuItem(
@@ -238,7 +227,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
                     child: Row(children: [
                       Container(width: 12, height: 12, decoration: BoxDecoration(color: _hex(m.colours[c] ?? '#999999'), shape: BoxShape.circle, border: Border.all(color: DmColors.border))),
                       const SizedBox(width: 8),
-                      Text(_colourFr[c] ?? c),
+                      Text(_cap(c)),
                     ]),
                   ),
               ],
@@ -252,16 +241,16 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
             child: TextField(
               controller: _price,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Prix', suffixText: 'TND'),
+              decoration: const InputDecoration(labelText: 'Price', suffixText: 'TND'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: DropdownButtonFormField<String?>(
               initialValue: _brand,
-              decoration: const InputDecoration(labelText: 'Marque (taille)'),
+              decoration: const InputDecoration(labelText: 'Shop brand (for size)'),
               items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('— aucune —')),
+                const DropdownMenuItem<String?>(value: null, child: Text('— no size advice —')),
                 for (final b in m.brands) DropdownMenuItem<String?>(value: b, child: Text(b, overflow: TextOverflow.ellipsis)),
               ],
               onChanged: (v) => setState(() => _brand = v),
@@ -274,15 +263,15 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
           minLines: 1,
           maxLines: 3,
           decoration: const InputDecoration(
-            labelText: 'Comment te vont tes vêtements ? (optionnel)',
-            hintText: 'Ex. : je porte du M chez Medina Atelier, serré aux épaules',
+            labelText: 'How do your clothes fit? (optional)',
+            hintText: 'e.g. I wear M at Medina Atelier, tight on the shoulders',
           ),
         ),
         const SizedBox(height: 12),
         Row(children: [
-          Text('Réponse en'.toUpperCase(), style: DmText.eyebrow),
+          Text('Answer in'.toUpperCase(), style: DmText.eyebrow),
           const SizedBox(width: 10),
-          for (final (code, label) in const [('fr', 'Français'), ('en', 'English'), ('ar', 'Tounsi')])
+          for (final (code, label) in const [('en', 'English'), ('fr', 'Français'), ('ar', 'Tounsi')])
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: DmChoiceChip(label: label, selected: _lang == code, onTap: () => setState(() => _lang = code)),
@@ -332,13 +321,13 @@ class _ResultView extends ConsumerWidget {
           const SizedBox(height: 14),
           Text(r.explanation, style: DmText.body.copyWith(fontSize: 14, color: DmColors.text)),
           const SizedBox(height: 4),
-          Text(r.explanationByAi ? 'Écrit par l’IA locale à partir des faits ci-dessous' : 'Texte modèle (IA locale éteinte)', style: DmText.caption),
+          Text(r.explanationByAi ? 'Written by the local AI from the facts below' : 'Template text (local AI off)', style: DmText.caption),
           if (r.fillsGoal != null || r.newOutfits > 0) ...[
             const SizedBox(height: 12),
             Wrap(spacing: 6, runSpacing: 6, children: [
-              if (r.newOutfits > 0) DmPill('${r.newOutfits} nouvelles tenues'),
-              if (r.fillsGoal != null) DmPill('Objectif : ${r.fillsGoal}'),
-              if (r.costPerWear != null) DmPill('${r.costPerWear!.toStringAsFixed(2)} TND / port'),
+              if (r.newOutfits > 0) DmPill('${r.newOutfits} new outfits'),
+              if (r.fillsGoal != null) DmPill('Goal: ${r.fillsGoal}'),
+              if (r.costPerWear != null) DmPill('${r.costPerWear!.toStringAsFixed(2)} TND per wear'),
             ]),
           ],
         ]),
@@ -354,15 +343,15 @@ class _ResultView extends ConsumerWidget {
             border: Border.all(color: DmColors.gold),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Pas sûr·e'.toUpperCase(), style: DmText.eyebrow),
+            Text('Not sure'.toUpperCase(), style: DmText.eyebrow),
             const SizedBox(height: 4),
             Text(r.question!, style: DmText.body.copyWith(color: DmColors.text, fontSize: 13)),
             if (r.questionKey != null) ...[
               const SizedBox(height: 10),
               Row(children: [
-                DmButton('Oui', onPressed: () => notifier.answer(r.questionKey!, true)),
+                DmButton('Yes, I need it', onPressed: () => notifier.answer(r.questionKey!, true)),
                 const SizedBox(width: 8),
-                DmButton('Non', kind: DmButtonKind.outline, onPressed: () => notifier.answer(r.questionKey!, false)),
+                DmButton('No', kind: DmButtonKind.outline, onPressed: () => notifier.answer(r.questionKey!, false)),
               ]),
             ],
           ]),
@@ -373,16 +362,16 @@ class _ResultView extends ConsumerWidget {
       DmCard(
         padding: const EdgeInsets.all(18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const DmSectionHeader(eyebrow: 'Pourquoi', title: 'Ce qui a pesé'),
+          const DmSectionHeader(eyebrow: 'Why', title: 'What pushed the decision'),
           const SizedBox(height: 12),
           for (final e in r.contributions.entries.take(6)) _ContributionBar(label: e.key, value: e.value),
           const SizedBox(height: 4),
-          Text('vert = vers « achète » · rouge = vers « passe ton tour »', style: DmText.caption),
+          Text('green = toward BUY · red = toward SKIP', style: DmText.caption),
           const SizedBox(height: 14),
           DmReasons(r.reasons.take(5).toList()),
           if (r.whatIf.isNotEmpty) ...[
             const Divider(height: 24),
-            Text('Ce qui changerait la réponse'.toUpperCase(), style: DmText.eyebrow),
+            Text('What would change the answer'.toUpperCase(), style: DmText.eyebrow),
             const SizedBox(height: 6),
             for (final w in r.whatIf) Text('→ $w', style: DmText.body),
           ],
@@ -394,7 +383,7 @@ class _ResultView extends ConsumerWidget {
         DmCard(
           padding: const EdgeInsets.all(18),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const DmSectionHeader(eyebrow: 'Déjà dans ton placard', title: 'Pièces proches'),
+            const DmSectionHeader(eyebrow: 'Already in your wardrobe', title: 'Similar pieces'),
             const SizedBox(height: 10),
             Wrap(spacing: 6, runSpacing: 6, children: [
               for (final s in r.similar.take(4)) DmPill('${s.label} · ${(s.similarity * 100).round()} %'),
@@ -418,7 +407,7 @@ class _ResultView extends ConsumerWidget {
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Ta taille'.toUpperCase(), style: DmText.eyebrow),
+                Text('Your size'.toUpperCase(), style: DmText.eyebrow),
                 const SizedBox(height: 2),
                 Text(r.sizeNote ?? '', style: DmText.body),
               ]),
@@ -429,7 +418,7 @@ class _ResultView extends ConsumerWidget {
       // 6. Local shops
       if (r.links.isNotEmpty) ...[
         const SizedBox(height: 20),
-        DmSectionHeader(eyebrow: r.links.first.isReal ? 'Boutiques tunisiennes' : 'Boutiques (exemple)', title: 'Acheter près de chez toi'),
+        DmSectionHeader(eyebrow: r.links.first.isReal ? 'Tunisian shops' : 'Shops (example)', title: 'Buy locally'),
         const SizedBox(height: 10),
         SizedBox(
           height: 222,
@@ -447,7 +436,7 @@ class _ResultView extends ConsumerWidget {
         DmCard(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Smart Buy se souvient'.toUpperCase(), style: DmText.eyebrow),
+            Text('Smart Buy remembered'.toUpperCase(), style: DmText.eyebrow),
             const SizedBox(height: 6),
             for (final n in r.memoryNotes) Text('• $n', style: DmText.body),
           ]),
@@ -456,23 +445,23 @@ class _ResultView extends ConsumerWidget {
       const SizedBox(height: 14),
       Wrap(spacing: 6, runSpacing: 6, children: [
         for (final a in r.nextActions.where((a) => a.action != 'feedback' && a.action != 'ask_user'))
-          ActionChip(label: Text(a.label), onPressed: () => dmToast(context, 'Bientôt : ${a.tool ?? ''} via l’assistant')),
+          ActionChip(label: Text(a.label), onPressed: () => dmToast(context, 'Coming soon: ${a.tool ?? ''} through the assistant')),
       ]),
       const SizedBox(height: 18),
-      Text('Ce conseil t’aide ?'.toUpperCase(), style: DmText.eyebrow),
+      Text('Was this good advice?'.toUpperCase(), style: DmText.eyebrow),
       const SizedBox(height: 8),
       Row(children: [
         Expanded(
-          child: DmButton('Bon conseil', kind: DmButtonKind.dark, onPressed: () async {
+          child: DmButton('Good advice', kind: DmButtonKind.dark, onPressed: () async {
             await notifier.feedback(liked: true);
-            if (context.mounted) dmToast(context, 'Merci, je retiens');
+            if (context.mounted) dmToast(context, 'Thanks, noted');
           }),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: DmButton('Pas pour moi', kind: DmButtonKind.outline, onPressed: () async {
+          child: DmButton('Not for me', kind: DmButtonKind.outline, onPressed: () async {
             await notifier.feedback(liked: false);
-            if (context.mounted) dmToast(context, 'Noté, je m’adapte');
+            if (context.mounted) dmToast(context, 'Noted, I will adapt');
           }),
         ),
       ]),
@@ -598,13 +587,13 @@ class _ShoppingListSheet extends ConsumerWidget {
         controller: controller,
         padding: const EdgeInsets.all(20),
         children: [
-          const DmSectionHeader(eyebrow: 'Ma liste d’achats', title: 'Ce qui manque vraiment'),
+          const DmSectionHeader(eyebrow: 'My shopping list', title: 'What you really miss'),
           const SizedBox(height: 14),
           ...list.when(
             loading: () => [const Center(child: CircularProgressIndicator())],
             error: (e, _) => [Text('$e', style: DmText.body)],
             data: (items) => items.isEmpty
-                ? [const DmEmptyState(title: 'Rien ne manque', message: 'Ta garde-robe couvre tes objectifs.')]
+                ? [const DmEmptyState(title: 'Nothing missing', message: 'Your wardrobe covers your goals.')]
                 : [
                     for (final it in items)
                       Padding(
@@ -616,7 +605,7 @@ class _ShoppingListSheet extends ConsumerWidget {
                               if (it.typicalPrice != null) DmPill('≈ ${it.typicalPrice!.round()} TND', dark: it.withinBudget == false),
                             ]),
                             const SizedBox(height: 4),
-                            Text('${it.why} · ${it.newOutfits} nouvelles tenues', style: DmText.body),
+                            Text('${it.why} · ${it.newOutfits} new outfits', style: DmText.body),
                             for (final l in it.links)
                               TextButton(
                                 onPressed: () => launchUrl(Uri.parse(l.url), mode: LaunchMode.externalApplication),

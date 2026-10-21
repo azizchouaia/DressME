@@ -12,7 +12,7 @@ final smartBuyMetaProvider = FutureProvider<SmartBuyMeta>((ref) => ref.read(smar
 class SmartBuyNotifier extends AsyncNotifier<SmartBuyResult?> {
   late String sessionId;
   String userId = 'usr_demo';
-  String language = 'fr';
+  String language = 'en';
 
   @override
   Future<SmartBuyResult?> build() async {
