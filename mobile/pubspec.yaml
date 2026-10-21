@@ -31,3 +31,23 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+  # DressMe fonts (SIL Open Font License), bundled so the app looks the same offline on every phone
+  fonts:
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans_300Light.ttf
+          weight: 300
+        - asset: assets/fonts/DMSans_400Regular.ttf
+        - asset: assets/fonts/DMSans_400Regular_Italic.ttf
+          style: italic
+        - asset: assets/fonts/DMSans_500Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans_600SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans_700Bold.ttf
+          weight: 700
+    - family: DM Serif Display
+      fonts:
+        - asset: assets/fonts/DMSerifDisplay_400Regular.ttf
+        - asset: assets/fonts/DMSerifDisplay_400Regular_Italic.ttf
+          style: italic

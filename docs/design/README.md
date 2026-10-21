@@ -144,3 +144,16 @@ Widget build(BuildContext context) {
 - **Thème global** : `mobile/lib/app/theme.dart` garde l'ancien thème violet. Pour appliquer le design à
   toute l'application d'un coup, il suffit d'y utiliser `dressMeTheme()`. C'est une décision d'équipe.
 - `mobile/lib/core/` est partagé : toute modification de `dressme_design.dart` passe par une PR.
+
+## Kit commun (à utiliser par tous les BO)
+
+| Quoi | Où | Comment |
+|---|---|---|
+| Thème de toute l'app | `mobile/lib/app/theme.dart` | `appTheme = dressMeTheme()` : rien à faire dans vos écrans |
+| Polices | `mobile/assets/fonts/` (DM Sans, DM Serif Display, licence OFL) | déclarées dans `pubspec.yaml`, marchent hors ligne |
+| Couleurs, rayons, textes | `mobile/lib/core/design/dressme_design.dart` | `DmColors.gold`, `DmRadius.card`, `DmText.title` |
+| Widgets communs | `mobile/lib/core/widgets/dm_widgets.dart` | `DmHero`, `DmCard`, `DmChoiceChip`, `DmButton` (dark / gold / outline), `DmScoreBadge`, `DmReasons`, `DmEmptyState`, `dmToast` + `DmSectionHeader`, `DmPill` |
+| Galerie | route `/design` | tous les éléments sur un écran, pour vérifier le rendu |
+| Web, slides, schémas | `docs/design/tokens/dressme_tokens.css` + `.json` | mêmes valeurs en CSS (`--dm-gold`…) et JSON |
+
+Règles : pas de couleur en dur dans un écran (toujours `DmColors`), pas de nouveau widget commun sans le mettre ici.
