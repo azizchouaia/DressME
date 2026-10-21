@@ -56,7 +56,8 @@ def tool_description() -> str:
     """Same text as the orchestrator's shared.agent_card.describe() (BO8), plus how to use the result."""
     try:
         from shared.agent_card import describe
-        return describe(CARD) + " If the result has `question`, call again with `answer` and the same session_id."
+        return describe(CARD) + (" If the result has `question`, call again with `answer` and the same session_id."
+                                  " Follow `next_actions` to chain stylist / localshop.")
     except ImportError:
         pass
     c = CARD
