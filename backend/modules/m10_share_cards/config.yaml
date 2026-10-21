@@ -1,0 +1,13 @@
+public_base_url: https://dressme.tn        # share links look like https://dressme.tn/s/<code>
+storage: memory                             # memory (dev) | s3 (MinIO / S3 through shared.storage)
+image_fetch_timeout_s: 4
+font_path: null                             # optional .ttf; Pillow's built-in font is used otherwise
+formats:
+  story: [1080, 1920]
+  square: [1080, 1080]
+  post: [1080, 1350]
+# Row heights of the flat-lay (share of the content area) when the row exists
+row_weights:
+  upper: 0.42
+  lower: 0.36
+  feet: 0.22

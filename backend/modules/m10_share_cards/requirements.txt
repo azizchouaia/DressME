@@ -1,0 +1,5 @@
+# Extra dependencies of M10 · Share / export cards (owner BO7)
+pillow>=10.1         # card rendering
+numpy>=1.26          # K-means input
+scikit-learn>=1.4    # K-means colours (ML) + TF-IDF retriever (RAG)
+qrcode>=7.4          # QR code of the referral link (optional: cards render without it)

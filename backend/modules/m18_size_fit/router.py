@@ -16,3 +16,8 @@ def _impl():
 @router.post("/advise", response_model=AdviseResponse)
 def advise(req: AdviseRequest):
     return _impl().advise(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

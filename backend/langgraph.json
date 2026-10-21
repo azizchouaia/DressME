@@ -1,0 +1,6 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "orchestrator": "./orchestrator/studio.py:graph"
+  }
+}

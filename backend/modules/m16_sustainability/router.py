@@ -16,3 +16,8 @@ def _impl():
 @router.post("/score", response_model=ScoreResponse)
 def score(req: ScoreRequest):
     return _impl().score(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

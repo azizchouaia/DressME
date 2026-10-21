@@ -16,3 +16,8 @@ def _impl():
 @router.post("/clients", response_model=ClientsResponse)
 def clients(req: ClientsRequest):
     return _impl().clients(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

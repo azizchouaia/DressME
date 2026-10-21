@@ -1,0 +1,138 @@
+# M1 configuration: models, thresholds and zero-shot labels.
+# Every prompt is built as `prompt_template.format(label=<prompt or label>)`.
+
+models:
+  clip: patrickjohncyh/fashion-clip
+  rembg: isnet-general-use
+  rembg_fallback: u2net
+  device: cpu
+
+thresholds:
+  duplicate: 0.85        # pairs above -> same group (union-find)
+  similar: 0.75          # /similar default
+  confidence: 0.85       # below -> needs_confirmation (real photos: correct >= 0.97, wrong <= 0.73)
+  season_relative: 0.6   # keep every season whose prob >= 0.6 * best season prob
+
+prompt_template: "a photo of a {label}"
+
+# FashionCLIP's own logit scale is 100: its softmax is very peaky, which suits the category decision
+# but collapses multi-label seasons and the formality average. Heads listed here use a softer scale.
+logit_scales:
+  seasons: 25
+  formality: 50
+
+# label = stored value (Garment.subcategory). category = GarmentCategory.
+# local_tag is set for Tunisian traditional pieces.
+subcategories:
+  - {label: t-shirt, category: top}
+  - {label: shirt, category: top}
+  - {label: linen shirt, category: top}
+  - {label: polo shirt, category: top}
+  - {label: blouse, category: top}
+  - {label: sweater, category: top, prompt: knitted sweater}
+  - {label: sweatshirt, category: top}
+  - {label: hoodie, category: top}
+  - {label: tank top, category: top}
+  - {label: jeans, category: bottom, prompt: pair of jeans}
+  - {label: chinos, category: bottom, prompt: pair of chino trousers}
+  - {label: trousers, category: bottom, prompt: pair of tailored trousers}
+  - {label: shorts, category: bottom, prompt: pair of shorts}
+  - {label: skirt, category: bottom}
+  - {label: dress, category: dress}
+  - {label: summer dress, category: dress}
+  - {label: evening dress, category: dress}
+  - {label: jacket, category: outerwear}
+  - {label: leather jacket, category: outerwear}
+  - {label: denim jacket, category: outerwear}
+  - {label: blazer, category: outerwear}
+  - {label: coat, category: outerwear}
+  - {label: sneakers, category: shoes, prompt: pair of sneakers}
+  - {label: loafers, category: shoes, prompt: pair of loafers}
+  - {label: boots, category: shoes, prompt: pair of boots}
+  - {label: sandals, category: shoes, prompt: pair of sandals}
+  - {label: heels, category: shoes, prompt: pair of high heels}
+  - {label: dress shoes, category: shoes, prompt: pair of leather dress shoes}
+  - {label: bag, category: accessory, prompt: handbag}
+  - {label: belt, category: accessory, prompt: leather belt}
+  - {label: sunglasses, category: accessory, prompt: pair of sunglasses}
+  - {label: hat, category: accessory}
+  - {label: scarf, category: accessory}
+  - {label: watch, category: accessory, prompt: wristwatch}
+  - {label: jewelry, category: accessory, prompt: piece of jewelry}
+  # Tunisian traditional garments
+  - {label: jebba, category: traditional, local_tag: jebba,
+     prompt: "jebba, a traditional Tunisian long sleeveless robe for men"}
+  - {label: kachabia, category: traditional, local_tag: kachabia,
+     prompt: "kachabia, a traditional Tunisian hooded wool cloak"}
+  - {label: sefsari, category: traditional, local_tag: sefsari,
+     prompt: "sefsari, a traditional Tunisian white silk veil wrapped around the body"}
+  - {label: blouza, category: traditional, local_tag: blouza,
+     prompt: "blouza, a traditional Tunisian embroidered festive dress"}
+
+seasons:
+  - {label: spring, prompt: light spring outfit}
+  - {label: summer, prompt: lightweight summer clothing}
+  - {label: autumn, prompt: autumn layering clothing}
+  - {label: winter, prompt: warm winter clothing}
+
+patterns:
+  - {label: solid, prompt: plain solid colour garment}
+  - {label: striped, prompt: striped garment}
+  - {label: checked, prompt: checked plaid garment}
+  - {label: floral, prompt: floral print garment}
+  - {label: polka dot, prompt: polka dot garment}
+  - {label: graphic, prompt: garment with a graphic print}
+  - {label: animal print, prompt: leopard animal print garment}
+  - {label: embroidered, prompt: embroidered garment}
+
+materials:
+  - {label: cotton, prompt: cotton garment}
+  - {label: linen, prompt: linen garment}
+  - {label: denim, prompt: denim garment}
+  - {label: leather, prompt: leather item}
+  - {label: suede, prompt: suede item}
+  - {label: wool, prompt: wool garment}
+  - {label: silk, prompt: silk garment}
+  - {label: knit, prompt: knitted garment}
+  - {label: synthetic, prompt: synthetic polyester garment}
+
+# formality = sum(prob * value) over these ordered levels
+formality:
+  - {label: very casual, value: 0.0, prompt: very casual loungewear}
+  - {label: casual, value: 0.25, prompt: casual everyday clothing}
+  - {label: smart casual, value: 0.5, prompt: smart casual clothing}
+  - {label: business, value: 0.75, prompt: business office clothing}
+  - {label: formal, value: 1.0, prompt: formal ceremony clothing}
+
+# Colour naming: nearest entry in CIE-LAB (delta E 76).
+palette:
+  black: "#1C1B1A"
+  charcoal: "#3B3B3B"
+  grey: "#8E8E8E"
+  light grey: "#C9C9C7"
+  white: "#F7F7F5"
+  cream: "#EFE6D2"
+  beige: "#D8C3A5"
+  khaki: "#B5A27A"
+  camel: "#C19A6B"
+  tan: "#A57C52"
+  brown: "#6F4E37"
+  dark brown: "#3E2A1E"
+  navy: "#1F2A44"
+  blue: "#2F5DA8"
+  denim: "#4A6A8F"
+  light blue: "#9CC3E6"
+  teal: "#2A7F7F"
+  green: "#3E7D4F"
+  olive: "#6B6B3A"
+  mint: "#A8D5BA"
+  yellow: "#E8C547"
+  mustard: "#C9A227"
+  orange: "#E07B39"
+  red: "#B3261E"
+  burgundy: "#6D1A2B"
+  pink: "#E8A0B4"
+  purple: "#6A4C93"
+  lavender: "#B8A9D9"
+  gold: "#C4A35A"
+  silver: "#BFC1C2"

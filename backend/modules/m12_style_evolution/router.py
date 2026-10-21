@@ -16,3 +16,8 @@ def _impl():
 @router.post("/timeline", response_model=TimelineResponse)
 def timeline(req: TimelineRequest):
     return _impl().timeline(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

@@ -1,18 +1,40 @@
-"""HTTP endpoints of M6. Included automatically by api/main.py."""
+"""HTTP endpoints of M6 Smart Buy. Included automatically by api/main.py."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from shared.config import settings
-
-from . import mock, service
-from .contract import VerdictRequest, VerdictResponse
+from .agent import SmartBuyAgent
+from .contract import SmartBuyInput, SmartBuyOutput
 
 router = APIRouter(prefix="/m06", tags=["M6 Smart Buy / what-if engine"])
 
 
-def _impl():
-    return mock if getattr(settings, "use_mocks", True) else service
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD
+_agent = None
 
-@router.post("/verdict", response_model=VerdictResponse)
-def verdict(req: VerdictRequest):
-    return _impl().verdict(req.model_dump())
+
+def agent() -> SmartBuyAgent:
+    global _agent
+    if _agent is None:
+        _agent = SmartBuyAgent()
+    return _agent
+
+
+@router.post("/verdict", response_model=SmartBuyOutput)
+async def verdict(inp: SmartBuyInput):
+    try:
+        return await agent()(inp.model_dump())
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@router.post("/shopping-list")
+def shopping_list(user_id: str):
+    """Wardrobe gap shopping list from the user's goals (M5) + gaps: most useful pieces first."""
+    from .shopping import shopping_list as build
+    try:
+        return {"items": build(agent(), user_id)}
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e

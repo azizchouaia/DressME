@@ -24,3 +24,8 @@ def feedback(req: FeedbackRequest):
 @router.post("/gaps", response_model=GapsResponse)
 def gaps(req: GapsRequest):
     return _impl().gaps(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

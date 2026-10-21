@@ -20,3 +20,8 @@ def schedule(req: ScheduleRequest):
 @router.post("/calendar", response_model=CalendarResponse)
 def calendar(req: CalendarRequest):
     return _impl().calendar(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

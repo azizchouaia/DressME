@@ -1,0 +1,11 @@
+# BO5 extra deps
+numpy
+pyyaml
+# real mode: open_clip_torch (FashionCLIP) via M1, not here
+fastapi
+uvicorn
+python-multipart
+# photo analysis
+torch
+transformers
+pillow

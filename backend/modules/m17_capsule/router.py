@@ -16,3 +16,8 @@ def _impl():
 @router.post("/capsule", response_model=CapsuleResponse)
 def capsule(req: CapsuleRequest):
     return _impl().capsule(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

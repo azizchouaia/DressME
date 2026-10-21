@@ -20,3 +20,8 @@ def worn(req: WornRequest):
 @router.post("/stats", response_model=StatsResponse)
 def stats(req: StatsRequest):
     return _impl().stats(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

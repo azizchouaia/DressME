@@ -1,0 +1,45 @@
+use_mocks: true
+
+# which data the mocks use: 'synthetic' (generated) or 'real' (yours) -> ml/data/bo5/<dataset>/
+dataset: synthetic
+
+# --- redundancy (M1 similarity, cosine 0..1) ---
+duplicate_threshold: 0.85      # >= this -> same piece already owned -> SKIP
+similar_threshold: 0.70        # >= this -> "similar" (penalty, not automatic skip)
+top_k_neighbours: 5
+other_colour_novelty_factor: 0.5  # same type, other colour: novelty = 1 - 0.5 * similarity
+
+# --- outfits unlocked (M2) ---
+outfits_for_max_score: 8       # 8+ new outfits = full marks on this criterion
+
+# --- score weights (sum = 1) ---
+weights:
+  new_outfits: 0.40
+  gap_fill: 0.25
+  novelty: 0.20               # 1 - max similarity
+  price_value: 0.15           # cost per new outfit vs. budget
+
+# --- price ---
+target_cost_per_outfit_tnd: 15 # <= this per new outfit = full marks
+
+# --- too many of the same type ---
+max_same_type: 3               # owns >= 3 of this type -> BUY capped to THINK
+
+# --- verdict ---
+buy_threshold: 70              # score >= 70 -> BUY
+skip_threshold: 40             # score < 40 -> SKIP ; in between -> THINK
+
+data_dir: ../ml/data/bo5
+
+# --- decision upgrades ---
+decision: learned               # rules | learned  (learned = models/verdict_model.json, see learn.py)
+personalize: false             # true = per-user strictness learned by the bandit (bandit.py)
+uncertain_band: 5              # score within 5 points of a threshold = close call -> ask a question
+min_ai_confidence: 0.5         # below = ask the user to confirm the photo
+min_probability: 0.55          # learned mode: top probability below = close call
+feature_means:                 # 'average piece' used to explain contributions (rules mode)
+  new_outfits: 0.5
+  gap_fill: 0.2
+  novelty: 0.6
+  price_value: 0.6
+goal_points: 15                # rules mode: a candidate that helps (+) / breaks (-) the user's goals moves the score by up to 15

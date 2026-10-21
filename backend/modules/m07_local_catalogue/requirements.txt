@@ -1,0 +1,9 @@
+# Extra dependencies for the local catalogue agent only
+# FashionCLIP (pipeline/encoder.py)
+torch
+transformers
+numpy
+# scraper/ (offline catalogue build); openpyxl is optional, for the .xlsx copy
+requests
+pillow
+openpyxl

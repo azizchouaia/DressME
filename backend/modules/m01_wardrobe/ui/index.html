@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ma garde-robe · DressMe</title>
+  <meta name="description" content="Démo du module M1 : garde-robe numérisée (classification, couleurs, doublons).">
+  <link rel="icon" href="/m01/ui/assets/shirt-navy.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/m01/ui/styles.css">
+  <script type="module" src="/m01/ui/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#wardrobe">Aller à la garde-robe</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__mark">DressMe</span>
+      <span class="brand__sep" aria-hidden="true"></span>
+      <span class="brand__sub">Ma garde-robe</span>
+    </div>
+    <div class="topbar__meta">
+      <span class="mode" id="mode" hidden></span>
+      <span class="user" id="user"></span>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro">
+      <p class="eyebrow">Module M1 · Wardrobe digitiser</p>
+      <h1>Votre dressing, <em>numérisé</em>.</h1>
+      <p class="intro__lead">Chaque pièce est détourée, classée et rangée au bon endroit.</p>
+    </div>
+
+    <div class="toolbar" id="toolbar" hidden>
+      <form class="filters" id="filters" aria-label="Filtres">
+        <label class="field">
+          <span class="field__label">Catégorie</span>
+          <select id="f-category" name="category">
+            <option value="">Toutes</option>
+            <option value="top">Hauts</option>
+            <option value="bottom">Bas</option>
+            <option value="dress">Robes</option>
+            <option value="outerwear">Vestes &amp; manteaux</option>
+            <option value="traditional">Traditionnel</option>
+            <option value="shoes">Chaussures</option>
+            <option value="accessory">Accessoires</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Saison</span>
+          <select id="f-season" name="season">
+            <option value="">Toutes</option>
+            <option value="spring">Printemps</option>
+            <option value="summer">Été</option>
+            <option value="autumn">Automne</option>
+            <option value="winter">Hiver</option>
+          </select>
+        </label>
+        <button type="reset" class="btn btn--link" id="f-reset">Réinitialiser</button>
+      </form>
+      <div class="toolbar__actions">
+        <span class="total" id="total" aria-live="polite"></span>
+        <button type="button" class="btn btn--primary" id="add">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Ajouter une pièce</span>
+        </button>
+        <button type="button" class="btn btn--ghost" id="close">Fermer</button>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+    </div>
+
+    <div class="stage">
+      <section class="wardrobe" id="wardrobe" data-state="closed" aria-label="Garde-robe" tabindex="-1">
+        <div class="wardrobe__crown" aria-hidden="true"></div>
+        <div class="wardrobe__frame">
+          <nav class="bay-nav" aria-label="Rayons">
+            <button type="button" data-bay="accessories" aria-pressed="false">Accessoires <span data-count="accessories"></span></button>
+            <button type="button" data-bay="clothes" aria-pressed="true">Vêtements <span data-count="clothes"></span></button>
+            <button type="button" data-bay="shoes" aria-pressed="false">Chaussures <span data-count="shoes"></span></button>
+          </nav>
+
+          <div class="interior" id="interior" inert>
+            <section class="bay bay--accessories" data-bay="accessories" aria-labelledby="h-accessories">
+              <header class="bay__head">
+                <h2 id="h-accessories">Accessoires</h2>
+                <span class="bay__count" data-count="accessories"></span>
+              </header>
+              <div class="shelves" data-shelf="accessories"></div>
+            </section>
+
+            <section class="bay bay--clothes is-active" data-bay="clothes" aria-labelledby="h-clothes">
+              <header class="bay__head">
+                <h2 id="h-clothes">Vêtements</h2>
+                <span class="bay__count" data-count="clothes"></span>
+              </header>
+              <div class="rails">
+                <div class="rail-wrap"><ul class="hangers" data-rail="upper" aria-label="Tringle haute : hauts et vestes"></ul></div>
+                <div class="rail-wrap"><ul class="hangers" data-rail="lower" aria-label="Tringle basse : bas, robes et tenues traditionnelles"></ul></div>
+              </div>
+            </section>
+
+            <section class="bay bay--shoes" data-bay="shoes" aria-labelledby="h-shoes">
+              <header class="bay__head">
+                <h2 id="h-shoes">Chaussures</h2>
+                <span class="bay__count" data-count="shoes"></span>
+              </header>
+              <div class="shelves shelves--slanted" data-shelf="shoes"></div>
+            </section>
+          </div>
+
+          <div class="doors" id="doors" aria-hidden="true">
+            <div class="door door--left"><span class="door__panel"></span><span class="door__panel"></span><span class="door__handle"></span></div>
+            <div class="door door--right"><span class="door__panel"></span><span class="door__panel"></span><span class="door__handle"></span></div>
+          </div>
+
+          <button type="button" class="open-cta" id="open">
+            <span class="open-cta__label">Ouvrir ma garde-robe</span>
+            <span class="open-cta__hint" id="open-hint">Chargement…</span>
+          </button>
+        </div>
+        <div class="wardrobe__plinth" aria-hidden="true"><span></span><span></span></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" hidden>
+    <button type="button" class="panel__close" id="panel-close" aria-label="Fermer la fiche">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <div class="panel__body" id="panel-body"></div>
+  </aside>
+
+  <div class="dup-layer" id="dup-layer" hidden>
+    <div class="dup-dialog" id="dup-dialog" role="alertdialog" aria-modal="true" aria-labelledby="dup-title" aria-describedby="dup-desc">
+      <p class="sheet__eyebrow">Doublon possible</p>
+      <h2 class="dup-dialog__title" id="dup-title">Cette pièce ressemble à une pièce de votre garde‑robe</h2>
+      <p class="dup-dialog__desc" id="dup-desc">Elle n’a pas encore été ajoutée. Voulez-vous l’ajouter quand même ?</p>
+      <div class="dup-compare" id="dup-compare"></div>
+      <div class="dup-dialog__actions">
+        <button type="button" class="btn btn--ghost" id="dup-cancel">Annuler l’ajout</button>
+        <button type="button" class="btn btn--primary" id="dup-accept">Ajouter quand même</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>

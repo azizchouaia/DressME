@@ -2,17 +2,26 @@
 
 from fastapi import APIRouter
 
-from shared.config import settings
-
-from . import mock, service
-from .contract import RenderRequest, RenderResponse
+from . import service
+from .agent import TryOnAgent
+from .contract import RenderRequest, RenderResponse, TryOnInput
 
 router = APIRouter(prefix="/m09", tags=["M9 3D avatar renderer"])
 
 
 def _impl():
-    return mock if getattr(settings, "use_mocks", True) else service
+    return service
 
 @router.post("/render", response_model=RenderResponse)
 def render(req: RenderRequest):
     return _impl().render(req.model_dump())
+
+@router.post("/run")
+async def run(req: TryOnInput):
+    return await TryOnAgent()(req.model_dump())
+
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

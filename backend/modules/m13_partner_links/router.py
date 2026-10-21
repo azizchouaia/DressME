@@ -16,3 +16,8 @@ def _impl():
 @router.post("/links", response_model=LinksResponse)
 def links(req: LinksRequest):
     return _impl().links(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

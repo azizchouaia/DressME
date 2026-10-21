@@ -16,3 +16,8 @@ def _impl():
 @router.post("/plan", response_model=PlanResponse)
 def plan(req: PlanRequest):
     return _impl().plan(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

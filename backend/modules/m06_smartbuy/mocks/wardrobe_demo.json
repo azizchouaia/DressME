@@ -1,0 +1,180 @@
+{
+  "user_id": "usr_demo",
+  "gaps": [
+    "white shirt",
+    "light jacket",
+    "olive t-shirt"
+  ],
+  "items": [
+    {
+      "id": "itm_01",
+      "label": "Navy linen shirt",
+      "category": "top",
+      "subcategory": "shirt",
+      "colour": "navy",
+      "embedding": [
+        0.982,
+        -0.035,
+        0.015,
+        -0.043,
+        0.204,
+        -0.013,
+        -0.044,
+        0.001
+      ]
+    },
+    {
+      "id": "itm_02",
+      "label": "Black t-shirt",
+      "category": "top",
+      "subcategory": "t-shirt",
+      "colour": "black",
+      "embedding": [
+        0.654,
+        -0.007,
+        0.557,
+        -0.041,
+        0.092,
+        0.033,
+        -0.038,
+        -0.028
+      ]
+    },
+    {
+      "id": "itm_03",
+      "label": "Grey t-shirt",
+      "category": "top",
+      "subcategory": "t-shirt",
+      "colour": "grey",
+      "embedding": [
+        0.713,
+        0.045,
+        0.608,
+        -0.01,
+        0.148,
+        -0.045,
+        0.036,
+        -0.021
+      ]
+    },
+    {
+      "id": "itm_04",
+      "label": "Beige chinos",
+      "category": "bottom",
+      "subcategory": "chinos",
+      "colour": "beige",
+      "embedding": [
+        -0.036,
+        -0.038,
+        -0.019,
+        1.032,
+        -0.032,
+        0.308,
+        0.014,
+        -0.013
+      ]
+    },
+    {
+      "id": "itm_05",
+      "label": "Black jeans",
+      "category": "bottom",
+      "subcategory": "jeans",
+      "colour": "black",
+      "embedding": [
+        0.005,
+        -0.044,
+        0.256,
+        0.871,
+        0.018,
+        -0.007,
+        -0.019,
+        0.009
+      ]
+    },
+    {
+      "id": "itm_06",
+      "label": "Blue jeans",
+      "category": "bottom",
+      "subcategory": "jeans",
+      "colour": "blue",
+      "embedding": [
+        0.195,
+        -0.02,
+        0.029,
+        0.97,
+        -0.026,
+        0.007,
+        0.203,
+        0.038
+      ]
+    },
+    {
+      "id": "itm_07",
+      "label": "White sneakers",
+      "category": "shoes",
+      "subcategory": "sneakers",
+      "colour": "white",
+      "embedding": [
+        0.023,
+        0.479,
+        0.048,
+        -0.038,
+        -0.008,
+        0.026,
+        0.965,
+        -0.001
+      ]
+    },
+    {
+      "id": "itm_08",
+      "label": "Brown loafers",
+      "category": "shoes",
+      "subcategory": "loafers",
+      "colour": "brown",
+      "embedding": [
+        -0.046,
+        0.017,
+        0.026,
+        0.007,
+        0.038,
+        0.381,
+        0.92,
+        0.209
+      ]
+    },
+    {
+      "id": "itm_09",
+      "label": "Beige trench coat",
+      "category": "outerwear",
+      "subcategory": "coat",
+      "colour": "beige",
+      "embedding": [
+        0.008,
+        -0.004,
+        0.034,
+        0.044,
+        0.997,
+        0.516,
+        -0.044,
+        0.02
+      ]
+    },
+    {
+      "id": "itm_10",
+      "label": "White t-shirt",
+      "category": "top",
+      "subcategory": "t-shirt",
+      "colour": "white",
+      "embedding": [
+        0.6,
+        0.4,
+        0.4,
+        0,
+        0.1,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

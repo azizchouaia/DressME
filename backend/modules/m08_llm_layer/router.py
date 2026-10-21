@@ -20,3 +20,8 @@ def parse(req: ParseRequest):
 @router.post("/explain", response_model=ExplainResponse)
 def explain(req: ExplainRequest):
     return _impl().explain(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD

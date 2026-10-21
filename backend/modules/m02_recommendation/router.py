@@ -16,3 +16,8 @@ def _impl():
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend(req: RecommendRequest):
     return _impl().recommend(req.model_dump())
+
+@router.get("/identity")
+def identity_card():
+    from .identity import CARD
+    return CARD
