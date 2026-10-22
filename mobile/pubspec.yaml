@@ -19,6 +19,7 @@ dependencies:
   flutter_card_swiper: ^7.0.1
   json_annotation: ^4.9.0
   url_launcher: ^6.3.0
+  web: ^1.1.0 # BO7: embeds the BO9 avatar viewer in the web app (avatar share)
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,20 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+  # Fonts of the DressMe Figma prototype (core/design/dressme_design.dart: DmFonts). SIL Open Font License,
+  # see assets/fonts/OFL-*.txt. Added by BO7 for the BO7 screens; every screen using DmText gets them.
+  fonts:
+    - family: DM Serif Display
+      fonts:
+        - asset: assets/fonts/DMSerifDisplay-Regular.ttf
+        - asset: assets/fonts/DMSerifDisplay-Italic.ttf
+          style: italic
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700

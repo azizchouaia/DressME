@@ -147,6 +147,32 @@ def _silhouette(category: str, color_hex: str, w: int, h: int) -> Image.Image:
     return img
 
 
+def _mannequin(canvas: Image.Image, area: tuple[int, int, int, int], rgb: tuple[int, int, int]) -> None:
+    """Faceless figure with rounded limbs (head, torso, arms, legs) filling the avatar area, drawn at 4x and
+    scaled down so the edges are smooth."""
+    ax, ay, aw, ah = area
+    h = int(ah * 0.88)
+    w = int(h * 0.42)
+    s = 4  # supersampling
+    fig = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(fig)
+    col = (*rgb, 140)
+
+    def box(x0: float, y0: float, x1: float, y1: float) -> tuple[int, int, int, int]:  # on a 100 x 240 grid
+        k = w * s / 100
+        return (int(x0 * k), int(y0 * k), int(x1 * k), int(y1 * k))
+
+    d.ellipse(box(38, 2, 62, 30), fill=col)  # head
+    d.rounded_rectangle(box(45, 26, 55, 36), radius=8, fill=col)  # neck
+    d.rounded_rectangle(box(24, 34, 76, 118), radius=int(w * s * 0.12), fill=col)  # torso
+    d.rounded_rectangle(box(10, 38, 23, 116), radius=int(w * s * 0.06), fill=col)  # arms
+    d.rounded_rectangle(box(77, 38, 90, 116), radius=int(w * s * 0.06), fill=col)
+    d.rounded_rectangle(box(27, 108, 48, 236), radius=int(w * s * 0.09), fill=col)  # legs
+    d.rounded_rectangle(box(52, 108, 73, 236), radius=int(w * s * 0.09), fill=col)
+    fig = fig.resize((w, h), Image.LANCZOS)
+    canvas.alpha_composite(fig, (ax + (aw - w) // 2, ay + ah - h - int(ah * 0.04)))
+
+
 def _paste_with_shadow(canvas: Image.Image, piece: Image.Image, x: int, y: int) -> None:
     alpha = piece.split()[-1]
     shadow = Image.new("RGBA", piece.size, (0, 0, 0, 0))
@@ -184,6 +210,7 @@ def run(
     footer: str | None,
     content_area: tuple[int, int, int, int],
     qr_url: str | None = None,
+    avatar: tuple[str, tuple[int, int, int, int]] | None = None,
     font_path: str | None = None,
     timeout: float = 4.0,
 ) -> bytes:
@@ -203,6 +230,21 @@ def run(
         y += f_title.size + 10
     if subtitle:
         d.text((m, y + 4), subtitle, font=font(34, font_path), fill=muted_rgb)
+
+    # 3D avatar of the user (M9, BO9), drawn large on the left of a "tryon" card
+    if avatar:
+        src, (ax, ay, aw, ah) = avatar
+        img = load_image(src, timeout)
+        tile = tuple((c * 3 + 255) // 4 for c in hex_to_rgb(palette.background))
+        d.rounded_rectangle((ax, ay, ax + aw, ay + ah), radius=40, fill=(*tile, 255))
+        bbox = img.getbbox() if img is not None else None  # None too for an empty (transparent) capture
+        if img is not None and bbox:
+            img = img.crop(bbox)  # crop the empty margins of the viewer screenshot
+            body = _fit(img, int(aw * 0.92), int(ah * 0.94))
+            bx, by = ax + (aw - body.width) // 2, ay + ah - body.height - int(ah * 0.03)
+            _paste_with_shadow(canvas, body, bx, by)
+        else:  # no avatar picture yet: a faceless mannequin, so the card still renders (mock-first rule)
+            _mannequin(canvas, (ax, ay, aw, ah), muted_rgb)
 
     # garments
     f_label = font(28, font_path)

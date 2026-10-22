@@ -61,6 +61,9 @@ class ShareCardInput(BaseModel):
     watermark: bool = True
     language: str = "en"  # caption language: en | fr | tn (Tunisian in Latin letters)
     qr: bool = False  # QR code of the referral link on the card (printed flyers, screens, stories)
+    # Image of the user's 3D avatar (M9, BO9): PNG data URI, URL or path. Used by kind "tryon": the avatar is
+    # drawn large and the outfit pieces (M1) next to it. Without it, the card shows the pieces only.
+    avatar_image: str | None = None
 
 
 class ShareCardOutput(BaseModel):

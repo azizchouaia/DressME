@@ -31,6 +31,13 @@ else:
 api = APIRouter(prefix="/m10", tags=["M10 Share / export cards"])
 
 
+# Fonts of the DressMe Figma prototype (DM Serif Display + DM Sans), also used by the BO7 demo page
+FONTS = (
+    "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1"
+    "&family=DM+Sans:wght@400;600;700&display=swap"
+)
+
+
 def _agent():
     if share_agent is None:
         raise HTTPException(
@@ -121,15 +128,17 @@ async def shared_link_page(code: str, request: Request, ch: str | None = None):
 <meta property="og:description" content="{e(card["caption"])}">
 <meta property="og:image" content="{e(img_abs)}">
 <meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link href="{FONTS}" rel="stylesheet">
 <style>
-body{{margin:0;background:#f5f3f6;color:#1e1b22;
-font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
+body{{margin:0;background:#F6F3EE;color:#211D19;
+font:15px/1.5 "DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
+h2{{font:400 28px/1.15 "DM Serif Display",Georgia,serif}}
 main{{max-width:460px;margin:0 auto;padding:20px 16px 40px}}
-.brand{{font-weight:800;letter-spacing:.02em;color:#a3305f}}
-img{{width:100%;border-radius:16px;border:1px solid #e4dfe8;margin:12px 0;background:#fff}}
+.brand{{font:italic 400 28px/1 "DM Serif Display",Georgia,serif;color:#211D19}}
+img{{width:100%;border-radius:24px;border:1px solid #E5DED4;margin:12px 0;background:#fff}}
 .btn{{display:block;width:100%;border:0;border-radius:24px;padding:13px;font:inherit;font-weight:700;
-background:#a3305f;color:#fff;cursor:pointer;margin-top:10px}}
-.muted{{color:#6c6672;font-size:13px}}.ok{{background:#e2f2ea;color:#1f7a57;border-radius:12px;padding:12px}}
+background:#211D19;color:#fff;cursor:pointer;margin-top:10px}}
+.muted{{color:#81776D;font-size:13px}}.ok{{background:#F3EADC;color:#9A744B;border-radius:18px;padding:12px}}
 </style></head><body><main>
 <div class="brand">DressMe</div>
 <h2 style="margin:6px 0 0">{e(card["user_id"])} {title}</h2>
@@ -174,8 +183,12 @@ async def share_metrics(user_id: str | None = None):
 router = APIRouter()
 router.include_router(api)
 try:
+    from bo.bo7_sharing import app as _bo7_app
+    from bo.bo7_sharing import avatar as _bo7_avatar
     from bo.bo7_sharing.demo.router import router as _bo7_demo
 
     router.include_router(_bo7_demo)
+    router.include_router(_bo7_avatar.router)  # BO9 avatar viewer + M9, for "share a 3D avatar look"
+    router.include_router(_bo7_app.router)  # Flutter web build of the app (/bo7/app/)
 except ImportError:  # pragma: no cover
     pass

@@ -1,226 +1,113 @@
-// Owner: BO7 · M15 — one challenge: rules, join, daily log, progress, leaderboard, posts.
+// Owner: BO7 · M15 — one challenge: join, log today's outfit, coach message (RAG + LLM), card, leaderboard.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'share_card_sheet.dart';
-import '../data/challenge_models.dart';
-import '../data/challenges_repository.dart';
-import '../logic/challenges_providers.dart';
-import 'outfit_picker_sheet.dart';
-import 'post_tile.dart';
+import '../../../core/design/dressme_design.dart';
+import '../data/bo7_models.dart';
+import '../data/bo7_repository.dart';
+import '../logic/bo7_providers.dart';
+import 'community_tab.dart';
 import 'widgets.dart';
 
-class ChallengeDetailScreen extends ConsumerWidget {
+class ChallengeDetailScreen extends ConsumerStatefulWidget {
   const ChallengeDetailScreen({super.key, required this.challengeId});
+
   final String challengeId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final challenge = ref.watch(challengeProvider(challengeId));
-    return challenge.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(appBar: AppBar(), body: Center(child: Text('$e'))),
-      data: (c) => DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(c.title),
-            bottom: const TabBar(tabs: [Tab(text: 'My progress'), Tab(text: 'Leaderboard'), Tab(text: 'Posts')]),
-          ),
-          body: TabBarView(children: [
-            _ProgressTab(challenge: c),
-            _LeaderboardTab(challengeId: c.id),
-            _PostsTab(challengeId: c.id),
-          ]),
-        ),
-      ),
-    );
-  }
+  ConsumerState<ChallengeDetailScreen> createState() => _ChallengeDetailScreenState();
 }
 
-class _ProgressTab extends ConsumerStatefulWidget {
-  const _ProgressTab({required this.challenge});
-  final Challenge challenge;
-
-  @override
-  ConsumerState<_ProgressTab> createState() => _ProgressTabState();
-}
-
-class _ProgressTabState extends ConsumerState<_ProgressTab> {
+class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
+  final Set<String> _picked = {};
+  final _caption = TextEditingController();
+  EntryResult? _result;
   bool _busy = false;
-  List<String> _hint = const [];
 
-  Challenge get c => widget.challenge;
+  String get _id => widget.challengeId;
 
-  void _snack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _join() async {
+  Future<void> _run(Future<void> Function(Bo7Repository repo, String user) action) async {
     setState(() => _busy = true);
     try {
-      await ref.read(challengeActionsProvider(c.id)).join();
-    } on ChallengeException catch (e) {
-      _snack(e.message);
+      await action(ref.read(bo7RepositoryProvider), ref.read(currentUserProvider));
+    } on Bo7Exception catch (e) {
+      if (mounted) showSnack(context, e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _log(int day) async {
-    final selection = await showOutfitPicker(context, day: day, preselect: _hint);
-    if (selection == null || !mounted) return;
-    setState(() => _busy = true);
-    try {
-      final result = await ref.read(challengeActionsProvider(c.id)).submit(selection.itemIds, caption: selection.caption);
-      if (!mounted) return;
-      setState(() => _hint = result.suggestion);
-      await showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (_) => EntryResultView(result: result),
-      );
-    } on ChallengeException catch (e) {
-      _snack(e.message);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
+  Future<void> _join() => _run((repo, user) async {
+        await repo.join(_id, user);
+        refreshChallenge(ref, _id);
+      });
+
+  Future<void> _submit() => _run((repo, user) async {
+        final r = await repo.submit(_id, user, _picked.toList(), caption: _caption.text.trim());
+        setState(() {
+          _result = r;
+          _picked.clear();
+          _caption.clear();
+        });
+        refreshChallenge(ref, _id);
+      });
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    final progress = ref.watch(progressProvider(c.id));
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(c.description, style: t.textTheme.bodyLarge),
-        if (c.sponsor != null) ...[
-          const SizedBox(height: 8),
-          Row(children: [const Icon(Icons.storefront_outlined, size: 16), const SizedBox(width: 6), Text('Sponsored by ${c.sponsor}')]),
-        ],
-        const SizedBox(height: 16),
-        Text('Rules', style: t.textTheme.titleSmall),
-        for (final r in c.rules)
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.rule, size: 20),
-            title: Text(r.description),
-          ),
-        if (c.feasibility != null) FeasibilityBar(value: c.feasibility!, reason: c.reason),
-        const SizedBox(height: 20),
-        if (!c.joined)
-          FilledButton.icon(
-            onPressed: _busy ? null : _join,
-            icon: const Icon(Icons.flag_outlined),
-            label: Text('Join · ${c.durationDays} days'),
-          )
-        else
-          progress.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
-            data: (p) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DayStrip(progress: p),
-                const SizedBox(height: 16),
-                Wrap(spacing: 12, runSpacing: 8, children: [
-                  _Stat('${p.validDays}/${p.durationDays}', 'valid days'),
-                  _Stat('${p.streak}', 'day streak'),
-                  _Stat('${p.points}', 'points'),
-                ]),
-                if (p.badges.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Wrap(spacing: 8, children: [for (final b in p.badges) Chip(avatar: const Icon(Icons.emoji_events_outlined, size: 16), label: Text(b))]),
-                ],
-                const SizedBox(height: 20),
-                if (p.finished)
-                  const ListTile(leading: Icon(Icons.celebration_outlined), title: Text('Challenge complete'))
-                else
-                  FilledButton.icon(
-                    onPressed: _busy ? null : () => _log(p.nextDay!),
-                    icon: _busy
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.add_a_photo_outlined),
-                    label: Text("Log day ${p.nextDay}'s outfit"),
-                  ),
-                if (_hint.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text('Idea for tomorrow is preselected in the picker (${_hint.length} pieces).', style: t.textTheme.bodySmall),
-                ],
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat(this.value, this.label);
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(color: t.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(value, style: t.textTheme.titleLarge),
-        Text(label, style: t.textTheme.bodySmall),
-      ]),
-    );
-  }
-}
-
-/// Shown after "Check my outfit": valid → card + share, invalid → what broke the rules.
-class EntryResultView extends ConsumerWidget {
-  const EntryResultView({super.key, required this.result});
-  final EntryResult result;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = Theme.of(context);
-    final post = result.post;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    final challenge = ref.watch(challengeProvider(_id));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Défi')),
+      body: AsyncBody<Challenge>(
+        value: challenge,
+        onRetry: () => ref.invalidate(challengeProvider(_id)),
+        builder: (c) => ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: [
-            Icon(result.valid ? Icons.check_circle : Icons.error_outline,
-                size: 48, color: result.valid ? Colors.green.shade600 : t.colorScheme.error),
-            const SizedBox(height: 8),
-            Text(
-              result.valid ? 'Day ${result.day} counts!' : 'Day ${result.day} does not count',
-              textAlign: TextAlign.center,
-              style: t.textTheme.titleLarge,
+            Bo7Hero(
+              eyebrow: c.sponsor != null ? 'Sponsorisé par ${c.sponsor}' : 'Défi · ${c.durationDays} jours',
+              title: c.title,
+              subtitle: c.description,
             ),
-            const SizedBox(height: 8),
-            for (final v in result.violations)
-              ListTile(dense: true, leading: const Icon(Icons.close, size: 18), title: Text(v)),
-            if (result.valid)
-              Text('${result.progress.validDays} of ${result.progress.durationDays} days done · streak ${result.progress.streak}',
-                  textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            if (post != null && post.cardImageUrl != null && post.shareUrl != null)
-              FilledButton.icon(
-                onPressed: () => showExistingCardSheet(
-                  context,
-                  imageUrl: post.cardImageUrl!,
-                  shareUrl: post.shareUrl!,
-                  caption: post.caption ?? '',
-                ),
-                icon: const Icon(Icons.ios_share),
-                label: const Text('Share my challenge card'),
+            const SizedBox(height: 12),
+            Wrap(spacing: 6, runSpacing: 6, children: [for (final r in c.rules) DmPill(r.description)]),
+            if (c.reason != null) ...[
+              const SizedBox(height: 8),
+              Text(c.reason!, style: DmText.body),
+            ],
+            const SizedBox(height: 14),
+            if (!c.joined)
+              FilledButton(
+                onPressed: _busy ? null : _join,
+                child: Text('Rejoindre pour ${c.durationDays} jours'),
+              )
+            else
+              _ProgressPanel(
+                challengeId: _id,
+                picked: _picked,
+                caption: _caption,
+                busy: _busy,
+                onToggle: (g) => setState(() => _picked.contains(g.id) ? _picked.remove(g.id) : _picked.add(g.id)),
+                onSubmit: _submit,
               ),
-            if (!result.valid)
-              FilledButton.tonal(onPressed: () => Navigator.pop(context), child: const Text('Pick other pieces')),
+            if (_result != null) ...[
+              const SizedBox(height: 14),
+              _ResultPanel(result: _result!),
+            ],
+            const SizedBox(height: 14),
+            _LeaderboardPanel(challengeId: _id),
+            const SizedBox(height: 14),
+            _NudgesPanel(challengeId: _id),
+            const SizedBox(height: 14),
+            Bo7Panel(
+              title: 'Publications',
+              child: AsyncBody<List<Post>>(
+                value: ref.watch(postsProvider(_id)),
+                compact: true,
+                builder: (posts) => posts.isEmpty
+                    ? const Text('Chaque jour validé devient une publication avec sa carte.', style: DmText.body)
+                    : Column(children: [for (final p in posts) PostCard(post: p)]),
+              ),
+            ),
           ],
         ),
       ),
@@ -228,35 +115,221 @@ class EntryResultView extends ConsumerWidget {
   }
 }
 
-class _LeaderboardTab extends ConsumerWidget {
-  const _LeaderboardTab({required this.challengeId});
+class _ProgressPanel extends ConsumerWidget {
+  const _ProgressPanel({
+    required this.challengeId,
+    required this.picked,
+    required this.caption,
+    required this.busy,
+    required this.onToggle,
+    required this.onSubmit,
+  });
+
+  final String challengeId;
+  final Set<String> picked;
+  final TextEditingController caption;
+  final bool busy;
+  final ValueChanged<Garment> onToggle;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncBody<Progress>(
+      value: ref.watch(progressProvider(challengeId)),
+      compact: true,
+      builder: (p) => Bo7Panel(
+        title: p.finished ? 'Défi terminé' : 'Jour ${p.nextDay} : qu\'as-tu porté ?',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var d = 1; d <= p.durationDays; d++)
+                  _DayDot(day: d, status: p.statusOfDay(d), next: d == p.nextDay),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                StatTile('${p.points}', 'points'),
+                StatTile('${p.streak}', 'série'),
+                StatTile('${p.validDays}/${p.durationDays}', 'jours validés'),
+                if (p.completionProbability != null)
+                  StatTile('${(p.completionProbability! * 100).round()} %', 'chance de finir (ML)', dark: true),
+              ],
+            ),
+            if (p.badges.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, children: [for (final b in p.badges) DmPill('🏅 $b')]),
+            ],
+            if (!p.finished) ...[
+              const SizedBox(height: 14),
+              AsyncBody<List<Garment>>(
+                value: ref.watch(wardrobeProvider),
+                compact: true,
+                builder: (ward) => GarmentPicker(garments: ward, selected: picked, onToggle: onToggle, height: 320),
+              ),
+              const SizedBox(height: 10),
+              TextField(controller: caption, decoration: const InputDecoration(hintText: 'Légende (facultatif)')),
+              const SizedBox(height: 10),
+              FilledButton(
+                onPressed: busy || picked.isEmpty ? null : onSubmit,
+                child: Text(
+                    busy ? 'Vérification…' : (picked.isEmpty ? 'Choisis ta tenue' : 'Valider le jour ${p.nextDay}')),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DayDot extends StatelessWidget {
+  const _DayDot({required this.day, required this.status, required this.next});
+
+  final int day;
+  final bool? status;
+  final bool next;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = status == null ? DmColors.surface : (status! ? DmColors.success : const Color(0xFFB0573E));
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: bg,
+        border: Border.all(color: next ? DmColors.bronze : DmColors.border, width: next ? 2.4 : 1.2),
+      ),
+      child: Text(
+        '$day',
+        style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: status == null ? (next ? DmColors.bronze : DmColors.ink) : Colors.white),
+      ),
+    );
+  }
+}
+
+class _ResultPanel extends ConsumerWidget {
+  const _ResultPanel({required this.result});
+
+  final EntryResult result;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = result;
+    final repo = ref.read(bo7RepositoryProvider);
+    final ward = ref.watch(wardrobeProvider).valueOrNull ?? const <Garment>[];
+    final tomorrow = [for (final id in r.suggestion) ...ward.where((g) => g.id == id)];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: r.valid ? DmColors.successBg : DmColors.warningBg,
+        borderRadius: BorderRadius.circular(DmRadius.panel),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(r.valid ? 'Jour ${r.day} validé' : 'Jour ${r.day} non validé',
+                    style: DmText.title.copyWith(fontSize: 21)),
+              ),
+              TextButton.icon(
+                onPressed: () => showPipeline(context, 'Agent challenges', r.pipeline),
+                icon: const Icon(Icons.account_tree_outlined, size: 16),
+                label: const Text('Voir le pipeline'),
+              ),
+            ],
+          ),
+          for (final v in r.violations) Text('• $v', style: DmText.body.copyWith(color: DmColors.warning)),
+          if (r.coachMessage != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: DmColors.surface, borderRadius: BorderRadius.circular(DmRadius.card)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(r.coachSource == 'llm' ? 'COACH · LLAMA 3.2 + RAG' : 'COACH', style: DmText.eyebrow),
+                  const SizedBox(height: 4),
+                  Text(r.coachMessage!, style: DmText.body.copyWith(fontSize: 13, color: DmColors.text)),
+                ],
+              ),
+            ),
+          ],
+          if (r.post?.cardImageUrl != null) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DmRadius.card),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 420),
+                child: Image.network(repo.url(r.post!.cardImageUrl!), fit: BoxFit.contain),
+              ),
+            ),
+            if (r.post?.shareUrl != null)
+              TextButton(onPressed: () => openLink(context, r.post!.shareUrl!), child: Text(r.post!.shareUrl!)),
+          ],
+          if (tomorrow.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text('DEMAIN, ESSAIE', style: DmText.eyebrow),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 90,
+              child: Row(
+                children: [
+                  for (final g in tomorrow)
+                    Expanded(
+                      child: Padding(padding: const EdgeInsets.only(right: 6), child: GarmentImage(g)),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderboardPanel extends ConsumerWidget {
+  const _LeaderboardPanel({required this.challengeId});
+
   final String challengeId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final me = ref.watch(currentUserIdProvider);
-    final rows = ref.watch(leaderboardProvider(challengeId));
-    return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(leaderboardProvider(challengeId)),
-      child: rows.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ListView(children: [Center(child: Text('$e'))]),
-        data: (list) => list.isEmpty
-            ? ListView(children: const [SizedBox(height: 80), Center(child: Text('Nobody has joined yet. Be the first!'))])
-            : ListView(
+    final me = ref.watch(currentUserProvider);
+    return Bo7Panel(
+      title: 'Classement',
+      child: AsyncBody<List<LeaderboardRow>>(
+        value: ref.watch(leaderboardProvider(challengeId)),
+        compact: true,
+        builder: (rows) => rows.isEmpty
+            ? const Text('Personne n\'a encore rejoint. Rejoins, puis change de profil pour jouer comme une amie.',
+                style: DmText.body)
+            : Column(
                 children: [
-                  for (final r in list)
+                  for (final r in rows)
                     ListTile(
-                      selected: r.userId == me,
-                      leading: CircleAvatar(child: Text('${r.rank}')),
-                      title: Text(r.userId == me ? '${r.userId} (you)' : r.userId),
-                      subtitle: Text('${r.validDays} valid days · ${r.likes} likes'),
-                      trailing: Text(r.score.toStringAsFixed(0), style: Theme.of(context).textTheme.titleMedium),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: UserAvatar(r.userId, radius: 15),
+                      title: Text('${r.rank}. ${r.userId}',
+                          style:
+                              DmText.itemName.copyWith(fontWeight: r.userId == me ? FontWeight.w800 : FontWeight.w600)),
+                      subtitle: Text('${r.validDays} jours · ${r.likes} j\'aime', style: DmText.caption),
+                      trailing: Text(r.score.toStringAsFixed(1), style: DmText.price),
                     ),
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Score = 10 per valid day + 5 × average likes (smoothed so one viral post does not win).'),
-                  ),
                 ],
               ),
       ),
@@ -264,24 +337,35 @@ class _LeaderboardTab extends ConsumerWidget {
   }
 }
 
-class _PostsTab extends ConsumerWidget {
-  const _PostsTab({required this.challengeId});
+class _NudgesPanel extends ConsumerWidget {
+  const _NudgesPanel({required this.challengeId});
+
   final String challengeId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final posts = ref.watch(challengePostsProvider(challengeId));
-    return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(challengePostsProvider(challengeId)),
-      child: posts.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ListView(children: [Center(child: Text('$e'))]),
-        data: (list) => list.isEmpty
-            ? ListView(children: const [SizedBox(height: 80), Center(child: Text('No posts yet.'))])
-            : ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: list.length,
-                itemBuilder: (_, i) => PostTile(post: list[i]),
+    return Bo7Panel(
+      title: 'Qui a besoin d\'un rappel',
+      subtitle: 'Les participantes à risque d\'abandon (modèle ML), avec une tenue proposée.',
+      child: AsyncBody<List<Nudge>>(
+        value: ref.watch(nudgesProvider(challengeId)),
+        compact: true,
+        builder: (rows) => rows.isEmpty
+            ? const Text('Tout le monde est à jour.', style: DmText.body)
+            : Column(
+                children: [
+                  for (final n in rows)
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: UserAvatar(n.userId, radius: 15),
+                      title: Text(n.message, style: DmText.body.copyWith(color: DmColors.text)),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        onPressed: () => showSnack(context, 'Rappel envoyé à ${n.userId}'),
+                      ),
+                    ),
+                ],
               ),
       ),
     );

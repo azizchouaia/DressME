@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Pose sheets</title>
+    <style>
+      :root {
+        --paper: #f6f4f0;
+        --ink: #141414;
+        --muted: #8a857d;
+        --fill: #efebe4;
+      }
+      * { box-sizing: border-box; }
+      html, body, canvas { margin: 0; width: 100%; height: 100%; }
+      body {
+        overflow: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font: 14px/1.3 "Segoe UI", system-ui, sans-serif;
+      }
+      canvas { display: block; background: var(--paper); touch-action: none; }
+      .top {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: calc(12px + env(safe-area-inset-top)) 16px 0;
+        pointer-events: none;
+      }
+      .eyebrow {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 2px 0 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 28px;
+        font-weight: 500;
+      }
+      .top-actions { display: flex; gap: 8px; pointer-events: auto; }
+      #reset, .clothes-link {
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff;
+        color: var(--ink);
+        font: 13px "Segoe UI", system-ui, sans-serif;
+        box-shadow: 0 4px 16px rgba(20, 20, 20, 0.08);
+        text-decoration: none;
+      }
+      .clothes-dock {
+        position: absolute;
+        z-index: 3;
+        left: 50%;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        width: min(420px, calc(100% - 24px));
+        padding: 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 24px rgba(20, 20, 20, 0.08);
+      }
+      .pose-row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .pose-row button {
+        border: 0;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: var(--fill);
+        color: var(--ink);
+        font: 12px "Segoe UI", system-ui, sans-serif;
+      }
+      .pose-row button.active { background: var(--ink); color: #fff; }
+      #error {
+        position: absolute;
+        z-index: 4;
+        left: 12px;
+        right: 12px;
+        top: calc(12px + env(safe-area-inset-top));
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #fff;
+        color: #b3261e;
+      }
+    </style>
+  </head>
+  <body data-page="poses">
+    <canvas id="c"></canvas>
+    <header class="top">
+      <div>
+        <p class="eyebrow">DressMe</p>
+        <h1>Pose sheets</h1>
+      </div>
+      <div class="top-actions">
+        <a class="clothes-link" href="./index.html?mesh=/smplx_thin.glb&v=71">Build</a>
+        <button id="reset" type="button" hidden>Reset view</button>
+      </div>
+    </header>
+    <div class="clothes-dock">
+      <div class="pose-row">
+        <button type="button" data-sex="male" class="active">Man</button>
+        <button type="button" data-sex="female">Woman</button>
+        <button type="button" data-kind="tpose" class="active">T-pose</button>
+        <button type="button" data-kind="front">Front</button>
+        <button type="button" data-kind="hip">Hand on hip</button>
+        <button id="save-pose" type="button">Save image</button>
+        <button id="save-all-poses" type="button">Save all 6</button>
+      </div>
+    </div>
+    <input id="skeleton" type="checkbox" hidden />
+    <p id="error" hidden></p>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./scene.mjs?v=83"></script>
+  </body>
+</html>

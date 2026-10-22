@@ -81,6 +81,12 @@ class ShareAgent(BaseAgent[ShareCardInput, ShareCardOutput]):
             )
         )
 
+        avatar_area = None
+        if inp.kind == "tryon":  # avatar (M9) on the left, the outfit pieces in a column on the right
+            ax, ay, aw, ah = g_area
+            split = int(aw * 0.6)
+            avatar_area = (ax, ay, split - 24, ah)
+            g_area = (ax + split, ay, aw - split, ah)
         boxes = layout.run(items, g_area, weights=self.config.get("row_weights"))
         steps.append(
             PipelineStep(
@@ -114,6 +120,7 @@ class ShareAgent(BaseAgent[ShareCardInput, ShareCardOutput]):
             stats=stats,
             footer=url.split("://", 1)[-1] if inp.watermark else None,
             content_area=content,
+            avatar=(inp.avatar_image or "", avatar_area) if avatar_area else None,
             qr_url=f"{url}?ch=qr" if inp.qr else None,
             font_path=self.config.get("font_path"),
             timeout=self.config.get("image_fetch_timeout_s", 4),
