@@ -110,25 +110,25 @@ void main() {
       child: const MaterialApp(home: LocalMarketScreen()),
     ));
 
-    expect(find.text('jebba brodée'),
+    expect(find.text('embroidered jebba'),
         findsOneWidget); // example chips before the first search
 
     await tester.enterText(find.byKey(const Key('bo6-query')),
-        'baskets blanches à Tunis pour 80 TND');
+        'white sneakers in Tunis for 80 TND');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
 
-    expect(repo.lastQuery, 'baskets blanches à Tunis pour 80 TND');
-    expect(find.text('1 article trouvé'), findsOneWidget);
-    expect(find.text('Baskets'), findsOneWidget);
+    expect(repo.lastQuery, 'white sneakers in Tunis for 80 TND');
+    expect(find.text('1 piece found'), findsOneWidget);
+    expect(find.text('Sneakers'), findsOneWidget);
     expect(find.text('≤ 80 TND'), findsOneWidget);
     expect(find.text('Basket à plateforme femme'), findsOneWidget);
     expect(find.text('69,3 TND'), findsOneWidget);
     expect(find.text('87 %'), findsOneWidget);
-    expect(find.textContaining('de plus'), findsNothing); // everything shown
+    expect(find.textContaining('more'), findsNothing); // everything shown
   });
 
-  testWidgets('"Voir plus" loads the next page of the same search',
+  testWidgets('"Show more" loads the next page of the same search',
       (tester) async {
     final repo = _PagedRepository();
     await tester.pumpWidget(ProviderScope(
@@ -138,16 +138,18 @@ void main() {
     await tester.enterText(find.byKey(const Key('bo6-query')), 'robe');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
-    expect(find.text('30 articles trouvés · 24 affichés'), findsOneWidget);
+    expect(find.text('30 pieces found · 24 shown'), findsOneWidget);
 
-    final more = find.text('Voir 6 de plus');
+    final more = find.text('Show 6 more');
     await tester.scrollUntilVisible(more, 300,
         scrollable: find.byType(Scrollable).last);
+    await tester.ensureVisible(more);
+    await tester.pumpAndSettle();
     await tester.tap(more);
     await tester.pumpAndSettle();
 
     expect(repo.offsets, [0, 24]); // second call starts after the first page
-    expect(find.textContaining('de plus'), findsNothing); // all 30 are shown
+    expect(find.textContaining(' more'), findsNothing); // all 30 are shown
     await tester.scrollUntilVisible(find.text('Robe 29'), 300,
         scrollable: find.byType(Scrollable).last);
     expect(find.text('Robe 29'), findsOneWidget); // last piece of page 2

@@ -22,6 +22,7 @@ from .contract import (
     Handoff,
     HandoffIn,
     HandoffUpdate,
+    Insights,
     InstoreIn,
     InstoreOut,
     LinkIn,
@@ -175,6 +176,16 @@ async def dashboard(
     source: Sources = None,
 ):
     return await _call(service.get_dashboard, shop, days, source)
+
+
+@router.get("/dashboard/insights", response_model=Insights)
+async def dashboard_insights(
+    shop: Annotated[str | None, Query(description="Shop of the M7 catalogue; empty = whole market")] = None,
+    days: Days = None,
+    source: Sources = None,
+):
+    """2-3 tips written by the BO6 LLM (Qwen 2.5 7B) from the dashboard figures; rule-based when it is off."""
+    return await _call(service.get_insights, shop, days, source)
 
 
 @router.get("/pro/{pro_id}/dashboard", response_model=Dashboard)

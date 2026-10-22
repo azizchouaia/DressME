@@ -3,7 +3,7 @@
 **Technical report · BO6 Tunisian market · ESPRIT 2026**
 Data collection (scraping), cleaning, a clothing search engine over Tunisian shops, and its evaluation.
 
-*Updated 16/10/2026: 43 shops, 6,375 products. First version 14/10/2026 (15 shops, 2,471 products).*
+*Updated 22/10/2026: Qwen 2.5 7B LLM (§5.13, §6.6). 16/10/2026: 43 shops, 6,375 products. First version 14/10/2026 (15 shops, 2,471 products).*
 
 ---
 
@@ -831,6 +831,40 @@ against 58 % in French on 12 direct searches). That is why French, darija and Ar
 The evaluation of §6 confirms it at a larger scale: FashionCLIP alone on the raw request gets 0.03 nDCG on
 darija, against 0.97 for the pipeline.
 
+### 5.13 The agent's LLM: Qwen 2.5 7B, local
+
+Since 22/10, the `localshop` agent (M7 and its M14 skill) has **an LLM: Qwen 2.5 7B**, run on the
+machine with **Ollama** (`llm.py`). Why this model: it is free and local (no API key, the clients' requests
+never leave the machine), it fits in memory on a 32 GB PC without a GPU, and it is good in French and
+Arabic, which matters for darija.
+
+**Its role in M7: understand the requests the rules do not understand.** The rules of §5.3 stay the first
+step, fast and exact. The LLM is called only when they find **no piece type, no colour and no photo**
+(`pipeline/understand.py`):
+
+```
+"haja nlabesha l b7ar fi sif"  ──►  rules: nothing understood
+        │
+        ▼  Qwen 2.5 7B, JSON output forced by a schema (Ollama structured outputs)
+{french: "…", subcategory: <catalogue code>, color: <code>, gender, max_price_tnd, city}
+        │
+        ▼  checks in the code
+budget written in the request? city and gender said in the request? otherwise removed
+        │
+        ▼  the normal search (FashionCLIP + BM25 + filters) runs on these filters
+kept only if it finds pieces; note: "Demande comprise avec l'IA (qwen2.5:7b): …"
+```
+
+The LLM **never sees the products and chooses nothing**: it turns the request into filters, with a fixed
+vocabulary (the catalogue's codes). When it is off, slow or wrong, the answer is the rules' one, as before.
+The tests use a fake LLM; they never call Ollama.
+
+**Two lessons from tuning it**, measured on the requests of §6.6:
+- with examples in the prompt, the small model **copied them** into unrelated answers ("beach outfit"
+  for a work outfit): the prompt has no examples any more and asks for "the most likely piece" for the
+  use (beach → swimwear, winter → coat, interview → suit);
+- the model **invented a gender** ("women"): a gender is kept only when the request says it.
+
 ---
 
 ## 6. Evaluation
@@ -908,6 +942,31 @@ Per language (nDCG@10): French 0.908, English 0.905, darija 0.974, Arabic 0.962.
 the two raw methods (top 10 of each). Grading about twenty requests is enough (`human_rel` = 0, 1 or 2,
 looking at the photo and the link): save the file as `judgments.csv` and run again; `RESULTS.md` then adds
 human nDCG@10 and P@5, and the agreement with the automatic grades (Cohen's kappa).
+
+### 6.6 What the LLM adds: 16 hard requests
+
+On the 72 requests of §6.1 the rules already understand everything, so the LLM is never called. To measure
+it, we wrote **16 requests the rules do not understand** (French, English, darija, Arabic: "haja nlabesha
+l b7ar fi sif", "an outfit for a job interview", "عندي عرس في سوسة نحب حاجة باهية"…), with their intent
+written by hand (`evaluation/queries_llm.yaml`, script `llm_eval.py`).
+
+| | Type understood and right | Budget / city right | Pieces found | Median time (CPU) |
+|---|---|---|---|---|
+| Rules alone | 0/16 | 15/16 | 0/16 | – |
+| **Rules + Qwen 2.5 7B** | **11/16** | 16/16 | 14/16 | 14.8 s |
+| Rules + Qwen 2.5 3B | 12/16 | 16/16 | 16/16 | 7.6 s |
+
+- The LLM takes these requests from **0 to 11 out of 16** understood; no budget or city is invented
+  (16/16).
+- **7B and 3B are even** on this small set (11 vs 12 is not a real difference). The 7B rewrites better
+  ("costume d'affaires" for an interview, "sac de femme" for a gift for a mother, where the 3B writes
+  "robe de travail" and "robe de fête"), but it is **twice as slow** on a CPU. The model is changed in
+  `config.yaml → llm.model`.
+- The 7B's misses: the beach read as "shirt", winter shoes read as "shirt", a warm outfit read as
+  "evening dress", the hammam not understood.
+- **Limit**: these 16 requests and their intent were written by the same team as the system; a set
+  written by other people would give a fairer figure. The response time (≈ 15 s) comes from the lack of
+  a GPU; that is why the LLM is only the last resort.
 
 ---
 

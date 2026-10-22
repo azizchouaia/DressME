@@ -14,6 +14,8 @@ CARD = {
         "The orchestrator calls localshop, not this module.",
         "A pro sees a client's data only after the client accepted; the client can revoke it.",
         "The dashboard shows aggregates only (no user id, groups under min_group hidden).",
+        "The BO6 LLM (qwen2.5:7b) writes the stylist's summary sentence and the boutique tips; numbers stay "
+        "from the code.",
     ],
     "when_to_use": [],
     "when_not_to_use": ["Call localshop."],

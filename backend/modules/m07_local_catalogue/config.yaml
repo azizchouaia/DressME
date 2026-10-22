@@ -31,6 +31,22 @@ gender_photo_margin: 1.5
 log_events: true
 log_dir: ml/data/logs
 
+# LLM of the BO6 agent (llm.py), shared with M14: Qwen 2.5 7B run locally by Ollama (free, French + Arabic).
+# It only understands requests the rules miss and writes texts; it never picks products, prices or stylists.
+# Off, not installed or too slow -> every use falls back to the rules. Install: `ollama pull qwen2.5:7b`.
+llm:
+  enabled: true
+  url: http://127.0.0.1:11434
+  model: qwen2.5:7b
+  timeout_s: 90          # CPU only: a 7B model answers in ~5-30 s
+  temperature: 0
+  keep_alive: 15m        # keep the model loaded between calls
+  uses:
+    understand: true         # M7: requests the rules do not understand
+    handoff_summary: true    # M14: one sentence for the stylist
+    escalation: true         # M14: longer chats -> asks for a human / frustrated?
+    insights: true           # M14: tips for a boutique from the dashboard figures
+
 # Agent memory (memory.py): one JSON file per user, relative to the repo root, never git.
 memory_dir: ml/data/bo6/memory
 memory_history: 50    # past searches kept per user

@@ -188,13 +188,13 @@ String describeError(Object error) {
   if (error is DioException) {
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
-      return "Serveur DressMe injoignable (${error.requestOptions.baseUrl}). "
-          'Lance « uvicorn api.main:app » dans backend/.';
+      return 'DressMe server unreachable (${error.requestOptions.baseUrl}). '
+          'Run "uvicorn api.main:app" in backend/.';
     }
     final detail = error.response?.data is Map
         ? (error.response!.data as Map)['detail']
         : null;
-    return 'Erreur ${error.response?.statusCode ?? ''} : ${detail ?? error.message}';
+    return 'Error ${error.response?.statusCode ?? ''}: ${detail ?? error.message}';
   }
   return error.toString();
 }
@@ -217,6 +217,7 @@ class LocalMarketRepository {
       int offset = 0}) async {
     final res = await _dio.post<Map<String, dynamic>>('/m07/search', data: {
       'query': query,
+      'language': 'en', // notes and reasons in English, as the app
       'k': k,
       if (offset > 0) 'offset': offset,
       if (city != null) 'city': city,

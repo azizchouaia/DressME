@@ -9,12 +9,13 @@ from shared.base_agent import AgentError, BaseAgent
 from . import clients
 from .contract import AgentInfo, LocalShopInput, LocalShopOutput, NextAction, ParsedQuery, ShopResult
 from .identity import CARD, VERSION, tool_description
+from .llm import get_llm
 from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV, CONFIG, INDEX_DIR, model_source
-from .pipeline import filter, parse, rerank, retrieve
+from .pipeline import filter, parse, rerank, retrieve, understand
 from .pipeline.catalogue import Catalogue
 from .scraper.normalize import fold
-from .taxonomy import COLOR_CODES, SUBCATEGORIES, canonical_city, governorate
+from .taxonomy import SUBCATEGORIES, canonical_city, colour_name, governorate, label
 
 # Questions, labels and memory notes in the request's language. Facts (shops, prices, notes) stay as found.
 TEXTS = {
@@ -125,6 +126,41 @@ def gender_answer(value: str) -> str | None:
     return parse.gender_from_query(fold(value))
 
 
+# Notes on the search, in the request's language (Arabic keeps French for now).
+NOTES = {
+    "fr": {
+        "no_style": "Vecteur de style « {style} » pas encore disponible (M5) : classement sans le style.",
+        "other_cities": "Rien trouvé à {city} : résultats d'autres villes ou de boutiques en ligne.",
+        "sold_out": "Aucun article en stock pour l'instant : {n} article(s) en rupture de stock, "
+        "à vérifier auprès de la boutique.",
+        "no_colour": "Aucun article de couleur {colour} parmi les {what}{where} : "
+        "voici les autres {what} disponibles.",
+        "in_city": " à {city}",
+        "items": "articles",
+        "nothing_for": "Je n'ai trouvé aucun article correspondant à « {asked} » dans les boutiques locales.",
+        "no_match": "Aucun article ne correspond à ces critères.",
+        "llm_note": "Demande comprise avec l'IA ({model}) : {what}.",
+        "rewritten": "requête reformulée",
+    },
+    "en": {
+        "no_style": "Style vector “{style}” not available yet (M5): ranked without the style.",
+        "other_cities": "Nothing found in {city}: results from other cities or online shops.",
+        "sold_out": "Nothing in stock for now: {n} piece(s) sold out, to check with the shop.",
+        "no_colour": "No {colour} piece among the {what}{where}: here are the other {what} available.",
+        "in_city": " in {city}",
+        "items": "pieces",
+        "nothing_for": "I found no piece matching “{asked}” in the local shops.",
+        "no_match": "No piece matches these criteria.",
+        "llm_note": "Request understood with AI ({model}): {what}.",
+        "rewritten": "request rewritten",
+    },
+}
+
+
+def notes_for(language: str) -> dict:
+    return NOTES.get(language, NOTES["fr"])
+
+
 class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
     name = CARD["name"]
     description = tool_description()
@@ -213,15 +249,12 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         return "; ".join(cities) or None
 
     @staticmethod
-    def _colour_note(parsed: ParsedQuery, city_applied: bool) -> str:
+    def _colour_note(parsed: ParsedQuery, city_applied: bool, language: str) -> str:
         """The colour asked for exists nowhere (in stock or not, in any city): say it before other colours."""
-        colour = COLOR_CODES[parsed.color][0].lower()
-        what = SUBCATEGORIES[parsed.subcategory][1].lower() if parsed.subcategory else "articles"
-        where = f" à {parsed.city}" if city_applied else ""
-        return (
-            f"Aucun article de couleur {colour} parmi les {what}{where} : "
-            f"voici les autres {what} disponibles."
-        )
+        t = notes_for(language)
+        what = label(parsed.subcategory, language).lower() if parsed.subcategory else t["items"]
+        where = t["in_city"].format(city=parsed.city) if city_applied else ""
+        return t["no_colour"].format(colour=colour_name(parsed.color, language), what=what, where=where)
 
     # ------------------------------------------------------------------ agent loop with memory
     async def run(self, inp: LocalShopInput) -> LocalShopOutput:
@@ -238,7 +271,21 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         search = LocalShopInput.model_validate({**request, "language": inp.language})
 
         remembered = self.memory.preferences(uid).get("gender")  # women / men / any (= do not ask again)
-        out = await self._search(search, remembered if remembered in ("women", "men") else None, memory_notes)
+        gender = remembered if remembered in ("women", "men") else None
+        out = await self._search(search, gender, memory_notes)
+        if self._llm_can_help(search, out):
+            slots = await understand.run(get_llm(), search.query)
+            if slots:  # the normal search runs again on what the LLM read, checked against the catalogue
+                retry = search.model_copy(update=slots)
+                second = await self._search(retry, gender, [])
+                if second.results:
+                    request |= slots  # memory keeps the understood request (answer, next page)
+                    search, out = retry, second
+                    out.parsed.understood_by = "llm"
+                    note = notes_for(inp.language)["llm_note"].format(
+                        model=get_llm().model, what=self._describe(out.parsed, inp.language)
+                    )
+                    out.note = f"{out.note} {note}" if out.note else note
         if search.offset == 0:
             out.question, out.question_key = self._question(search, out, ask_gender=remembered is None)
 
@@ -248,6 +295,23 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         out.memory_notes = memory_notes
         out.next_actions = self._next_actions(out, search, texts)
         return out
+
+    @staticmethod
+    def _llm_can_help(inp: LocalShopInput, out: LocalShopOutput) -> bool:
+        """Only for a written request where the rules understood no piece, colour or photo."""
+        parsed = out.parsed
+        understood = parsed.subcategory or parsed.category or parsed.color or inp.image_embedding
+        return bool(inp.query.strip()) and not understood and get_llm().on("understand")
+
+    @staticmethod
+    def _describe(parsed: ParsedQuery, language: str) -> str:
+        parts = [
+            label(parsed.subcategory, language) if parsed.subcategory else None,
+            colour_name(parsed.color, language) if parsed.color else None,
+            f"≤ {parsed.max_price_tnd:g} TND" if parsed.max_price_tnd else None,
+            parsed.city,
+        ]
+        return ", ".join(p for p in parts if p) or notes_for(language)["rewritten"]
 
     def _restore(self, inp: LocalShopInput, uid: str, memory_notes: list[str]) -> dict:
         """The last search of this session, with the user's answer applied or moved to the next page."""
@@ -396,15 +460,12 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         if from_memory and memory_notes is not None:
             texts = TEXTS[inp.language]
             memory_notes.append(texts["gender_memory"].format(gender=texts[parsed.gender]))
-        notes = []
+        notes, t = [], notes_for(inp.language)
         style_values = inp.style_vector
         if isinstance(style_values, str):  # an id, as in the architecture doc: ask M5 for the vector
             style_values = clients.style_vector_from_m5(inp.user_id, style_values)
             if style_values is None:
-                notes.append(
-                    f"Vecteur de style « {inp.style_vector} » pas encore disponible (M5) : "
-                    "classement sans le style."
-                )
+                notes.append(t["no_style"].format(style=inp.style_vector))
         style = self._vector(style_values, "style_vector")
         image = self._vector(inp.image_embedding, "image_embedding")
 
@@ -439,24 +500,17 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         city_applied = use_city and bool(parsed.city)
         if len(candidates):
             if parsed.city and not use_city and not filter.city_mask(cat, parsed.city)[candidates].any():
-                notes.append(
-                    f"Rien trouvé à {parsed.city} : résultats d'autres villes ou de boutiques en ligne."
-                )
+                notes.append(t["other_cities"].format(city=parsed.city))
             if with_sold_out and not stock:
-                notes.append(
-                    f"Aucun article en stock pour l'instant : {len(candidates)} article(s) en rupture de "
-                    "stock, à vérifier auprès de la boutique."
-                )
+                notes.append(t["sold_out"].format(n=len(candidates)))
             if parsed.color and not use_color:
-                notes.append(self._colour_note(parsed, city_applied))
+                notes.append(self._colour_note(parsed, city_applied, inp.language))
         if not len(candidates):
             if not evidence.any():
                 asked = parsed.corrected or " ".join(t for t in (inp.query, inp.gap) if t)
-                notes.append(
-                    f"Je n'ai trouvé aucun article correspondant à « {asked} » dans les boutiques locales."
-                )
+                notes.append(t["nothing_for"].format(asked=asked))
             else:
-                notes.append("Aucun article ne correspond à ces critères.")
+                notes.append(t["no_match"])
             return LocalShopOutput(results=[], parsed=parsed, total_matches=0, note=" ".join(notes))
 
         match, parts = rerank.score(cat, candidates, parsed, visual, visual_kind, bm25, style, self.config)
@@ -486,7 +540,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                     shop_url=p["shop_url"],
                     origin_type=p["origin_type"],
                     available=p["available"],
-                    reasons=rerank.reasons(p, parsed, parts, j, visual_kind),
+                    reasons=rerank.reasons(p, parsed, parts, j, visual_kind, inp.language),
                 )
             )
         return LocalShopOutput(

@@ -82,6 +82,23 @@ here (`memory_gender_min_share`: no men's filter on dresses). `DELETE /m07/memor
 `smartbuy` (photo + price + shop of the top result) · `show_outfits` → `stylist` · `more_results` →
 `localshop` with `next_page` · `feedback` → `POST /m07/feedback`. Labels follow `language`.
 
+## LLM of the BO6 agent (`llm.py`) — Qwen 2.5 7B, local with Ollama
+One LLM for the whole BO6 agent (M7 and its M14 skill), run locally by Ollama (free, no API key,
+French + Arabic). **It reads and writes; it never chooses a product, a price, a score or a stylist.**
+
+| Where | What the LLM does | What the code checks |
+|---|---|---|
+| M7 `pipeline/understand.py` | A request the rules do not understand at all ("haja nlabesha l b7ar fi sif") → JSON: piece type, colour, gender, budget, city + a short French rewrite; then the **normal search** runs on it | JSON schema with the catalogue's codes (Ollama structured outputs); a budget must be written in the request, a city said in it, a gender said in it; the search only keeps the result if it finds pieces |
+| M14 hand-off summary | One clear French sentence for the stylist | ≤ 260 characters, no number the client did not write; the facts lines stay from the code |
+| M14 escalation | On a longer chat the rules do not escalate: asks for a human / frustrated / important occasion | The LLM must quote the client's words; a quote not in the chat is ignored; it can add a signal, never remove one |
+| M14 boutique tips | 2-3 tips from the dashboard figures (`GET /m14/dashboard/insights`) | Every number of a tip must be in the figures, else the tip is dropped; rule-based tips when the LLM is off |
+
+Setup: install Ollama, then `ollama pull qwen2.5:7b`. Settings in `config.yaml → llm` (`enabled`, `model`,
+`timeout_s`, one switch per use). **LLM off, not installed or too slow → the rules answer**, exactly as
+before (the same fallback idea as real modules vs mocks). The agent card (`identity.py`) declares it.
+Tests never call Ollama (a fake LLM in `tests/test_llm.py`). Measured gain: `evaluation/RESULTS_LLM.md`
+(`python -m modules.m07_local_catalogue.evaluation.llm_eval qwen2.5:7b`).
+
 ## Endpoints (prefix `/m07`, `router.py`, included automatically by `api/main.py`)
 - `POST /m07/search` — body = `LocalShopInput`, answer = `LocalShopOutput` (with a `search_id`)
 - `GET /m07/card` (and `/m07/identity`) — agent card

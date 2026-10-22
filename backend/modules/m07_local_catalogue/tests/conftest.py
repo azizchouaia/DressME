@@ -1,6 +1,6 @@
 import pytest
 
-from modules.m07_local_catalogue import events, memory, service
+from modules.m07_local_catalogue import events, llm, memory, service
 
 
 @pytest.fixture(autouse=True)
@@ -18,3 +18,9 @@ def memory_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(memory, "default_folder", lambda: folder)
     monkeypatch.setattr(service, "_memory", None)
     return folder
+
+
+@pytest.fixture(autouse=True)
+def no_llm(monkeypatch):
+    """Tests never call Ollama: the LLM is off unless a test installs a fake one (test_llm.py)."""
+    monkeypatch.setattr(llm, "_llm", llm.LLM({"enabled": False, "model": "off", "url": "http://off"}))

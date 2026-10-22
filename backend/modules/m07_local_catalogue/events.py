@@ -109,6 +109,7 @@ def log_search(
                 "governorate",
                 "translated",
                 "corrected",
+                "understood_by",
             )
         },
         "total_matches": out.get("total_matches", 0),

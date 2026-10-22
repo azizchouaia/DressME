@@ -17,18 +17,19 @@ from sklearn.metrics import silhouette_score
 
 from modules.m07_local_catalogue.contract import ParsedQuery
 from modules.m07_local_catalogue.pipeline import parse
-from modules.m07_local_catalogue.taxonomy import COLOR_CODES, SUBCATEGORIES
+from modules.m07_local_catalogue.taxonomy import SUBCATEGORIES, SUBCATEGORY_EN
 
-CATEGORY_FR = {
-    "top": "Hauts",
-    "bottom": "Bas",
-    "dress": "Robes & ensembles",
-    "outerwear": "Vestes & manteaux",
-    "shoes": "Chaussures",
-    "accessory": "Accessoires",
-    "traditional": "Tenues traditionnelles",
+# Theme names are shown in the Espace pro, in English (the catalogue labels are French).
+CATEGORY_EN = {
+    "top": "Tops",
+    "bottom": "Bottoms",
+    "dress": "Dresses & sets",
+    "outerwear": "Jackets & coats",
+    "shoes": "Shoes",
+    "accessory": "Accessories",
+    "traditional": "Traditional outfits",
 }
-GENDER_FR = {"women": "femme", "men": "homme"}
+GENDER_EN = {"women": "women", "men": "men"}
 
 
 def prompt_of(search: dict) -> str | None:
@@ -73,8 +74,8 @@ def _label(members: list[dict]) -> tuple[str, str | None, str | None, str | None
         else None
     )
     subcategory = kind if level == "sub" else None
-    name = SUBCATEGORIES[kind][1] if subcategory else CATEGORY_FR.get(kind or "", "Articles")
-    parts = [name, COLOR_CODES[color][0] if color else None, GENDER_FR.get(gender or "")]
+    name = SUBCATEGORY_EN.get(kind, kind) if subcategory else CATEGORY_EN.get(kind or "", "Items")
+    parts = [name, color.replace("_", " ") if color else None, GENDER_EN.get(gender or "")]
     category = SUBCATEGORIES[kind][0] if subcategory else kind
     return " · ".join(p for p in parts if p), subcategory, color, gender, category
 

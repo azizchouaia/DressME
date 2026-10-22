@@ -197,6 +197,15 @@ def test_next_actions_chain_other_agents(agent):
     assert "more_results" not in acts  # one shirt only
 
 
+def test_reasons_and_notes_in_english(agent):
+    out = call(agent, query="white linen shirt", user_id="u4", session_id="s1", language="en")
+    assert out["results"][0]["reasons"][:2] == ["Shirts", "Colour: white"]
+    out = call(agent, query="chemise violette", user_id="u4", session_id="s2", language="en")
+    assert out["note"].startswith("No purple piece among the shirts")
+    out = call(agent, query="chemise violette", user_id="u4", session_id="s3")
+    assert out["note"].startswith("Aucun article de couleur violet parmi les chemises")  # French by default
+
+
 def test_question_in_arabic(agent):
     out = call(agent, query="baskets", user_id="u3", session_id="s1", language="ar")
     assert out["question"] == "للنساء أم للرجال؟"

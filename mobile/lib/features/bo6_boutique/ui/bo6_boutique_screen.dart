@@ -11,30 +11,31 @@ import '../../bo6_local_market/logic/bo6_local_market_provider.dart'
     show localMarketRepositoryProvider, localShopsProvider;
 import '../data/bo6_boutique_repository.dart';
 import '../logic/bo6_boutique_provider.dart';
+import 'bo6_words.dart';
 
 String _pct(double v) => '${(v * 100).round()} %';
 String _tnd(double v) =>
     '${v.toStringAsFixed(v == v.roundToDouble() ? 0 : 1).replaceAll('.', ',')} TND';
 
-const _statusFr = {
-  'queued': 'En attente',
-  'accepted': 'Acceptée',
-  'declined': 'Refusée',
-  'closed': 'Close',
-  'not_needed': 'Pas nécessaire',
-  'no_stylist': 'Aucun styliste libre',
-  'invited': 'Invité',
-  'active': 'Accès accordé',
-  'revoked': 'Accès retiré',
+const _status = {
+  'queued': 'Waiting',
+  'accepted': 'Accepted',
+  'declined': 'Declined',
+  'closed': 'Closed',
+  'not_needed': 'Not needed',
+  'no_stylist': 'No stylist free',
+  'invited': 'Invited',
+  'active': 'Access granted',
+  'revoked': 'Access removed',
 };
-const _reasonFr = {
-  'asks_human': 'demande un styliste',
+const _reason = {
+  'asks_human': 'asks for a stylist',
   'frustration': 'frustration',
-  'complex_occasion': 'occasion importante',
-  'low_confidence': "l'assistant n'est pas sûr",
-  'long_conversation': 'longue conversation',
-  'repeated_request': 'répète sa demande',
-  'user_choice': 'choix du client',
+  'complex_occasion': 'important occasion',
+  'low_confidence': 'the assistant is not sure',
+  'long_conversation': 'long conversation',
+  'repeated_request': 'repeats the request',
+  'user_choice': "client's choice",
 };
 
 class BoutiqueScreen extends StatelessWidget {
@@ -89,7 +90,7 @@ class _Hero extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
-                    tooltip: 'Boutiques locales',
+                    tooltip: 'Local shops',
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () => context.go('/bo6_local_market'),
                   ),
@@ -97,17 +98,17 @@ class _Hero extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('ESPACE PRO',
+                        Text('PRO SPACE',
                             style:
                                 DmText.eyebrow.copyWith(color: DmColors.gold)),
                         const SizedBox(height: 4),
-                        Text('Boutiques & stylistes',
+                        Text('Shops & stylists',
                             style: DmText.display
                                 .copyWith(color: Colors.white, fontSize: 28)),
                         const SizedBox(height: 6),
                         Text(
-                            'Ce que cherchent les clients, et les demandes '
-                            "passées de l'assistant à un styliste.",
+                            'What clients search for, and the requests the '
+                            'assistant passed to a stylist.',
                             style: DmText.body.copyWith(color: onDark)),
                       ],
                     ),
@@ -124,8 +125,8 @@ class _Hero extends StatelessWidget {
               dividerColor: Colors.transparent,
               labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               tabs: [
-                Tab(text: 'Tableau de bord'),
-                Tab(text: 'Hand-off styliste'),
+                Tab(text: 'Dashboard'),
+                Tab(text: 'Stylist hand-off'),
                 Tab(text: 'Clients'),
               ],
             ),
@@ -271,17 +272,17 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
                 requestFocusOnTap: true,
                 menuHeight: 360,
                 leadingIcon: const Icon(Icons.storefront_outlined, size: 20),
-                label: Text('Boutique (${list.length} dans le catalogue)'),
+                label: Text('Shop (${list.length} in the catalogue)'),
                 onSelected: (v) => setState(() => _shop = v ?? _market),
                 dropdownMenuEntries: [
                   const DropdownMenuEntry(
-                      value: _market, label: 'Tout le marché'),
+                      value: _market, label: 'Whole market'),
                   for (final shop in list)
                     DropdownMenuEntry(
                       value: shop.shop,
                       label: shop.shop,
                       trailingIcon: Text(
-                          '${shop.city ?? 'en ligne'} · ${shop.products} articles',
+                          '${shop.city ?? 'online'} · ${shop.products} pieces',
                           style: DmText.caption),
                     ),
                 ],
@@ -291,7 +292,7 @@ class _DashboardTabState extends ConsumerState<_DashboardTab> {
         ),
         const SizedBox(height: 6),
         _Picker<int>(
-          options: const [('7 jours', 7), ('30 jours', 30), ('90 jours', 90)],
+          options: const [('7 days', 7), ('30 days', 30), ('90 days', 90)],
           selected: _days,
           onPick: (v) => setState(() => _days = v),
         ),
@@ -321,7 +322,7 @@ class _DashboardBody extends StatelessWidget {
     if (d.searches == 0) {
       return ListView(children: const [
         _Message(
-            'Aucune recherche sur la période. Lance le simulateur de trafic '
+            'No search in this period. Run the traffic simulator '
             '(python -m modules.m14_stylist_mode.simulate.traffic).'),
       ]);
     }
@@ -341,21 +342,23 @@ class _DashboardBody extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DmRadius.small),
               ),
               child: Text(
-                '${_pct(d.simulatedShare)} des recherches viennent du simulateur '
-                '(pas encore de vrais clients).',
+                '${_pct(d.simulatedShare)} of the searches come from the simulator '
+                '(no real clients yet).',
                 style: DmText.body.copyWith(color: DmColors.warning),
               ),
             ),
           ),
         _Kpis(d),
+        const SizedBox(height: 14),
+        _InsightsCard(shop: d.shop, days: d.periodDays),
         const SizedBox(height: 22),
         DmSectionHeader(
-          eyebrow: d.shop == null ? 'Marché' : 'Opportunités',
-          title: 'Demande non satisfaite',
+          eyebrow: d.shop == null ? 'Market' : 'Opportunities',
+          title: 'Unmet demand',
         ),
         const SizedBox(height: 10),
         if (d.unmet.isEmpty)
-          const Text('Rien à signaler sur la période.', style: DmText.body),
+          const Text('Nothing to report in this period.', style: DmText.body),
         for (final u in d.unmet)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -369,13 +372,13 @@ class _DashboardBody extends StatelessWidget {
                   const SizedBox(height: 8),
                   _Bar(
                       value: u.opportunity / maxOpp,
-                      label: 'opportunité ${u.opportunity.round()}'),
+                      label: 'opportunity ${u.opportunity.round()}'),
                 ],
               ),
             ),
           ),
         const SizedBox(height: 18),
-        const DmSectionHeader(eyebrow: 'Cette semaine', title: 'Tendances'),
+        const DmSectionHeader(eyebrow: 'This week', title: 'Trends'),
         const SizedBox(height: 10),
         _Card(
           child: Column(
@@ -390,8 +393,8 @@ class _DashboardBody extends StatelessWidget {
                   ),
                   title: Text(t.label, style: DmText.itemName),
                   subtitle: Text(
-                    '${t.last7Days} recherches en 7 jours '
-                    '(moyenne ${t.weeklyMeanBefore.toStringAsFixed(1)} / semaine avant)',
+                    '${t.last7Days} searches in 7 days '
+                    '(mean ${t.weeklyMeanBefore.toStringAsFixed(1)} / week before)',
                     style: DmText.caption,
                   ),
                   trailing:
@@ -402,7 +405,7 @@ class _DashboardBody extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         const DmSectionHeader(
-            eyebrow: 'Thèmes', title: 'Ce que cherchent les clients'),
+            eyebrow: 'Themes', title: 'What clients search for'),
         const SizedBox(height: 10),
         for (final t in d.themes)
           Padding(
@@ -411,14 +414,14 @@ class _DashboardBody extends StatelessWidget {
           ),
         const SizedBox(height: 18),
         DmSectionHeader(
-          eyebrow: 'Prix',
+          eyebrow: 'Prices',
           title: d.shop == null
-              ? 'Budgets vs prix du marché'
-              : 'Budgets vs vos prix',
+              ? 'Budgets vs market prices'
+              : 'Budgets vs your prices',
         ),
         const SizedBox(height: 10),
         if (d.prices.isEmpty)
-          const Text('Pas assez de budgets donnés sur la période.',
+          const Text('Not enough budgets given in this period.',
               style: DmText.body),
         for (final p in d.prices)
           Padding(
@@ -435,16 +438,16 @@ class _DashboardBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Budget médian ${_tnd(p.demandP50)} '
+                    'Median budget ${_tnd(p.demandP50)} '
                     '(${_tnd(p.demandP25)} – ${_tnd(p.demandP75)})'
-                    '${p.shopP50 == null ? '' : ' · prix médian ${d.shop == null ? 'du marché' : 'chez vous'} ${_tnd(p.shopP50!)}'}',
+                    '${p.shopP50 == null ? '' : ' · median price ${d.shop == null ? 'in the market' : 'in your shop'} ${_tnd(p.shopP50!)}'}',
                     style: DmText.body,
                   ),
                   if (p.servedShare != null) ...[
                     const SizedBox(height: 6),
                     _Bar(
                         value: p.servedShare!,
-                        label: 'budgets servis ${_pct(p.servedShare!)}'),
+                        label: 'budgets served ${_pct(p.servedShare!)}'),
                   ],
                 ],
               ),
@@ -452,8 +455,8 @@ class _DashboardBody extends StatelessWidget {
           ),
         const SizedBox(height: 16),
         Text(
-          '${d.hiddenGroups} groupe(s) de moins de 10 recherches masqué(s) · '
-          '${d.notUnderstood} recherche(s) non comprise(s). '
+          '${d.hiddenGroups} group(s) under 10 searches hidden · '
+          '${d.notUnderstood} search(es) not understood. '
           '${d.method['privacy'] ?? ''}',
           style: DmText.caption,
         ),
@@ -471,14 +474,14 @@ class _Kpis extends StatelessWidget {
   Widget build(BuildContext context) {
     final f = d.funnel;
     final tiles = <(String, String)>[
-      ('Recherches', '${d.searches}'),
+      ('Searches', '${d.searches}'),
       if (f != null) ...[
-        ('Vos pièces affichées', '${f.impressions}'),
-        ('Pièces ouvertes', '${f.views}'),
-        ('Visites du site', '${f.clicks}'),
-        ('Rang (visites)', f.rank == null ? '–' : '${f.rank}e'),
+        ('Your pieces shown', '${f.impressions}'),
+        ('Pieces opened', '${f.views}'),
+        ('Site visits', '${f.clicks}'),
+        ('Rank (visits)', f.rank == null ? '–' : '#${f.rank}'),
       ] else
-        ('Thèmes', '${d.themes.length}'),
+        ('Themes', '${d.themes.length}'),
     ];
     return Wrap(
       spacing: 8,
@@ -544,7 +547,7 @@ class _ThemeCard extends StatelessWidget {
           const SizedBox(height: 8),
           _Bar(
               value: t.weakAnswerRate,
-              label: 'sans pièce exacte ${_pct(t.weakAnswerRate)}'),
+              label: 'no exact piece ${_pct(t.weakAnswerRate)}'),
         ],
       ),
     );
@@ -571,7 +574,7 @@ class _HandoffTabState extends ConsumerState<_HandoffTab> {
           _Message(describeError(e), icon: Icons.cloud_off_outlined),
       data: (list) {
         if (list.isEmpty) {
-          return const _Message('Aucun styliste. Lance '
+          return const _Message('No stylist. Run '
               'python -m modules.m14_stylist_mode.simulate.pros');
         }
         final selected = _stylistId ?? list.first.proId;
@@ -581,7 +584,7 @@ class _HandoffTabState extends ConsumerState<_HandoffTab> {
           children: [
             const SizedBox(height: 10),
             _Picker<String>(
-              // "Ines (démo) · 1": open hand-offs in each stylist's queue
+              // "Ines (demo) · 1": open hand-offs in each stylist's queue
               options: [
                 for (final p in list)
                   (
@@ -601,7 +604,7 @@ class _HandoffTabState extends ConsumerState<_HandoffTab> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Text(
-                '${me.city ?? ''} · ${me.specialities.join(', ')} · ${me.languages.join(', ')}',
+                '${me.city ?? ''} · ${me.specialities.map(wordEn).join(', ')} · ${me.languages.join(', ')}',
                 style: DmText.caption,
               ),
             ),
@@ -614,7 +617,7 @@ class _HandoffTabState extends ConsumerState<_HandoffTab> {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 16, 10),
-              child: DmSectionHeader(eyebrow: 'Ma file', title: 'Demandes'),
+              child: DmSectionHeader(eyebrow: 'My queue', title: 'Requests'),
             ),
             _Queue(stylistId: selected),
           ],
@@ -639,9 +642,9 @@ class _Queue extends ConsumerWidget {
           _Message(describeError(e), icon: Icons.cloud_off_outlined),
       data: (items) => items.isEmpty
           ? const _Message(
-              'Aucune demande pour ce styliste. Envoie une conversation avec le '
-              "simulateur : elle part chez le styliste le plus adapté (spécialité, ville, langue), "
-              "et l'écran l'affiche.")
+              'No request for this stylist. Send a conversation with the '
+              'simulator: it goes to the best-suited stylist (speciality, city, language), '
+              'and the screen shows it.')
           : Column(
               children: [
                 for (final h in items)
@@ -684,9 +687,9 @@ class _HandoffCard extends ConsumerWidget {
       messenger.showSnackBar(SnackBar(
         content: Text(status == 'declined'
             ? (next == null
-                ? 'Refusée : aucun autre styliste disponible.'
-                : 'Refusée : transmise à $next.')
-            : 'Demande ${_statusFr[out.status]?.toLowerCase() ?? out.status}.'),
+                ? 'Declined: no other stylist available.'
+                : 'Declined: passed to $next.')
+            : 'Request ${_status[out.status]?.toLowerCase() ?? out.status}.'),
       ));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(describeError(e))));
@@ -696,7 +699,7 @@ class _HandoffCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final facts = [
-      if (h.occasion != null) h.occasion!,
+      if (h.occasion != null) wordEn(h.occasion!),
       if (h.budgetTnd != null) _tnd(h.budgetTnd!),
       if (h.city != null) h.city!,
     ];
@@ -707,14 +710,14 @@ class _HandoffCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(child: Text(h.userId, style: DmText.cardTitle)),
-              DmPill(_statusFr[h.status] ?? h.status,
+              DmPill(_status[h.status] ?? h.status,
                   dark: h.status == 'accepted'),
             ],
           ),
           const SizedBox(height: 6),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final f in facts) DmPill(f),
-            if (h.reason != null) DmPill(_reasonFr[h.reason] ?? h.reason!),
+            if (h.reason != null) DmPill(_reason[h.reason] ?? h.reason!),
           ]),
           const SizedBox(height: 8),
           for (final line in h.summary)
@@ -728,21 +731,21 @@ class _HandoffCard extends ConsumerWidget {
               if (h.status == 'queued') ...[
                 FilledButton(
                     onPressed: () => _set(context, ref, 'accepted'),
-                    child: const Text('Accepter')),
+                    child: const Text('Accept')),
                 const SizedBox(width: 8),
                 OutlinedButton(
                     onPressed: () => _set(context, ref, 'declined'),
-                    child: const Text('Refuser')),
+                    child: const Text('Decline')),
               ],
               if (h.status == 'accepted') ...[
                 FilledButton.icon(
                     onPressed: () => context.go(_helpPath),
                     icon: const Icon(Icons.auto_fix_high, size: 18),
-                    label: const Text('Aider')),
+                    label: const Text('Help')),
                 const SizedBox(width: 8),
                 OutlinedButton(
                     onPressed: () => _set(context, ref, 'closed'),
-                    child: const Text('Clore')),
+                    child: const Text('Close')),
               ],
             ],
           ),
@@ -810,12 +813,12 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
                 .where((c) => c.proId == h.proId)
                 .map((c) => c.name)
                 .firstOrNull ??
-            'un styliste';
+            'a stylist';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(h.alreadyOpen
-                ? 'Ce client a déjà une demande en cours chez $to '
-                    '(${_statusFr[h.status]?.toLowerCase()}) : pas de doublon.'
-                : 'Demande envoyée à $to.')));
+                ? 'Message added to the open request of ${h.userId} with $to '
+                    '(${_status[h.status]?.toLowerCase()}): see "Last message".'
+                : 'Request sent to $to.')));
       }
     } catch (e) {
       if (mounted) {
@@ -834,10 +837,10 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('SIMULER UNE CONVERSATION CLIENT', style: DmText.eyebrow),
+          const Text('SIMULATE A CLIENT CONVERSATION', style: DmText.eyebrow),
           const SizedBox(height: 4),
           const Text(
-              "Messages du client avec l'assistant, un par ligne (FR, EN, darija, arabe).",
+              "The client's messages to the assistant, one per line (FR, EN, darija, Arabic).",
               style: DmText.body),
           const SizedBox(height: 10),
           TextField(
@@ -858,7 +861,7 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
             contentPadding: EdgeInsets.zero,
             dense: true,
             controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('Le client a appuyé sur « Parler à un styliste »',
+            title: const Text('The client tapped "Talk to a stylist"',
                 style: DmText.body),
           ),
           FilledButton.icon(
@@ -870,23 +873,23 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.support_agent, size: 18),
-            label: const Text("Envoyer à l'assistant"),
+            label: const Text('Send to the assistant'),
           ),
           if (h != null) ...[
             const Divider(height: 24),
             Text(
               h.escalate
-                  ? 'Escalade (${_reasonFr[h.reason] ?? h.reason}, score ${h.score.toStringAsFixed(2)}) '
-                      '→ ${_statusFr[h.status] ?? h.status}'
-                  : "Pas d'escalade (score ${h.score.toStringAsFixed(2)}) : l'assistant répond seul.",
+                  ? 'Escalation${h.byLlm ? ' (AI)' : ''} (${_reason[h.reason] ?? h.reason}, score ${h.score.toStringAsFixed(2)}) '
+                      '→ ${_status[h.status] ?? h.status}'
+                  : 'No escalation (score ${h.score.toStringAsFixed(2)}): the assistant answers alone.',
               style: DmText.itemName,
             ),
             if (!h.escalate && _assistant != null) ...[
               const SizedBox(height: 6),
               Text(
                 _assistant!.results.isEmpty
-                    ? "L'assistant n'a rien trouvé dans les boutiques."
-                    : "L'assistant a trouvé ${_assistant!.totalMatches} pièce(s) dans les boutiques, par ex. : "
+                    ? 'The assistant found nothing in the shops.'
+                    : 'The assistant found ${_assistant!.totalMatches} piece(s) in the shops, e.g.: '
                         '${_assistant!.results.map((p) => '${p.item} (${p.shop}${p.priceTnd == null ? '' : ', ${p.priceTnd!.toStringAsFixed(0)} TND'})').join(' · ')}',
                 style: DmText.body,
               ),
@@ -894,7 +897,7 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _send(force: true),
                 icon: const Icon(Icons.support_agent, size: 18),
-                label: const Text('Le client veut quand même un styliste'),
+                label: const Text('The client still wants a stylist'),
               ),
             ],
             for (final (i, c) in h.candidates.indexed)
@@ -969,7 +972,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                 child: TextField(
                   controller: _invite,
                   decoration: const InputDecoration(
-                      hintText: 'Identifiant client (ex. usr_050)',
+                      hintText: 'Client id (e.g. usr_050)',
                       isDense: true),
                 ),
               ),
@@ -981,7 +984,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                   _run(() => repo.invite(selected, id));
                   _invite.clear();
                 },
-                child: const Text('Inviter'),
+                child: const Text('Invite'),
               ),
             ],
           ),
@@ -989,8 +992,8 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 4, 16, 6),
           child: Text(
-              "Rien n'est partagé tant que le client n'a pas accepté ; il peut retirer "
-              "l'accès à tout moment. Les boutons « client » simulent son app.",
+              'Nothing is shared until the client accepts; they can remove access '
+              'at any time. The "client" buttons simulate their app.',
               style: DmText.caption),
         ),
         links.when(
@@ -1000,8 +1003,8 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
               _Message(describeError(e), icon: Icons.cloud_off_outlined),
           data: (items) => items.isEmpty
               ? const _Message(
-                  "Aucun client pour ce compte : invite un identifiant "
-                  'client ci-dessus, puis accepte côté client.')
+                  'No client for this account: invite a client id '
+                  'above, then accept on the client side.')
               : Column(
                   children: [
                     for (final l in items)
@@ -1015,7 +1018,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                                 Expanded(
                                     child: Text(l.clientId,
                                         style: DmText.cardTitle)),
-                                DmPill(_statusFr[l.status] ?? l.status,
+                                DmPill(_status[l.status] ?? l.status,
                                     dark: l.status == 'active'),
                               ]),
                               const SizedBox(height: 8),
@@ -1024,11 +1027,11 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                                   OutlinedButton(
                                       onPressed: () =>
                                           _run(() => repo.consent(l, true)),
-                                      child: const Text('Accepter (client)')),
+                                      child: const Text('Accept (client)')),
                                   OutlinedButton(
                                       onPressed: () =>
                                           _run(() => repo.consent(l, false)),
-                                      child: const Text('Refuser (client)')),
+                                      child: const Text('Decline (client)')),
                                 ],
                                 if (l.status == 'active') ...[
                                   FilledButton.icon(
@@ -1036,7 +1039,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                                         '/bo6_boutique/help/$selected/${l.clientId}'),
                                     icon: const Icon(Icons.auto_fix_high,
                                         size: 18),
-                                    label: const Text('Aider'),
+                                    label: const Text('Help'),
                                   ),
                                   OutlinedButton(
                                     onPressed: () => showModalBottomSheet<void>(
@@ -1047,13 +1050,13 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                                           proId: selected,
                                           clientId: l.clientId),
                                     ),
-                                    child: const Text('Voir la fiche'),
+                                    child: const Text('See the file'),
                                   ),
                                   OutlinedButton(
                                       onPressed: () =>
                                           _run(() => repo.revoke(l)),
                                       child: const Text(
-                                          "Retirer l'accès (client)")),
+                                          'Remove access (client)')),
                                 ],
                               ]),
                             ],
@@ -1089,7 +1092,7 @@ class _BriefSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             children: [
               DmSectionHeader(
-                  eyebrow: 'Fiche client', title: b.archetype ?? b.clientId),
+                  eyebrow: 'Client file', title: b.archetype ?? b.clientId),
               const SizedBox(height: 12),
               for (final line in b.summary)
                 Padding(
@@ -1098,7 +1101,7 @@ class _BriefSheet extends ConsumerWidget {
                       style: DmText.body.copyWith(fontSize: 13)),
                 ),
               const SizedBox(height: 12),
-              Text('GARDE-ROBE · ${b.items} PIÈCES', style: DmText.eyebrow),
+              Text('WARDROBE · ${b.items} PIECES', style: DmText.eyebrow),
               const SizedBox(height: 6),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 for (final e in b.perCategory.entries)
@@ -1107,7 +1110,7 @@ class _BriefSheet extends ConsumerWidget {
               ]),
               if (b.recentSearches.isNotEmpty) ...[
                 const SizedBox(height: 14),
-                const Text('A CHERCHÉ DANS LES BOUTIQUES',
+                const Text('SEARCHED IN THE SHOPS',
                     style: DmText.eyebrow),
                 const SizedBox(height: 6),
                 for (final s in b.recentSearches)
@@ -1115,12 +1118,143 @@ class _BriefSheet extends ConsumerWidget {
               ],
               const SizedBox(height: 16),
               Text(
-                'Sources : ${b.sources.entries.map((e) => '${e.key.toUpperCase()} ${e.value == 'real' ? 'réel' : 'mock'}').join(' · ')}',
+                'Sources: ${b.sources.entries.map((e) => '${e.key.toUpperCase()} ${e.value == 'real' ? 'real' : 'mock'}').join(' · ')}',
                 style: DmText.caption,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Tips for the boutique from the dashboard figures, written by the BO6 LLM (Qwen 2.5 7B, local).
+/// Generated on demand only: the model runs on the CPU and takes a few seconds to a minute.
+class _InsightsCard extends ConsumerStatefulWidget {
+  const _InsightsCard({required this.shop, required this.days});
+
+  final String? shop;
+  final int days;
+
+  @override
+  ConsumerState<_InsightsCard> createState() => _InsightsCardState();
+}
+
+class _InsightsCardState extends ConsumerState<_InsightsCard> {
+  Insights? _tips;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void didUpdateWidget(covariant _InsightsCard old) {
+    super.didUpdateWidget(old);
+    if (old.shop != widget.shop || old.days != widget.days) {
+      setState(() {
+        _tips = null;
+        _error = null;
+      });
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final tips = await ref
+          .read(boutiqueRepositoryProvider)
+          .insights(shop: widget.shop, days: widget.days);
+      setState(() => _tips = tips);
+    } catch (e) {
+      setState(() => _error = describeError(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _tips;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DmColors.ink,
+        borderRadius: BorderRadius.circular(DmRadius.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, size: 16, color: DmColors.gold),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text('AI TIPS',
+                    style: DmText.eyebrow.copyWith(color: DmColors.gold)),
+              ),
+              if (t != null)
+                Text(
+                    t.source == 'llm'
+                        ? 'written by ${t.model}'
+                        : 'rules (LLM off)',
+                    style: DmText.caption.copyWith(color: Colors.white60)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (t == null && !_busy) ...[
+            const Text(
+                'Qwen 2.5 7B (local) turns the figures below into 2-3 tips. '
+                'The numbers always come from the dashboard.',
+                style: TextStyle(fontSize: 12, color: Colors.white70)),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                  backgroundColor: DmColors.gold,
+                  foregroundColor: DmColors.inkDeep),
+              onPressed: _load,
+              icon: const Icon(Icons.auto_awesome, size: 16),
+              label: const Text('Generate tips'),
+            ),
+          ],
+          if (_busy)
+            const Row(children: [
+              SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: DmColors.gold)),
+              SizedBox(width: 8),
+              Text(
+                  'Qwen is writing the tips (on the CPU, up to a minute)…',
+                  style: TextStyle(fontSize: 12, color: Colors.white70)),
+            ]),
+          if (_error != null)
+            Text(_error!,
+                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          if (t != null) ...[
+            if (t.tips.isEmpty)
+              const Text('No tip for this period.',
+                  style: TextStyle(fontSize: 12, color: Colors.white70)),
+            for (final tip in t.tips)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('• $tip',
+                    style: const TextStyle(
+                        fontSize: 13, color: Colors.white, height: 1.4)),
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: DmColors.gold),
+                onPressed: _busy ? null : _load,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Generate again'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

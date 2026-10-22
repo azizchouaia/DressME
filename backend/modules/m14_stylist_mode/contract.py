@@ -257,7 +257,7 @@ class UnmetDemand(BaseModel):
     products_in_market: int  # the same in the whole M7 catalogue
     visual_coverage: float  # best FashionCLIP match of a shop photo with the theme, 0..1
     opportunity: float  # n_searches x (1 - coverage): what the dashboard ranks by
-    hint: str  # "132 recherches « Sandales dorées », 0 chez vous"
+    hint: str  # "132 searches for “Sandals · gold · women”, 0 in your shop"
 
 
 class PricePosition(BaseModel):
@@ -308,6 +308,17 @@ class Dashboard(BaseModel):
     method: dict[str, str] = {}  # how each block was computed (for the report and the UI)
 
 
+class Insights(BaseModel):
+    """Tips for a boutique, written by the BO6 LLM from the dashboard figures (or by rules if it is off)."""
+
+    shop: str | None
+    period_days: int
+    insights: list[str] = []
+    source: Literal["llm", "rules"]
+    model: str | None = None  # e.g. qwen2.5:7b
+    facts: list[str] = []  # the figures the tips were written from (each number of a tip comes from here)
+
+
 # ---------- F7 · hand-off from the assistant to a human stylist (BO8) ----------
 class Message(BaseModel):
     role: Literal["user", "assistant"]
@@ -327,6 +338,7 @@ class Escalation(BaseModel):
     score: float = Field(ge=0, le=1)
     reason: str | None = None  # strongest signal: asks_human, frustration, complex_occasion...
     signals: dict[str, float] = {}  # signal -> weight that fired
+    by_llm: bool = False  # a signal was added by the BO6 LLM (Qwen) on a longer chat the rules missed
 
 
 class HandoffIn(EscalateIn):

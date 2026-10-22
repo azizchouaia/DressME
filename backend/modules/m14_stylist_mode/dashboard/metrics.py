@@ -6,7 +6,7 @@ import numpy as np
 
 from modules.m07_local_catalogue import events as m7_events
 from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
-from modules.m07_local_catalogue.taxonomy import SUBCATEGORIES
+from modules.m07_local_catalogue.taxonomy import SUBCATEGORIES, SUBCATEGORY_EN
 
 
 def _piece_mask(catalogue, theme: dict) -> np.ndarray:
@@ -45,12 +45,12 @@ def unmet(theme: dict, figures: dict, catalogue, shop: str | None, cfg: dict) ->
     coverage = w["stock"] * min(n_shop / cfg["full_stock"], 1.0) + w["visual"] * visual
     n, weak = figures["n_searches"], figures["weak_answer_rate"]
     if shop is None:
-        hint = f"{n} recherches « {theme['label']} », {n_market} article(s) en stock dans le catalogue"
+        hint = f"{n} searches for “{theme['label']}”, {n_market} piece(s) in stock in the catalogue"
     else:
-        where = "aucun dans tout le catalogue" if n_market == 0 else f"{n_market} dans tout le catalogue"
-        hint = f"{n} recherches « {theme['label']} », {n_shop} chez vous ({where})"
+        where = "none in the whole catalogue" if n_market == 0 else f"{n_market} in the whole catalogue"
+        hint = f"{n} searches for “{theme['label']}”, {n_shop} in your shop ({where})"
     if weak >= 0.2:
-        hint += f", {weak:.0%} des recherches sans pièce exacte"
+        hint += f", {weak:.0%} of the searches without an exact piece"
     return {
         "theme_id": theme["theme_id"],
         "label": theme["label"],
@@ -87,7 +87,7 @@ def prices(
         shop_prices = catalogue.price[in_shop & (catalogue.subcategory == sub)]
         row = {
             "subcategory": sub,
-            "label": SUBCATEGORIES.get(sub, (None, sub))[1],
+            "label": SUBCATEGORY_EN.get(sub, sub),
             "n_budgets": len(values),
             "demand_p25": round(float(demand[0]), 1),
             "demand_p50": round(float(demand[1]), 1),

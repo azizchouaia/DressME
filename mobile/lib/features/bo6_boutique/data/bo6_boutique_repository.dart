@@ -44,6 +44,27 @@ class Pro {
       );
 }
 
+/// Tips for a boutique (M14 /dashboard/insights): written by the BO6 LLM (Qwen) or by rules.
+class Insights {
+  const Insights(
+      {required this.tips,
+      required this.source,
+      required this.facts,
+      this.model});
+
+  final List<String> tips;
+  final String source; // llm / rules
+  final String? model; // qwen2.5:7b
+  final List<String> facts;
+
+  factory Insights.fromJson(Map<String, dynamic> j) => Insights(
+        tips: _strings(j['insights']),
+        source: j['source'] as String,
+        model: j['model'] as String?,
+        facts: _strings(j['facts']),
+      );
+}
+
 class Funnel {
   const Funnel(
       {required this.impressions,
@@ -265,6 +286,7 @@ class Handoff {
     required this.userId,
     required this.status,
     required this.escalate,
+    this.byLlm = false,
     required this.score,
     required this.summary,
     required this.candidates,
@@ -283,6 +305,9 @@ class Handoff {
   final String
       status; // queued / accepted / declined / closed / not_needed / no_stylist
   final bool escalate;
+
+  /// The BO6 LLM added the signal that escalated this chat.
+  final bool byLlm;
   final double score;
   final String? reason;
   final String? proId;
@@ -308,6 +333,7 @@ class Handoff {
       userId: j['user_id'] as String,
       status: j['status'] as String,
       escalate: esc['escalate'] as bool,
+      byLlm: esc['by_llm'] as bool? ?? false,
       score: _num(esc['score']) ?? 0,
       reason: esc['reason'] as String?,
       proId: j['pro_id'] as String?,
@@ -537,6 +563,14 @@ class BoutiqueRepository {
     final res = await _dio.get<Map<String, dynamic>>('/m14/dashboard',
         queryParameters: {'days': days, if (shop != null) 'shop': shop});
     return Dashboard.fromJson(res.data!);
+  }
+
+  /// GET /m14/dashboard/insights?shop=&days= — the LLM runs on the CPU: a few seconds to a minute.
+  Future<Insights> insights({String? shop, int days = 30}) async {
+    final res = await _dio.get<Map<String, dynamic>>('/m14/dashboard/insights',
+        queryParameters: {'days': days, if (shop != null) 'shop': shop},
+        options: Options(receiveTimeout: const Duration(minutes: 3)));
+    return Insights.fromJson(res.data!);
   }
 
   /// GET /m14/handoff/queue?pro_id= (queued + accepted)

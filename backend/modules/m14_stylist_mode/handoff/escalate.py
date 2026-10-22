@@ -63,6 +63,10 @@ def run(messages: list[dict], ai_confidence: float | None, config: dict) -> dict
         fired["long_conversation"] = weights["long_conversation"]
     if _repeated(user):
         fired["repeated_request"] = weights["repeated_request"]
+    return combine(fired, cfg)
+
+
+def combine(fired: dict[str, float], cfg: dict) -> dict:
     keep = 1.0
     for w in fired.values():
         keep *= 1 - w
@@ -73,3 +77,54 @@ def run(messages: list[dict], ai_confidence: float | None, config: dict) -> dict
         "reason": max(fired, key=fired.get) if fired else None,
         "signals": fired,
     }
+
+
+# Stage 1b: the BO6 LLM (Qwen) reads longer chats the lexicons missed ("sma3ni chkoun ynajem y3awenni").
+LLM_SYSTEM = (
+    "You read a client's messages to a fashion shopping assistant in Tunisia (French, English, Tunisian "
+    "darija in Latin letters, or Arabic). Answer true only when it is clearly said. asks_human: the client "
+    "wants a real person or a stylist. frustrated: the client is unhappy with the assistant. "
+    "important_occasion: a wedding, engagement, henna, Aid, interview or graduation. "
+    "evidence: copy, word for word, the client's words that show it; '' when everything is false."
+)
+LLM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        **{k: {"type": "boolean"} for k in ("asks_human", "frustrated", "important_occasion")},
+        "evidence": {"type": "string"},
+    },
+    "required": ["asks_human", "frustrated", "important_occasion", "evidence"],
+}
+_LLM_SIGNAL = {
+    "asks_human": "asks_human",
+    "frustrated": "frustration",
+    "important_occasion": "complex_occasion",
+}
+
+
+def worth_asking(messages: list[dict]) -> bool:
+    """A one-line request ("robe noire") is the assistant's job: the LLM is asked on longer chats only."""
+    user = [m["text"] for m in messages if m["role"] == "user"]
+    return len(user) >= 2 or sum(len(t.split()) for t in user) >= 8
+
+
+async def with_llm(decision: dict, messages: list[dict], llm, config: dict) -> dict:
+    """Rules first; when they do not escalate a longer chat, the LLM may add signals (never remove one)."""
+    if decision["escalate"] or not llm.on("escalation") or not worth_asking(messages):
+        return decision
+    chat = "\n".join(f"- {m['text']}" for m in messages if m["role"] == "user")
+    said = await llm.json(LLM_SYSTEM, chat, LLM_SCHEMA, max_tokens=80)
+    if not said:
+        return decision
+    # Grounding: the LLM must quote the client's own words; a quote that is not in the chat is ignored.
+    evidence = fold(str(said.get("evidence") or "")).strip(" .!?\"'")
+    if len(evidence) < 4 or evidence not in fold(chat):
+        return decision
+    weights = config["handoff"]["signals"]
+    fired = dict(decision["signals"])
+    added = [s for k, s in _LLM_SIGNAL.items() if said.get(k) is True and s not in fired]
+    if not added:
+        return decision
+    for s in added:
+        fired[s] = weights[s]
+    return combine(fired, config["handoff"]) | {"by_llm": True}

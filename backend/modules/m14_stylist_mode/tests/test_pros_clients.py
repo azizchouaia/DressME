@@ -18,7 +18,7 @@ def api():
 
 
 def stylist(api, **extra):
-    body = {"type": "stylist", "name": "Amel (démo)", "city": "Tunis", "specialities": ["mariage"]} | extra
+    body = {"type": "stylist", "name": "Amel (demo)", "city": "Tunis", "specialities": ["mariage"]} | extra
     return api.post("/m14/pro", json=body).json()
 
 
@@ -32,7 +32,7 @@ def linked(api, pro_id, client="usr_042", accept=True):
 
 # ---- F1
 def test_boutique_account_must_be_a_catalogue_shop_once(api):
-    ok = api.post("/m14/pro", json={"type": "boutique", "name": "Manuella (démo)", "shop": "Manuella"})
+    ok = api.post("/m14/pro", json={"type": "boutique", "name": "Manuella (demo)", "shop": "Manuella"})
     assert ok.status_code == 200 and ok.json()["verified"] is False
     again = api.post("/m14/pro", json={"type": "boutique", "name": "Autre", "shop": "Manuella"})
     assert again.status_code == 422
@@ -83,13 +83,13 @@ def test_review_measures_agreement_with_m5(api):
     linked(api, pro["pro_id"])
     same = {
         "archetype": "casual",
-        "likes": ["denim", "lin"],
-        "dislikes": ["imprimés"],
+        "likes": ["denim", "linen"],
+        "dislikes": ["prints"],
         "colours": ["white", "navy", "beige"],
     }
     out = api.post("/m14/clients/usr_042/review", json={"pro_id": pro["pro_id"], "corrections": same}).json()
     assert out["changed"] == [] and out["agreement"] == 1.0 and out["sent_to_m5"]
-    changed = same | {"archetype": "minimaliste urbain"}
+    changed = same | {"archetype": "urban minimalist"}
     out = api.post(
         "/m14/clients/usr_042/review", json={"pro_id": pro["pro_id"], "corrections": changed}
     ).json()
@@ -122,7 +122,7 @@ def test_look_with_local_pieces(api):
 # ---- F5
 def test_instore_only_for_the_boutique_own_pieces(api):
     shop = api.post(
-        "/m14/pro", json={"type": "boutique", "name": "Manuella (démo)", "shop": "Manuella"}
+        "/m14/pro", json={"type": "boutique", "name": "Manuella (demo)", "shop": "Manuella"}
     ).json()
     linked(api, shop["pro_id"])
     body = {"pro_id": shop["pro_id"], "client_id": "usr_042", "product_id": "a1"}
@@ -137,7 +137,7 @@ def test_instore_only_for_the_boutique_own_pieces(api):
 
 # ---- F2b private conversation
 def test_private_conversation_between_the_stylist_and_the_client_only(api):
-    amel, sami = stylist(api), stylist(api, name="Sami (démo)")
+    amel, sami = stylist(api), stylist(api, name="Sami (demo)")
     link = linked(api, amel["pro_id"])
     chat = f"/m14/chat/{amel['pro_id']}/usr_042"
     assert (

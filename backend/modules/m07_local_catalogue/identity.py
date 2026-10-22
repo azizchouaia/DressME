@@ -5,7 +5,7 @@ The orchestrator (BO8) reads the card to know WHEN to call it and WHAT to do wit
 Served at GET /m07/card. The tool description is built from it, so they never drift apart.
 """
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 CARD = {
     "id": "dressme.bo6.localshop",
@@ -17,11 +17,14 @@ CARD = {
     "role": "Finds pieces sold by Tunisian shops and brands, with prices in dinars (TND), for a request, "
     "a wardrobe gap, a photo or the user's style.",
     "persona": "A friend who knows the Tunisian shops: concrete, local, never invents a product.",
+    "llm": "qwen2.5:7b, local with Ollama (llm.py): understands requests the rules miss, writes texts "
+    "for M14; never picks products, prices or stylists; off -> rules",
     "rules": [
         "Only shops, products and prices returned by the catalogue; never invented.",
         "Prices are in TND, as the shop shows them.",
         "A colour asked for is strict; a relaxed filter (city, stock, colour) is always said in `note`.",
         "When the request is unclear, ask ONE question the user can answer instead of guessing.",
+        "The LLM only reads and writes; products, prices and scores come from the catalogue and the code.",
     ],
     "when_to_use": [
         "Where can I buy this in Tunis? A linen shirt under 80 dinars. Shops near me.",

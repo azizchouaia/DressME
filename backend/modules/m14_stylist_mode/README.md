@@ -33,9 +33,21 @@ Data (never git): `ml/data/bo6/m14/*.json` (pros, links, reviews, looks, handoff
 | `POST /m14/looks` · `GET /m14/looks` | F4 look = wardrobe items + M7 pieces, M2 score, M10 card | BO7 |
 | `POST /m14/instore/session` | F5 M6 verdict for a boutique piece on the client's wardrobe | BO5 |
 | `GET /m14/dashboard?shop=&days=&source=` · `GET /m14/pro/{id}/dashboard` | F6 demand dashboard | BO6 |
+| `GET /m14/dashboard/insights?shop=&days=` | F6 2-3 tips written by the BO6 LLM from the figures (rules when off) | BO6 |
 | `POST /m14/handoff/check` · `POST /m14/handoff` · `GET /m14/handoff/queue?pro_id=` · `GET/PATCH /m14/handoff/{id}` | F7 hand-off (escalate, stylist, summary, queue, accept / decline / close) | BO8 |
 
 Shapes: `contract.py`; fixed answers for offline tests: `mock.py`.
+
+## LLM (shared with M7): Qwen 2.5 7B, local with Ollama
+M14 uses the BO6 agent's LLM (`modules/m07_local_catalogue/llm.py`, settings in M7's `config.yaml → llm`)
+in three places; the facts always come from the code:
+- **Hand-off summary** (`handoff/summary.py → llm_sentence`): one plain-French sentence of what the client
+  wants (useful for darija chats); dropped if too long or if it writes a number the client did not write.
+- **Escalation** (`handoff/escalate.py → with_llm`): only on longer chats the rules do not escalate; the LLM
+  must quote the client's words (grounding), it can add a signal, never remove one (`by_llm` in the answer).
+- **Boutique tips** (`dashboard/insights.py`, `GET /m14/dashboard/insights`): 2-3 tips from the dashboard
+  figures; a tip with a number that is not in the figures is dropped; rule-based tips when the LLM is off.
+LLM off or failing → exactly the rule-based behaviour. Tests use a fake LLM (`tests/test_llm.py`).
 
 ## What the simulated month shows (real M7 search, 300 users, 12 weeks)
 Market, last 30 days: 619 searches, 15 themes (KMeans k by silhouette 0.26), e.g. *Sandales · Doré* 70

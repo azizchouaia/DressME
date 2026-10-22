@@ -12,7 +12,8 @@ Branche : `BO6/local_catalogue`.*
 | Rôle | Chercher des pièces dans 43 boutiques tunisiennes (6 375 produits, prix en TND) | Côté professionnel : boutiques et stylistes, tableau de bord de la demande, hand-off assistant → styliste, conversation privée, looks |
 | Agent | **`localshop`** = l'agent BO6 (un agent par BO). `tool.py` trouvé par `orchestrator/registry.py` | **Pas d'agent** : compétence `boutique` de `localshop`. Pas de `tool.py` |
 | État | Réel et complet (données, FashionCLIP, évaluation, mémoire, `next_actions`) | Réel pour M7 ; **M1, M2, M3, M5, M6, M10 sur mock** tant qu'ils ne sont pas fusionnés |
-| Tests | `pytest modules/m07_local_catalogue` (150) | `pytest modules/m14_stylist_mode` (33) |
+| LLM | **Qwen 2.5 7B en local (Ollama)**, un seul pour M7 et M14 (`m07_local_catalogue/llm.py`) : comprend les requêtes difficiles | Le même LLM : résumé pour la styliste, escalade, conseils boutique |
+| Tests | `pytest modules/m07_local_catalogue` (156) | `pytest modules/m14_stylist_mode` (40) |
 | App | `/#/bo6_local_market` | `/#/bo6_boutique` (Espace pro) et `/#/bo6_boutique/help/:pro/:client` |
 
 **Ce qu'il reste à faire pour M14, par priorité** (détails au §4) :
@@ -22,6 +23,8 @@ Branche : `BO6/local_catalogue`.*
 4. **Orchestrateur (BO8)** : le bouton « Parler à un styliste » dans le chat → `POST /m14/handoff`.
 5. Remplacer le stockage JSON par **Postgres**.
 6. **App côté client** : consentement, looks reçus, conversation.
+7. **LLM** : installer Ollama et `qwen2.5:7b` sur la machine qui fait tourner l'API (§4.11). Sans lui, tout
+   marche quand même (règles).
 
 ---
 
@@ -259,6 +262,58 @@ mémoire de M7 (`memory.py`, un JSON par utilisateur).
 
 ---
 
+### 4.11 Le LLM du BO6 : Qwen 2.5 7B en local (Ollama)
+
+**Un seul LLM pour l'agent BO6** (M7 et sa compétence M14), dans `backend/modules/m07_local_catalogue/llm.py`.
+Il **lit et rédige** ; il ne choisit **jamais** un produit, un prix, un score ou un styliste.
+
+| Où | Ce que fait le LLM | Ce que le code vérifie |
+|---|---|---|
+| M7 `pipeline/understand.py` | Requête que les règles ne comprennent pas du tout → type de pièce, couleur, genre, budget, ville (JSON) + reformulation en français ; puis la recherche normale | Schéma JSON avec les codes du catalogue ; budget écrit dans la requête, ville et genre dits dans la requête ; gardé seulement si la recherche trouve des pièces |
+| M14 résumé du hand-off | Une phrase claire pour la styliste | ≤ 260 caractères, aucun chiffre que le client n'a pas écrit ; les lignes de faits restent calculées |
+| M14 escalade | Conversations longues que les règles n'escaladent pas | Le LLM doit citer les mots du client ; une citation absente de la conversation est ignorée ; il peut ajouter un signal, jamais en retirer |
+| M14 conseils boutique (`GET /m14/dashboard/insights`) | 2-3 conseils à partir des chiffres du tableau de bord | Tout chiffre d'un conseil doit exister dans les chiffres, sinon le conseil est retiré ; conseils par règles si le LLM est éteint |
+
+**Installation (machine qui fait tourner l'API)** :
+```bash
+# 1. installer Ollama (https://ollama.com), puis :
+ollama pull qwen2.5:7b          # ~4,7 Go
+ollama serve                    # si le service n'est pas déjà lancé (port 11434)
+```
+**Réglages** : `backend/modules/m07_local_catalogue/config.yaml → llm` (`enabled`, `url`, `model`,
+`timeout_s`, un interrupteur par usage). Pour une machine faible : `model: qwen2.5:3b` (plus rapide, un peu
+moins juste, voir `evaluation/RESULTS_LLM.md`).
+
+**Langue des réponses** : M7 répond dans la langue demandée (`language` : `fr` par défaut, `en`, `ar`) ;
+ses notes et ses raisons existent en français et en anglais (l'arabe garde le français pour l'instant). M14
+écrit en anglais, comme l'Espace pro de l'app. La requête du client peut toujours être en français,
+anglais, darija ou arabe. L'app Flutter BO6 est en anglais et envoie `language: "en"` à M7.
+
+**Sans Ollama, rien ne casse** : chaque usage retombe sur les règles (même logique que réel/mock).
+Les tests n'appellent jamais Ollama (faux LLM).
+
+**Lien avec `shared/llm.py` (BO8)** : l'orchestrateur passe par LangChain (`get_chat_model()`), le BO6
+appelle directement l'API d'Ollama pour utiliser les sorties JSON contraintes par un schéma, sans
+dépendance de plus. Les deux peuvent utiliser le **même serveur Ollama**. Si l'équipe passe à un LLM
+par API, seule la méthode `LLM._chat` de `llm.py` est à adapter.
+
+**Temps de réponse mesurés sur processeur seul** (i7-1165G7, 32 Go, sans GPU), avec `qwen2.5:7b` :
+
+| Usage | Temps | Avec `qwen2.5:3b` |
+|---|---|---|
+| Compréhension M7 (médiane sur 16 requêtes) | ≈ 15 s | ≈ 7,6 s |
+| Résumé du hand-off | 7-10 s | environ deux fois moins |
+| Escalade (conversation longue) | 9-14 s | environ deux fois moins |
+| Conseils boutique | ≈ 30 s | environ deux fois moins |
+| Premier appel (chargement du modèle) | + 15-20 s | + 5-10 s |
+
+Résultat M7 (`evaluation/RESULTS_LLM.md`) : sur 16 requêtes que les règles ne comprennent pas, le type de
+pièce passe de **0/16 à 11/16** avec le 7B (12/16 avec le 3B), sans budget ni ville inventés. C'est pour
+cela que le LLM n'est appelé que lorsque les règles échouent, et que les conseils boutique sont générés à
+la demande (bouton « Générer » dans l'app), pas à chaque ouverture du tableau de bord.
+
+---
+
 ## 5. Fusion : ordre conseillé et conflits attendus
 
 1. **`BO6/local_catalogue` en premier** : M7 est utilisé par Smart Buy, BO7 et l'orchestrateur.
@@ -284,7 +339,7 @@ mémoire de M7 (`memory.py`, un JSON par utilisateur).
 
 ```bash
 cd backend
-pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 184 tests sur la branche BO6
+pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 197 tests sur la branche BO6
 python -m modules.m14_stylist_mode.simulate.pros --reset
 python -m modules.m14_stylist_mode.simulate.traffic
 uvicorn api.main:app --port 8000                                           # http://localhost:8000/docs

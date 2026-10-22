@@ -10,7 +10,7 @@ def pro() -> dict:
     return {
         "pro_id": "pro_demo0001",
         "type": "stylist",
-        "name": "Amel (styliste, démo)",
+        "name": "Amel (stylist, demo)",
         "city": "Tunis",
         "shop": None,
         "specialities": ["mariage", "traditionnel"],
@@ -27,25 +27,25 @@ def brief() -> dict:
     return {
         "pro_id": "pro_demo0001",
         "client_id": "usr_042",
-        "archetype": "minimaliste urbain",
-        "likes": ["lin", "beige"],
-        "dislikes": ["imprimés"],
+        "archetype": "urban minimalist",
+        "likes": ["linen", "beige"],
+        "dislikes": ["prints"],
         "wardrobe": {
             "n_items": 24,
             "per_category": {"top": 9, "bottom": 6, "shoes": 4, "dress": 2, "outerwear": 3},
             "top_colours": ["beige", "white", "navy"],
-            "most_worn": ["Jean droit bleu", "Baskets blanches"],
+            "most_worn": ["Blue straight jeans", "White sneakers"],
             "never_worn": ["Robe rouge"],
             "price_range_tnd": [25.0, 240.0],
         },
-        "gaps": ["chaussures habillées"],
+        "gaps": ["dress shoes"],
         "recent_searches": ["sandales dorées mariage max 120 dt"],
         "summary": [
-            "Style : minimaliste urbain (aime : lin, beige ; évite : imprimés).",
-            "Garde-robe : 24 pièces, surtout top (9), bottom (6).",
-            "Le plus porté : Jean droit bleu, Baskets blanches. Jamais porté : Robe rouge.",
-            "Manque : chaussures habillées.",
-            "A cherché récemment : sandales dorées mariage max 120 dt.",
+            "Style: urban minimalist (likes: linen, beige ; avoids: prints).",
+            "Wardrobe: 24 pieces, mostly top (9), bottom (6).",
+            "Most worn: Blue straight jeans, White sneakers. Never worn: Red dress.",
+            "Missing: dress shoes.",
+            "Recently searched: sandales dorées mariage max 120 dt.",
         ],
         "sources": {"m1": "mock", "m3": "mock", "m5": "mock", "m7": "mock"},
     }
@@ -56,10 +56,10 @@ def review() -> dict:
         "review_id": "rev_demo0001",
         "pro_id": "pro_demo0001",
         "client_id": "usr_042",
-        "before": {"archetype": "casual", "likes": ["lin"], "dislikes": [], "colours": ["beige"]},
+        "before": {"archetype": "casual", "likes": ["linen"], "dislikes": [], "colours": ["beige"]},
         "corrections": {
-            "archetype": "minimaliste urbain",
-            "likes": ["lin"],
+            "archetype": "urban minimalist",
+            "likes": ["linen"],
             "dislikes": [],
             "colours": ["beige"],
         },
@@ -92,7 +92,7 @@ def look() -> dict:
         "score": 0.82,
         "card_url": "/m10/cards/card_demo/image",
         "share_url": "https://dressme.tn/s/demo",
-        "message": "Avec ton jean droit, pour samedi.",
+        "message": "With your straight jeans, for Saturday.",
         "created_at": _AT,
         "sources": {"m2": "mock", "m7": "mock", "m10": "mock"},
     }
@@ -105,8 +105,8 @@ def instore() -> dict:
         "product": look()["products"][0],
         "verdict": "buy",
         "score": 78,
-        "reasons": ["Va avec 5 pièces de ta garde-robe", "Tu n'as pas de baskets blanches"],
-        "explanation": "Bon achat : elle complète ta garde-robe sans doublon.",
+        "reasons": ["Goes with 5 pieces of your wardrobe", "You have no white sneakers"],
+        "explanation": "Good buy: it completes your wardrobe without a duplicate.",
         "sources": {"m6": "mock", "m7": "mock"},
     }
 
@@ -123,7 +123,7 @@ def dashboard(shop: str | None = "Manuella") -> dict:
         "themes": [
             {
                 "theme_id": "th_01",
-                "label": "Sandales dorées · femme",
+                "label": "Sandals · gold · women",
                 "subcategory": "sandals",
                 "color": "gold",
                 "gender": "women",
@@ -139,7 +139,7 @@ def dashboard(shop: str | None = "Manuella") -> dict:
         "unmet": [
             {
                 "theme_id": "th_01",
-                "label": "Sandales dorées · femme",
+                "label": "Sandals · gold · women",
                 "n_searches": 132,
                 "zero_result_rate": 0.41,
                 "weak_answer_rate": 0.55,
@@ -147,8 +147,8 @@ def dashboard(shop: str | None = "Manuella") -> dict:
                 "products_in_market": 3,
                 "visual_coverage": 0.22,
                 "opportunity": 103.0,
-                "hint": "132 recherches « Sandales · Doré · femme », 0 chez vous (3 dans tout le catalogue), "
-                "55 % des recherches sans pièce exacte.",
+                "hint": "132 searches for “Sandals · gold · women”, 0 in your shop "
+                "(3 in the whole catalogue), 55 % of the searches without an exact piece.",
             }
         ],
         "prices": [
@@ -168,7 +168,7 @@ def dashboard(shop: str | None = "Manuella") -> dict:
         "trends": [
             {
                 "theme_id": "th_01",
-                "label": "Sandales dorées · femme",
+                "label": "Sandals · gold · women",
                 "last_7_days": 58,
                 "weekly_mean_before": 9.4,
                 "z": 5.2,
@@ -196,10 +196,10 @@ def handoff() -> dict:
         "candidates": [
             {
                 "pro_id": "pro_demo0001",
-                "name": "Amel (styliste, démo)",
+                "name": "Amel (stylist, demo)",
                 "city": "Tunis",
                 "score": 0.86,
-                "reasons": ["Spécialité : mariage", "Même ville : Tunis", "Parle fr"],
+                "reasons": ["Speciality: mariage", "Same city: Tunis", "Speaks fr"],
             }
         ],
         "escalation": escalation(),
@@ -207,10 +207,10 @@ def handoff() -> dict:
         "budget_tnd": 300.0,
         "city": "Tunis",
         "summary": [
-            "Demande : une tenue pour le mariage de ma sœur en juillet",
-            "Occasion : mariage · budget : 300 TND · ville : Tunis",
-            "Pourquoi un humain : demande à parler à un styliste",
-            "A cherché : robe longue verte, sandales dorées",
+            "Request: une tenue pour le mariage de ma sœur en juillet",
+            "Occasion: wedding · budget: 300 TND · city: Tunis",
+            "Why a human: asked to talk to a stylist",
+            "Searched the shops for: robe longue verte, sandales dorées",
         ],
         "created_at": _AT,
         "updated_at": _AT,

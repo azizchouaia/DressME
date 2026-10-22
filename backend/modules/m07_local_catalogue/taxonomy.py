@@ -126,6 +126,61 @@ def color_code_from_text(text: str) -> str | None:
 # /collections/homme); pipeline/attributes.py estimates it from the photo when they do not. "" = unknown.
 GENDERS = {"women": "Femme", "men": "Homme", "unisex": "Mixte"}
 OPPOSITE_GENDER = {"women": "men", "men": "women"}
+
+
+# English display labels (the app's Espace pro and `language="en"` answers); French stays the default.
+SUBCATEGORY_EN = {
+    "sneakers": "Sneakers",
+    "shoes": "Shoes",
+    "sandals": "Sandals",
+    "boots": "Boots",
+    "heels": "Heels",
+    "bag": "Bags",
+    "accessory": "Accessories",
+    "hijab": "Hijabs",
+    "dress": "Dresses",
+    "jumpsuit": "Jumpsuits",
+    "set": "Sets",
+    "suit": "Suits",
+    "swimwear": "Swimwear",
+    "skirt": "Skirts",
+    "shorts": "Shorts",
+    "jeans": "Jeans",
+    "trousers": "Trousers",
+    "coat": "Coats",
+    "jacket": "Jackets",
+    "sweater": "Sweaters",
+    "tshirt": "T-shirts & tops",
+    "shirt": "Shirts",
+    "lingerie": "Lingerie & nightwear",
+    "traditional": "Traditional outfits",
+    "belt": "Belts",
+    "bracelet": "Bracelets",
+    "ring": "Rings",
+    "jewelry": "Jewellery",
+    "necklace": "Necklaces",
+    "earrings": "Earrings",
+    "hat": "Hats & caps",
+    "socks": "Socks",
+    "scarf": "Scarves",
+    "sunglasses": "Sunglasses",
+    "wallet": "Wallets",
+    "watch": "Watches",
+    "hair": "Hair accessories",
+}
+GENDERS_EN = {"women": "Women's", "men": "Men's", "unisex": "Unisex"}
+
+
+def label(subcategory: str, language: str = "fr") -> str:
+    """Display label of a subcategory: "Baskets" (fr, ar) or "Sneakers" (en)."""
+    return SUBCATEGORY_EN.get(subcategory, subcategory) if language == "en" else SUBCATEGORIES[subcategory][1]
+
+
+def colour_name(code: str, language: str = "fr") -> str:
+    """ "bleu marine" (fr, ar) or "navy blue" (en), lower case."""
+    return code.replace("_", " ") if language == "en" else COLOR_CODES[code][0].lower()
+
+
 _UNISEX_RE = re.compile(r"\b(?:unisexe?|mixte)\b")
 _WOMEN_RE = re.compile(r"\b(?:femmes?|woman|women|womens|dames?|filles?|feminine?s?|ladies|lady)\b")
 _MEN_RE = re.compile(r"\b(?:hommes?|man|men|mens|masculine?s?|monsieur)\b")

@@ -11,7 +11,7 @@ Weights come from config.yaml and are renormalised over the parts available for 
 import numpy as np
 
 from ..contract import ParsedQuery
-from ..taxonomy import COLOR_CODES, GENDERS, SUBCATEGORIES, governorate
+from ..taxonomy import GENDERS, GENDERS_EN, colour_name, governorate, label
 
 
 def _scale(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
@@ -85,55 +85,103 @@ def mmr(catalogue, candidates: np.ndarray, match: np.ndarray, k: int, lam: float
     return [int(order[i]) for i in chosen]
 
 
+# Reasons in the request's language (Arabic answers keep the French reasons for now).
+REASONS = {
+    "fr": {
+        "colour": "Couleur : {c}",
+        "colour_unknown": "Couleur non précisée par la boutique : vérifier sur la photo",
+        "other_colour": "Autre couleur : {c}",
+        "model": "Modèle {g}",
+        "from_photo": "{label} (estimé d'après la photo)",
+        "gender_unknown": "Genre non précisé par la boutique",
+        "budget": "{price} (budget {max:g} TND)",
+        "shop_in": "Boutique à {city}",
+        "shop_near": "Boutique à {city} (près de {asked})",
+        "chain": "Chaîne présente dans {n} villes ({cities}…)",
+        "like_photo": "Très proche de la photo",
+        "looks_like": "Ressemble visuellement à la demande",
+        "style": "Proche de ton style",
+        "local_brand": "Marque tunisienne",
+    },
+    "en": {
+        "colour": "Colour: {c}",
+        "colour_unknown": "Colour not given by the shop: check the photo",
+        "other_colour": "Other colour: {c}",
+        "model": "{g} piece",
+        "from_photo": "{label} (estimated from the photo)",
+        "gender_unknown": "Gender not given by the shop",
+        "budget": "{price} (budget {max:g} TND)",
+        "shop_in": "Shop in {city}",
+        "shop_near": "Shop in {city} (near {asked})",
+        "chain": "Chain in {n} cities ({cities}…)",
+        "like_photo": "Very close to the photo",
+        "looks_like": "Looks like the request",
+        "style": "Close to your style",
+        "local_brand": "Tunisian brand",
+    },
+}
+
+
 def reasons(
     product: dict,
     parsed: ParsedQuery,
     parts: dict[str, np.ndarray],
     j: int,
     visual_kind: str | None,
+    language: str = "fr",
 ) -> list[str]:
-    """Short French reasons built only from the product data and the computed scores."""
+    """Short reasons built only from the product data and the computed scores."""
+    t = REASONS.get(language, REASONS["fr"])
     out = []
     if parsed.subcategory:
-        out.append(SUBCATEGORIES[parsed.subcategory][1])
+        out.append(label(parsed.subcategory, language))
     if parsed.color:
-        wanted = COLOR_CODES[parsed.color][0].lower()
         if product.get("color") == parsed.color:
-            out.append(f"Couleur : {wanted}")
+            out.append(t["colour"].format(c=colour_name(parsed.color, language)))
         elif not product.get("color"):
-            out.append("Couleur non précisée par la boutique : vérifier sur la photo")
+            out.append(t["colour_unknown"])
         else:
-            out.append(f"Autre couleur : {product.get('color_fr', '').lower()}")
+            other = (
+                product["color"].replace("_", " ")
+                if language == "en"
+                else product.get("color_fr", "").lower()
+            )
+            out.append(t["other_colour"].format(c=other))
     if parsed.gender in ("women", "men"):
         gender = product.get("gender") or ""
         if gender in GENDERS:
-            label = f"Modèle {GENDERS[gender].lower()}"
+            name = GENDERS_EN[gender] if language == "en" else GENDERS[gender].lower()
+            model = t["model"].format(g=name)
             out.append(
-                f"{label} (estimé d'après la photo)" if product.get("gender_source") == "photo" else label
+                t["from_photo"].format(label=model) if product.get("gender_source") == "photo" else model
             )
         else:
-            out.append("Genre non précisé par la boutique")
+            out.append(t["gender_unknown"])
     if product.get("price_tnd") is not None:
         price = f"{product['price_tnd']:g} TND"
-        out.append(f"{price} (budget {parsed.max_price_tnd:g} TND)" if parsed.max_price_tnd else price)
+        out.append(
+            t["budget"].format(price=price, max=parsed.max_price_tnd) if parsed.max_price_tnd else price
+        )
     cities = [c for c in (product.get("city") or "").split("; ") if c]
     if parsed.city and parsed.city in cities:
-        out.append(f"Boutique à {parsed.city}")
+        out.append(t["shop_in"].format(city=parsed.city))
     elif parsed.city and cities:
         local = [c for c in cities if governorate(c) == parsed.governorate]
-        out.append(f"Boutique à {local[0]} (près de {parsed.city})" if local else f"Boutique à {cities[0]}")
+        out.append(
+            t["shop_near"].format(city=local[0], asked=parsed.city)
+            if local
+            else t["shop_in"].format(city=cities[0])
+        )
     elif len(cities) > 3:
-        out.append(f"Chaîne présente dans {len(cities)} villes ({', '.join(cities[:3])}…)")
+        out.append(t["chain"].format(n=len(cities), cities=", ".join(cities[:3])))
     elif cities:
-        out.append(f"Boutique à {', '.join(cities)}")
+        out.append(t["shop_in"].format(city=", ".join(cities)))
     visual = parts.get("visual")
     if visual is not None and not np.isnan(visual[j]) and visual[j] >= 0.6:
-        out.append(
-            "Très proche de la photo" if visual_kind == "image" else "Ressemble visuellement à la demande"
-        )
+        out.append(t["like_photo"] if visual_kind == "image" else t["looks_like"])
     style = parts.get("style")
     if style is not None and not np.isnan(style[j]) and style[j] >= 0.6:
-        out.append("Proche de ton style")
+        out.append(t["style"])
     if product.get("origin_type") == "local_brand":
-        out.append("Marque tunisienne")
+        out.append(t["local_brand"])
     return out

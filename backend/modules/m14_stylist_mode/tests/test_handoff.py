@@ -59,11 +59,12 @@ def test_handoff_picks_the_wedding_stylist_in_sousse_and_writes_the_summary(api)
     }
     h = api.post("/m14/handoff", json=body).json()
     assert h["status"] == "queued" and h["escalation"]["reason"] == "asks_human"
-    assert h["candidates"][0]["name"] == "Ines (démo)"  # Sousse + mariage + speaks fr
+    assert h["candidates"][0]["name"] == "Ines (demo)"  # Sousse + mariage + speaks fr
     assert h["pro_id"] == h["candidates"][0]["pro_id"]
     assert (h["occasion"], h["budget_tnd"], h["city"]) == ("mariage", 300, "Sousse")
-    assert h["summary"][0].startswith("Demande : une tenue pour le mariage")
-    assert "Pourquoi un humain : demande à parler à un styliste" in h["summary"]
+    assert h["summary"][0].startswith("Request: une tenue pour le mariage")
+    assert "Occasion: wedding · budget: 300 TND · city: Sousse" in h["summary"]
+    assert "Why a human: asked to talk to a stylist" in h["summary"]
     assert len(h["summary"]) <= 5
 
 
@@ -147,3 +148,14 @@ def test_the_main_occasion_wins_in_a_message():
     said = facts(user("une robe de soirée pour un mariage à Tunis, max 200 dt"))
     assert (said["occasion"], said["budget_tnd"], said["city"]) == ("mariage", 200, "Tunis")
     assert facts(user("une robe pour un mariage", "finalement c'est pour une soirée"))["occasion"] == "soirée"
+
+
+def test_a_new_message_goes_into_the_open_request(api):
+    first = {"user_id": "usr_091", "session_id": "c1", "messages": user("robe rouge"), "force": True}
+    h = api.post("/m14/handoff", json=first).json()
+    again = {"user_id": "usr_091", "session_id": "c2", "messages": user("je veux jupe noire avec pull blanc")}
+    h2 = api.post("/m14/handoff", json=again).json()
+    assert h2["handoff_id"] == h["handoff_id"] and h2["already_open"] and h2["pro_id"] == h["pro_id"]
+    assert [m["text"] for m in h2["messages"]] == ["robe rouge", "je veux jupe noire avec pull blanc"]
+    assert "Last message: je veux jupe noire avec pull blanc" in h2["summary"]
+    assert h2["history"][-1]["status"] == "new_message"

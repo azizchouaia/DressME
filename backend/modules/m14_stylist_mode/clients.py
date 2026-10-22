@@ -101,8 +101,8 @@ def product_as_garment(user_id: str, p: dict) -> dict:
 def mock_profile(user_id: str) -> dict:
     return {
         "archetype": "casual",
-        "likes": ["lin", "denim"],
-        "dislikes": ["imprimés"],
+        "likes": ["linen", "denim"],
+        "dislikes": ["prints"],
         "colours": ["beige", "white", "navy"],
         "style_vector": None,
     }
@@ -144,7 +144,7 @@ async def style_gaps(user_id: str):
             raise ValueError("M5 gaps not available yet")
         return [g if isinstance(g, str) else g.get("label", str(g)) for g in gaps]
 
-    return await _try("m5", real, lambda: ["chaussures habillées"])
+    return await _try("m5", real, lambda: ["dress shoes"])
 
 
 async def send_corrections(user_id: str, pro_id: str, corrections: dict):
@@ -186,8 +186,8 @@ async def verdict(user_id: str, product: dict, language: str):
         return {
             "verdict": "think",
             "score": 55,
-            "reasons": ["Smart Buy (M6) pas encore branché : avis par défaut"],
-            "explanation": "À confirmer avec Smart Buy quand il sera disponible.",
+            "reasons": ["Smart Buy (M6) not connected yet: default opinion"],
+            "explanation": "To be confirmed with Smart Buy when it is available.",
         }
 
     return await _try("m6", lambda: _post("/m06/verdict", body), mock)

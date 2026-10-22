@@ -25,7 +25,7 @@ def _speciality(pro: dict, wanted: set[str], decay: float) -> tuple[float, str |
     """1 - decay^n for n specialities said in the chat (decay 0.5): "costume homme mariage" ranks a suit +
     men + wedding stylist (0.875) above a wedding-only one (0.5)."""
     common = [s for s in pro.get("specialities") or [] if fold(s) in wanted]  # as the stylist wrote them
-    return (1 - decay ** len(common), f"Spécialité : {', '.join(common)}") if common else (0.0, None)
+    return (1 - decay ** len(common), f"Speciality: {', '.join(common)}") if common else (0.0, None)
 
 
 def _city(pro: dict, city: str | None, same_governorate: float) -> tuple[float, str | None]:
@@ -33,9 +33,9 @@ def _city(pro: dict, city: str | None, same_governorate: float) -> tuple[float, 
     if not (a and b):
         return 0.0, None
     if a == b:
-        return 1.0, f"Même ville : {a}"
+        return 1.0, f"Same city: {a}"
     if governorate(a) and governorate(a) == governorate(b):
-        return same_governorate, f"Près de chez vous : {a}"
+        return same_governorate, f"Near the client: {a}"
     return 0.0, None
 
 
@@ -72,12 +72,12 @@ def rank(
         speaks = {fold(x) for x in pro.get("languages") or []}
         parts["language"] = 1.0 if speaks & LANGUAGE_WORDS[language] else 0.0
         if parts["language"]:
-            reasons.append(f"Parle {language}")
+            reasons.append(f"Speaks {language}")
         parts["load"] = 1 - load / cfg["max_load"]
         style = _style(pro, client_vector)
         if style is not None:
             parts["style"] = style
-            reasons.append(f"Style proche ({style:.0%})")
+            reasons.append(f"Similar style ({style:.0%})")
         total = sum(weights[k] for k in parts)
         score = sum(weights[k] * v for k, v in parts.items()) / total
         out.append(

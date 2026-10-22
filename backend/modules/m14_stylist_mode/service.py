@@ -6,7 +6,10 @@ F6 dashboard · F7 hand-off. Other modules are reached through clients.py (real 
 
 from collections import Counter
 
+from modules.m07_local_catalogue.llm import get_llm
+
 from . import clients, dashboard, mock, store
+from .dashboard import insights as dashboard_insights
 from .handoff import escalate, match, summary
 from .paths import CONFIG
 
@@ -140,24 +143,24 @@ async def brief(pro_id: str, client_id: str) -> dict:
     taste = " ; ".join(
         t
         for t in (
-            f"aime : {', '.join(likes)}" if likes else "",
-            f"évite : {', '.join(dislikes)}" if dislikes else "",
+            f"likes: {', '.join(likes)}" if likes else "",
+            f"avoids: {', '.join(dislikes)}" if dislikes else "",
         )
         if t
     )
     lines = [
-        f"Style : {profile.get('archetype') or 'inconnu'}" + (f" ({taste})." if taste else "."),
-        f"Garde-robe : {wardrobe['n_items']} pièces, surtout {top_cats}." if items else "Garde-robe vide.",
+        f"Style: {profile.get('archetype') or 'unknown'}" + (f" ({taste})." if taste else "."),
+        f"Wardrobe: {wardrobe['n_items']} pieces, mostly {top_cats}." if items else "Empty wardrobe.",
     ]
     if wardrobe["most_worn"] or wardrobe["never_worn"]:
         lines.append(
-            f"Le plus porté : {', '.join(wardrobe['most_worn']) or '-'}. "
-            f"Jamais porté : {', '.join(wardrobe['never_worn']) or '-'}."
+            f"Most worn: {', '.join(wardrobe['most_worn']) or '-'}. "
+            f"Never worn: {', '.join(wardrobe['never_worn']) or '-'}."
         )
     if gaps:
-        lines.append(f"Manque : {', '.join(gaps)}.")
+        lines.append(f"Missing: {', '.join(gaps)}.")
     if searches:
-        lines.append(f"A cherché récemment : {', '.join(searches[:3])}.")
+        lines.append(f"Recently searched: {', '.join(searches[:3])}.")
     return {
         "pro_id": pro_id,
         "client_id": client_id,
@@ -355,7 +358,7 @@ async def send_look(body: dict) -> dict:
         body["pro_id"],
         body["client_id"],
         body["pro_id"],
-        body.get("message") or "Nouveau look",
+        body.get("message") or "New look",
         look["look_id"],
     )
     return look
@@ -403,6 +406,12 @@ async def get_dashboard(shop: str | None, days: int | None = None, sources: list
     return await dashboard.build(shop, CONFIG, agent.catalogue, agent.encoder, days, sources)
 
 
+async def get_insights(shop: str | None, days: int | None = None, sources: list[str] | None = None) -> dict:
+    """2-3 tips for the boutique: written by the BO6 LLM from the dashboard figures, or by rules."""
+    d = await get_dashboard(shop, days, sources)
+    return await dashboard_insights.build(d, get_llm())
+
+
 async def pro_dashboard(pro_id: str, days: int | None = None, sources: list[str] | None = None) -> dict:
     pro = _pro(pro_id)
     if pro["type"] != "boutique":
@@ -411,8 +420,42 @@ async def pro_dashboard(pro_id: str, days: int | None = None, sources: list[str]
 
 
 # ---------------------------------------------------------------- F7 · hand-off (BO8)
-def check_escalation(body: dict) -> dict:
-    return escalate.run(body["messages"], body.get("ai_confidence"), CONFIG)
+async def check_escalation(body: dict) -> dict:
+    """Rules first; on a longer chat they do not escalate, the BO6 LLM may add a signal (by_llm)."""
+    decision = escalate.run(body["messages"], body.get("ai_confidence"), CONFIG)
+    return await escalate.with_llm(decision, body["messages"], get_llm(), CONFIG)
+
+
+async def _add_to_open(h: dict, messages: list[dict], body: dict) -> dict:
+    """The client writes again while a request is open: add the new messages and refresh the facts."""
+    known = {(m["role"], m["text"]) for m in h.get("messages", [])}
+    new = [m for m in messages if (m["role"], m["text"]) not in known]
+    if new:
+        h["messages"] = [*h.get("messages", []), *new]
+        said = summary.facts(h["messages"])  # the last occasion / budget / city said wins
+        h |= {
+            "occasion": body.get("occasion") or said["occasion"] or h.get("occasion"),
+            "budget_tnd": body.get("budget_tnd") or said["budget_tnd"] or h.get("budget_tnd"),
+            "city": body.get("city") or said["city"] or h.get("city"),
+        }
+        searches, _ = await clients.recent_searches(h["user_id"], 3)
+        h["summary"] = await _summary(
+            h["messages"], h["occasion"], h["budget_tnd"], h["city"], h["escalation"]["reason"], searches
+        )
+        at = store.now()
+        h["history"].append({"status": "new_message", "pro_id": h["pro_id"], "at": at})
+        h["updated_at"] = at
+        store.handoffs.put(h["handoff_id"], h)
+    return h | {"already_open": True}
+
+
+async def _summary(messages, occasion, budget, city, reason, searches) -> list[str]:
+    """Fact lines from code; the BO6 LLM may replace the raw first line by one clear sentence."""
+    lines = summary.lines(messages, occasion, budget, city, reason, searches)
+    sentence = await summary.llm_sentence(get_llm(), messages)
+    if sentence:
+        lines = [f"Summary (AI): {sentence}", *lines[1:]]
+    return lines[:5]
 
 
 def _open_load() -> dict[str, int]:
@@ -423,11 +466,12 @@ def _open_load() -> dict[str, int]:
 
 async def create_handoff(body: dict) -> dict:
     messages = body["messages"]
-    # One open request per client: asking again (or tapping twice) returns the one in progress.
+    # One open request per client: new messages go into the request in progress (same stylist), so
+    # nothing the client writes is lost and no duplicate request is created.
     for h in store.handoffs.find(user_id=body["user_id"]):
         if h["status"] in ("queued", "accepted"):
-            return h | {"already_open": True}
-    decision = check_escalation(body)
+            return await _add_to_open(h, messages, body)
+    decision = await check_escalation(body)
     if body.get("force"):
         decision = {**decision, "escalate": True, "reason": decision["reason"] or "user_choice"}
     said = summary.facts(messages)
@@ -467,7 +511,7 @@ async def create_handoff(body: dict) -> dict:
     )
     record |= {
         "candidates": candidates,
-        "summary": summary.lines(messages, occasion, budget, city, decision["reason"], searches),
+        "summary": await _summary(messages, occasion, budget, city, decision["reason"], searches),
         "status": "queued" if candidates else "no_stylist",
         "pro_id": candidates[0]["pro_id"] if candidates else None,
     }
@@ -487,7 +531,7 @@ def _link_from_handoff(pro_id: str, client_id: str) -> None:
         "pro_id": pro_id,
         "client_id": client_id,
         "status": "active",
-        "message": "Demande d'aide (hand-off)",
+        "message": "Help request (hand-off)",
         "created_at": at,
         "answered_at": at,
     }

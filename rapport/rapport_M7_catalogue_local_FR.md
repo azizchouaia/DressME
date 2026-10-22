@@ -4,7 +4,7 @@
 Collecte des données (scraping), nettoyage, moteur de recherche de vêtements dans les boutiques tunisiennes,
 et évaluation.
 
-*Mis à jour le 16/10/2026 : 43 boutiques, 6 375 produits. Première version le 14/10/2026 (15 boutiques,
+*Mis à jour le 22/10/2026 : LLM Qwen 2.5 7B (§5.13, §6.6). Le 16/10/2026 : 43 boutiques, 6 375 produits. Première version le 14/10/2026 (15 boutiques,
 2 471 produits).*
 
 ---
@@ -856,6 +856,40 @@ contre 58 % en français sur 12 recherches directes). C'est pourquoi le françai
 passent par nos règles. L'évaluation du §6 le confirme à plus grande échelle : FashionCLIP seul sur la
 requête brute obtient 0,03 de nDCG sur la darija, contre 0,97 pour le pipeline.
 
+### 5.13 Le LLM de l'agent : Qwen 2.5 7B, en local
+
+Depuis le 22/10, l'agent `localshop` (M7 et sa compétence M14) a **un LLM : Qwen 2.5 7B**, exécuté sur la
+machine avec **Ollama** (`llm.py`). Pourquoi ce modèle : il est gratuit et local (pas de clé d'API, les
+requêtes des clients ne sortent pas de la machine), il tient en mémoire sur un PC de 32 Go sans carte
+graphique, et il est bon en français et en arabe, ce qui compte pour la darija.
+
+**Rôle dans M7 : comprendre les requêtes que les règles ne comprennent pas.** Les règles du §5.3
+restent la première étape, rapides et exactes. Le LLM n'est appelé que lorsqu'elles ne trouvent **ni type
+de pièce, ni couleur, ni photo** (`pipeline/understand.py`) :
+
+```
+"haja nlabesha l b7ar fi sif"  ──►  règles : rien compris
+        │
+        ▼  Qwen 2.5 7B, sortie JSON imposée par un schéma (Ollama structured outputs)
+{french: "…", subcategory: <code du catalogue>, color: <code>, gender, max_price_tnd, city}
+        │
+        ▼  vérifications du code
+budget écrit dans la requête ? ville et genre dits dans la requête ? sinon supprimés
+        │
+        ▼  la recherche normale (FashionCLIP + BM25 + filtres) tourne sur ces filtres
+gardé seulement si elle trouve des pièces ; note : « Demande comprise avec l'IA (qwen2.5:7b) : … »
+```
+
+Le LLM **ne voit pas les produits et ne choisit rien** : il traduit la demande en filtres, avec un
+vocabulaire imposé (les codes du catalogue). S'il est éteint, lent ou faux, la réponse est celle des
+règles, comme avant. Les tests utilisent un faux LLM ; ils n'appellent jamais Ollama.
+
+**Deux leçons de la mise au point**, mesurées sur les requêtes du §6.6 :
+- avec des exemples dans le prompt, le petit modèle les **recopiait** dans des réponses sans rapport
+  (« tenue de plage » pour une tenue de travail) : le prompt n'a plus d'exemples, mais demande « la pièce
+  la plus probable » selon l'usage (plage → maillot, hiver → manteau, entretien → costume) ;
+- le modèle **inventait un genre** (« women ») : un genre n'est gardé que si la requête le dit.
+
 ---
 
 ## 6. Évaluation
@@ -936,6 +970,31 @@ pipeline et les deux méthodes brutes (top 10 de chacune). Il suffit de noter un
 (`human_rel` = 0, 1 ou 2, en regardant la photo et le lien), d'enregistrer le fichier sous
 `judgments.csv` et de relancer : `RESULTS.md` ajoute alors le nDCG@10 et le P@5 humains, et l'accord avec
 les notes automatiques (kappa de Cohen).
+
+### 6.6 Ce que le LLM apporte : 16 requêtes difficiles
+
+Sur les 72 requêtes du §6.1, les règles comprennent déjà tout : le LLM n'y est jamais appelé. Pour le
+mesurer, nous avons écrit **16 requêtes que les règles ne comprennent pas** (français, anglais, darija,
+arabe : « haja nlabesha l b7ar fi sif », « an outfit for a job interview », « عندي عرس في سوسة نحب حاجة
+باهية »…), avec l'intention notée à la main (`evaluation/queries_llm.yaml`, script `llm_eval.py`).
+
+| | Type compris et juste | Budget / ville justes | Pièces trouvées | Temps médian (CPU) |
+|---|---|---|---|---|
+| Règles seules | 0/16 | 15/16 | 0/16 | – |
+| **Règles + Qwen 2.5 7B** | **11/16** | 16/16 | 14/16 | 14,8 s |
+| Règles + Qwen 2.5 3B | 12/16 | 16/16 | 16/16 | 7,6 s |
+
+- Le LLM fait passer ces requêtes de **0 à 11 sur 16** bien comprises ; aucun budget ni aucune ville n'est
+  inventé (16/16).
+- **7B et 3B font jeu égal** sur ce petit jeu (11 contre 12 : pas une vraie différence). Le 7B reformule
+  mieux (« costume d'affaires » pour un entretien, « sac de femme » pour un cadeau à une mère, là où le
+  3B écrit « robe de travail » et « robe de fête »), mais il est **deux fois plus lent** sur processeur.
+  Le modèle se change dans `config.yaml → llm.model`.
+- Les échecs du 7B : la plage comprise comme « chemise », des chaussures pour l'hiver comprises comme
+  « chemise », une tenue chaude comprise comme « robe de soirée », le hammam non compris.
+- **Limite** : ces 16 requêtes et leur intention ont été écrites par la même équipe que le système ;
+  un jeu écrit par d'autres personnes donnerait un chiffre plus juste. Le temps de réponse (≈ 15 s)
+  vient de l'absence de carte graphique ; c'est pourquoi le LLM n'est appelé qu'en dernier recours.
 
 ---
 

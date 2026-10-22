@@ -3,7 +3,7 @@
 **Rapport technique court · BO6 Marché tunisien · ESPRIT 2026**
 Le côté professionnel de DressMe : les boutiques tunisiennes et les stylistes humains.
 
-*Version du 21/10/2026. Les données clients et le trafic sont simulés (aucun vrai utilisateur avant la
+*Version du 22/10/2026 (ajout du LLM Qwen 2.5 7B). Les données clients et le trafic sont simulés (aucun vrai utilisateur avant la
 démo) ; la recherche dans les boutiques, elle, est réelle (catalogue M7 : 43 boutiques, 6 375 produits).*
 
 ---
@@ -42,7 +42,8 @@ App (Espace pro BO6)  ──►  /m14/*  ──►  service.py ─┬─ store.p
 | Clients réels / mock | `clients.py` : `real: [m7]` dans `config.yaml` ; chaque réponse indique sa source (`sources`) |
 | Aucune constante cachée | seuils, poids et plages dans `config.yaml` |
 | Mémoire | `store.py`, un fichier JSON par collection dans `ml/data/bo6/m14/` (jamais dans git) |
-| Tests + README | 33 tests, README à jour |
+| LLM | Qwen 2.5 7B local (Ollama), partagé avec M7 : il lit et rédige, le code décide (§6) |
+| Tests + README | 40 tests, README à jour |
 
 ## 3. Fonctionnalités
 
@@ -123,23 +124,67 @@ et masque les groupes de moins de 10 recherches. Accepter une demande donne à l
 fiche du client (c'est lui qui a demandé de l'aide), accès révocable comme une invitation. À mentionner
 dans la spécification : loi tunisienne 2004-63 sur la protection des données personnelles.
 
-## 6. Tests
+## 6. Le LLM : Qwen 2.5 7B en local (partagé avec M7)
 
-33 tests automatiques, environ 20 secondes, sur un catalogue de 8 produits avec un faux encodeur (sans
-modèle, sans internet) et des dossiers temporaires (les vraies données ne sont jamais touchées).
+L'agent BO6 utilise **un seul LLM**, pour M7 et M14 : **Qwen 2.5 7B**, exécuté **sur la machine** avec
+Ollama. Il est gratuit, sans clé d'API, les conversations des clients ne sortent pas de la machine, et il est
+bon en français et en arabe, ce qui aide pour la darija. **Il lit et rédige ; il ne choisit jamais un
+produit, un prix, un score ou une styliste.** Chacune de ses sorties est vérifiée par le code, et s'il est
+éteint ou trop lent, les règles répondent comme avant.
+
+**Langue (23/10)** : l'Espace pro de l'app est en anglais, donc les textes que M14 renvoie (résumé, raisons
+du choix de la styliste, fiche client, messages du tableau de bord, conseils) sont écrits en anglais. Les
+clients écrivent toujours en français, anglais, darija ou arabe : la compréhension ne change pas. Les codes
+internes (occasion `mariage`, spécialités des stylistes) restent tels quels, car ils servent à l'appariement ;
+l'app les affiche en anglais (`bo6_words.dart`).
+
+| Usage dans M14 | Ce que fait le LLM | Ce que le code vérifie | Temps (CPU) |
+|---|---|---|---|
+| **Résumé pour la styliste** | Une phrase claire de ce que veut le client, même depuis la darija | ≤ 260 caractères, aucun chiffre que le client n'a pas écrit ; les lignes de faits (occasion, budget, ville, raison) restent calculées | 7-10 s |
+| **Escalade** (conversations longues que les règles n'escaladent pas) | Demande un humain ? frustré ? occasion importante ? | Le LLM doit **citer mot pour mot** les paroles du client (*grounding*) ; une citation absente de la conversation est ignorée ; il peut ajouter un signal, jamais en retirer | 9-14 s |
+| **Conseils pour la boutique** (`GET /m14/dashboard/insights`, bouton « Generate tips ») | 2-3 conseils à partir des chiffres du tableau de bord | Tout chiffre d'un conseil doit exister dans les chiffres, sinon le conseil est retiré ; chaque ligne de chiffres porte un **verdict calculé par le code** (manque, peu de pièces, bien fourni ; prix bien placés ou trop chers) que le LLM doit suivre | 30-50 s |
+
+Exemples réels avec Qwen 2.5 7B :
+- Résumé : « Le client souhaite un costume pour un mariage à Tunis et demande des conseils. »
+- Escalade : « sma3ni chkoun ynajem y3awenni / 7ajti b chkoun ya3ref lmoda » → escalade (le LLM cite
+  « chkoun ynajem y3awenni ») ; « je cherche une robe rouge pour samedi / merci c'est parfait » → pas
+  d'escalade.
+- Conseils pour Manuella (23/10, en anglais) : « Necklaces: consider adding at least one necklace to your
+  inventory to meet customer demand. » ; « Red shoes: stock at least one pair of red shoes to fill the
+  current gap in your offerings. » ; « Sneakers: highlight your existing stock of sneakers, as they are well
+  stocked and likely to appeal to many customers. » (verdicts du code : 0 collier, 0 chaussure rouge,
+  34 baskets.)
+
+Deux erreurs observées pendant la mise au point ont conduit à ces garde-fous :
+- avec le modèle 3B, une conversation banale était prise pour une demande d'humain (d'où la citation
+  obligatoire) ;
+- un conseil disait de « revoir les prix » alors que la boutique était déjà sous le budget des clients
+  (d'où la comparaison faite par le code) ;
+- un conseil disait « seulement 335 pièces » pour un type très bien fourni, et un autre lisait « 100 % des
+  budgets servis » comme « prix trop chers » (d'où un verdict écrit par le code sur chaque ligne de
+  chiffres).
+
+Les chiffres sont vérifiés automatiquement ; le raisonnement, lui, ne peut pas l'être entièrement, et c'est
+pour cela que les conseils restent des suggestions pour la propriétaire.
+
+## 7. Tests
+
+40 tests automatiques, environ 35 secondes, sur un catalogue de 8 produits avec un faux encodeur et un faux
+LLM (sans modèle, sans internet, sans Ollama) et des dossiers temporaires (les vraies données ne sont jamais touchées).
 
 | Fichier | Tests | Ce qui est vérifié |
 |---|---|---|
 | `test_mock.py` | 8 | Chaque réponse du mock respecte le contrat |
 | `test_pros_clients.py` | 8 | Comptes boutique, consentement et retrait, fiche, accord M5/stylistes, looks, vendeur en magasin, **conversation privée** (accès, look dans la conversation, retrait, effacement) |
 | `test_dashboard.py` | 5 | Le simulateur écrit son propre journal ; le tableau de bord retrouve le signal injecté ; boutique (message, entonnoir, prix) ; erreurs 404 / 403 ; journal vide |
-| `test_handoff.py` | 12 | Escalade FR / EN / darija, cas sans escalade, choix de la styliste et résumé, cycle accepter / refuser / clore, une seule demande ouverte, occasion principale d'un message |
+| `test_handoff.py` | 13 | Escalade FR / EN / darija, cas sans escalade, choix de la styliste et résumé, cycle accepter / refuser / clore, une seule demande ouverte (un nouveau message s'y ajoute), occasion principale d'un message |
+| `test_llm.py` | 6 | Avec un faux LLM : phrase du résumé utilisée, phrase avec un chiffre inventé rejetée, escalade par le LLM, citation inventée ignorée, conseils gardés seulement avec des chiffres réels, conseils par règles sans LLM |
 
 ```bash
 cd backend && pytest modules/m14_stylist_mode
 ```
 
-## 7. Limites et suite
+## 8. Limites et suite
 
 - **Données simulées.** Clients fictifs et trafic simulé : les chiffres du tableau de bord valident la
   méthode, pas le marché. Les garde-robes, profils, notes de compatibilité et verdicts viennent des mocks
@@ -150,17 +195,21 @@ cd backend && pytest modules/m14_stylist_mode
   la semaine précédente de la référence, ou utiliser un test de Poisson, la ferait ressortir.
 - **Pas encore relié au chat.** L'agent `localshop` doit proposer « Parler à un styliste » (next_action
   vers le hand-off) pour que le parcours parte aussi de l'assistant.
+- **LLM sur processeur.** Sans carte graphique, Qwen 2.5 7B met 7 à 30 s par réponse : il n'est appelé
+  que lorsque les règles échouent, et les conseils sont générés à la demande. Le modèle 3B est deux fois
+  plus rapide, pour une compréhension comparable sur notre petit jeu de test (voir le rapport M7).
 - **Sécurité.** L'identité de l'auteur d'un message est déclarée par l'appelant : la vraie confidentialité
   demande l'authentification de la passerelle API (JWT), prévue dans le projet.
 - **À faire ensuite.** Prévision de la demande (calendrier tunisien : Ramadan, Aïd, mariages d'été, soldes),
   segments de clientèle, classifieur d'escalade entraîné, écran côté client pour recevoir les looks.
 
-## 8. Tester dans l'application
+## 9. Tester dans l'application
 
 ```bash
 cd backend
 python -m modules.m14_stylist_mode.simulate.pros       # stylistes, boutiques et clients de démo (--reset)
 python -m modules.m14_stylist_mode.simulate.traffic    # 12 semaines de recherches via M7 (~2 min)
+ollama pull qwen2.5:7b                                  # LLM (optionnel : sans lui, les règles répondent)
 uvicorn api.main:app --port 8000
 cd ../mobile && python tool/serve_app.py --api http://127.0.0.1:8000   # http://localhost:8090/#/bo6_boutique
 ```

@@ -2,7 +2,7 @@
 
     cd backend && python -m modules.m14_stylist_mode.simulate.pros [--reset]
 
-Names are fictional and marked "(démo)"; boutique accounts are unverified demo accounts of catalogue
+Names are fictional and marked "(demo)"; boutique accounts are unverified demo accounts of catalogue
 shops, so the hand-off and the boutique dashboard can be shown end to end.
 """
 
@@ -13,14 +13,14 @@ import json
 from .. import paths, service, store
 
 STYLISTS = [
-    ("Amel (démo)", "Tunis", ["mariage", "soirée", "traditionnel"], ["fr", "darija"]),
-    ("Yasmine (démo)", "La Marsa", ["bureau", "minimaliste", "entretien"], ["fr", "en"]),
-    ("Sami (démo)", "Tunis", ["homme", "costume", "mariage"], ["fr", "darija"]),
-    ("Ines (démo)", "Sousse", ["mariage", "henna", "fiançailles", "traditionnel"], ["fr", "darija", "ar"]),
-    ("Mehdi (démo)", "Sfax", ["streetwear", "baskets", "homme"], ["fr", "darija"]),
-    ("Rania (démo)", "Ariana", ["hijab", "modest", "bureau"], ["fr", "ar", "darija"]),
-    ("Leila (démo)", "Monastir", ["soirée", "robe", "mariage"], ["fr", "en"]),
-    ("Karim (démo)", "Nabeul", ["sport", "casual", "homme"], ["fr", "en", "darija"]),
+    ("Amel (demo)", "Tunis", ["mariage", "soirée", "traditionnel"], ["fr", "darija"]),
+    ("Yasmine (demo)", "La Marsa", ["bureau", "minimaliste", "entretien"], ["fr", "en"]),
+    ("Sami (demo)", "Tunis", ["homme", "costume", "mariage"], ["fr", "darija"]),
+    ("Ines (demo)", "Sousse", ["mariage", "henna", "fiançailles", "traditionnel"], ["fr", "darija", "ar"]),
+    ("Mehdi (demo)", "Sfax", ["streetwear", "baskets", "homme"], ["fr", "darija"]),
+    ("Rania (demo)", "Ariana", ["hijab", "modest", "bureau"], ["fr", "ar", "darija"]),
+    ("Leila (demo)", "Monastir", ["soirée", "robe", "mariage"], ["fr", "en"]),
+    ("Karim (demo)", "Nabeul", ["sport", "casual", "homme"], ["fr", "en", "darija"]),
 ]
 BOUTIQUES = [("Manuella", "Tunis"), ("Ms. Marion", "Tunis"), ("Cravate", "Tunis"), ("Joliesse", "Sousse")]
 CLIENTS = ["usr_042", "usr_043", "usr_044"]
@@ -52,7 +52,7 @@ async def seed(reset: bool = False) -> dict:
                 await service.create_pro(
                     {
                         "type": "boutique",
-                        "name": f"{shop} (démo)",
+                        "name": f"{shop} (demo)",
                         "city": city,
                         "shop": shop,
                         "specialities": [],

@@ -12,41 +12,20 @@ import '../../bo6_local_market/logic/bo6_local_market_provider.dart'
 import '../../bo6_local_market/ui/bo6_local_market_screen.dart' show formatTnd;
 import '../data/bo6_boutique_repository.dart';
 import '../logic/bo6_boutique_provider.dart';
+import 'bo6_words.dart';
 
-const _pieceFr = {
-  'jeans': 'Jean',
-  'shirt': 'Chemise',
-  'sweater': 'Pull',
-  'sneakers': 'Baskets',
-  'dress': 'Robe',
-  'jacket': 'Veste',
-  'bag': 'Sac',
-  'tshirt': 'T-shirt',
-  'trousers': 'Pantalon',
-  'skirt': 'Jupe',
-  'coat': 'Manteau',
-  'sandals': 'Sandales',
-  'heels': 'Escarpins',
-  'shoes': 'Chaussures',
-};
-const _colourFr = {
-  'black': 'noir',
-  'white': 'blanc',
-  'blue': 'bleu',
-  'navy': 'marine',
-  'beige': 'beige',
-  'red': 'rouge',
-  'green': 'vert',
-  'pink': 'rose',
-  'gold': 'doré',
-  'brown': 'marron',
-  'grey': 'gris',
+const _pieceEn = {
+  'tshirt': 't-shirt',
+  'sweater': 'sweater',
+  'trousers': 'trousers',
 };
 
+/// "White shirt", "Navy jacket": wardrobe codes in plain English.
 String _pieceName(WardrobePiece p) {
-  final name = _pieceFr[p.subcategory] ?? p.subcategory ?? p.category;
-  final colour = _colourFr[p.color] ?? p.color;
-  return colour == null ? name : '$name $colour';
+  final name = _pieceEn[p.subcategory] ?? p.subcategory ?? p.category;
+  final colour = p.color?.replaceAll('_', ' ');
+  final text = colour == null ? name : '$colour $name';
+  return text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
 }
 
 class HelpClientScreen extends ConsumerStatefulWidget {
@@ -88,7 +67,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
   void _prefill(Handoff h) {
     if (_prefilled) return;
     _prefilled = true;
-    _query.text = h.occasion == null ? '' : 'tenue ${h.occasion}';
+    _query.text = h.occasion == null ? '' : '${wordEn(h.occasion!)} outfit';
     if (h.budgetTnd != null) _budget.text = h.budgetTnd!.toStringAsFixed(0);
     _city = h.city;
     _cityOnly = h.city != null;
@@ -115,7 +94,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
 
   Future<void> _send() async {
     if (_items.isEmpty && _products.isEmpty) {
-      _snack('Choisis au moins une pièce (garde-robe ou boutique).');
+      _snack('Pick at least one piece (wardrobe or shop).');
       return;
     }
     setState(() => _sending = true);
@@ -137,8 +116,8 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
       });
       final score = look.score == null
           ? ''
-          : ' · compatibilité ${(look.score! * 100).round()} %';
-      _snack('Look envoyé à ${widget.clientId}$score.');
+          : ' · compatibility ${(look.score! * 100).round()} %';
+      _snack('Look sent to ${widget.clientId}$score.');
     } catch (e) {
       _snack(describeError(e));
     } finally {
@@ -153,7 +132,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
           .updateHandoff(widget.handoffId!, widget.proId, 'closed');
       ref.invalidate(handoffQueueProvider);
       if (mounted) {
-        _snack('Demande close.');
+        _snack('Request closed.');
         context.go('/bo6_boutique?tab=1');
       }
     } catch (e) {
@@ -198,7 +177,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                         proId: widget.proId, clientId: widget.clientId),
                     const SizedBox(height: 22),
                     const DmSectionHeader(
-                        eyebrow: 'Étape 1', title: 'Dans sa garde-robe'),
+                        eyebrow: 'Step 1', title: 'In their wardrobe'),
                     const SizedBox(height: 8),
                     _WardrobePicker(
                       keyIds: _key,
@@ -209,8 +188,8 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                     ),
                     const SizedBox(height: 22),
                     const DmSectionHeader(
-                        eyebrow: 'Étape 2',
-                        title: 'Dans les boutiques tunisiennes'),
+                        eyebrow: 'Step 2',
+                        title: 'In Tunisian shops'),
                     const SizedBox(height: 8),
                     _searchBar(),
                     const SizedBox(height: 10),
@@ -220,12 +199,12 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                       _results(_found!),
                     const SizedBox(height: 22),
                     const DmSectionHeader(
-                        eyebrow: 'Étape 3', title: 'Le look à envoyer'),
+                        eyebrow: 'Step 3', title: 'The look to send'),
                     const SizedBox(height: 8),
                     _lookTray(),
                     const SizedBox(height: 22),
                     const DmSectionHeader(
-                        eyebrow: 'Historique', title: 'Looks déjà envoyés'),
+                        eyebrow: 'History', title: 'Looks already sent'),
                     const SizedBox(height: 8),
                     _SentLooks(_key),
                   ],
@@ -240,7 +219,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _close,
                       icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Clore la demande (client aidé)'),
+                      label: const Text('Close the request (client helped)'),
                     ),
                   ),
                 )
@@ -262,7 +241,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _search(),
                 decoration: const InputDecoration(
-                  hintText: 'Ex. robe longue verte, sandales dorées…',
+                  hintText: 'e.g. long green dress, gold sandals…',
                   prefixIcon: Icon(Icons.search, color: DmColors.bronzeDark),
                   isDense: true,
                 ),
@@ -281,7 +260,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            FilledButton(onPressed: _search, child: const Text('Chercher')),
+            FilledButton(onPressed: _search, child: const Text('Search')),
           ],
         ),
         if (_city != null)
@@ -292,7 +271,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             title:
-                Text('Seulement les boutiques de $_city', style: DmText.body),
+                Text('Only shops in $_city', style: DmText.body),
           ),
       ],
     );
@@ -301,13 +280,13 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
   Widget _results(LocalSearchResult found) {
     final repo = ref.read(localMarketRepositoryProvider);
     if (found.results.isEmpty) {
-      return Text(found.note ?? 'Aucune pièce trouvée.', style: DmText.body);
+      return Text(found.note ?? 'No piece found.', style: DmText.body);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${found.totalMatches} pièce(s) · touche une pièce pour l\'ajouter au look'
+          '${found.totalMatches} piece(s) · tap a piece to add it to the look'
           '${found.note == null ? '' : ' · ${found.note}'}',
           style: DmText.caption,
         ),
@@ -405,7 +384,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
           children: [
             if (chosen.isEmpty && _products.isEmpty)
               const Text(
-                  'Ajoute des pièces de sa garde-robe (étape 1) et / ou des boutiques (étape 2).',
+                  'Add pieces from their wardrobe (step 1) and / or from the shops (step 2).',
                   style: DmText.body),
             Wrap(
               spacing: 6,
@@ -429,7 +408,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
             ),
             if (_products.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('À acheter : ${formatTnd(total)}', style: DmText.price),
+              Text('To buy: ${formatTnd(total)}', style: DmText.price),
             ],
             const SizedBox(height: 10),
             TextField(
@@ -438,13 +417,13 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
               maxLines: 4,
               decoration: const InputDecoration(
                   hintText:
-                      'Ton conseil au client (ex. « Avec ta veste marine, et ces sandales pour le mariage »)'),
+                      'Your advice to the client (e.g. "With your navy jacket, and these sandals for the wedding")'),
             ),
             const SizedBox(height: 10),
             FilledButton.icon(
               onPressed: _sending ? null : _send,
               icon: const Icon(Icons.send, size: 18),
-              label: const Text('Envoyer le look au client'),
+              label: const Text('Send the look to the client'),
             ),
           ],
         ),
@@ -471,7 +450,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               IconButton(
-                tooltip: 'Retour',
+                tooltip: 'Back',
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () =>
                     context.go('/bo6_boutique?tab=${handoff == null ? 2 : 1}'),
@@ -480,7 +459,7 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('AIDER UN CLIENT',
+                    Text('HELP A CLIENT',
                         style: DmText.eyebrow.copyWith(color: DmColors.gold)),
                     const SizedBox(height: 4),
                     Text(clientId,
@@ -488,8 +467,8 @@ class _Header extends StatelessWidget {
                             .copyWith(color: Colors.white, fontSize: 28)),
                     const SizedBox(height: 6),
                     Text(
-                      'Lis sa demande et sa fiche, compose un look avec sa garde-robe et des '
-                      'pièces de boutiques tunisiennes, puis envoie-le.',
+                      'Read the request and the client file, build a look from their wardrobe '
+                      'and pieces from Tunisian shops, then send it.',
                       style: DmText.body.copyWith(
                           color: Colors.white.withValues(alpha: 0.55)),
                     ),
@@ -512,7 +491,7 @@ class _RequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final facts = [
-      if (h.occasion != null) h.occasion!,
+      if (h.occasion != null) wordEn(h.occasion!),
       if (h.budgetTnd != null) formatTnd(h.budgetTnd!),
       if (h.city != null) h.city!,
     ];
@@ -522,7 +501,7 @@ class _RequestCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('SA DEMANDE', style: DmText.eyebrow),
+            const Text('THE REQUEST', style: DmText.eyebrow),
             const SizedBox(height: 6),
             Wrap(
                 spacing: 6,
@@ -567,7 +546,7 @@ class _BriefCard extends ConsumerWidget {
           data: (b) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SA FICHE', style: DmText.eyebrow),
+              const Text('CLIENT FILE', style: DmText.eyebrow),
               const SizedBox(height: 6),
               for (final line in b.summary)
                 Padding(
@@ -576,7 +555,7 @@ class _BriefCard extends ConsumerWidget {
                 ),
               const SizedBox(height: 4),
               Text(
-                'Sources : ${b.sources.entries.map((e) => '${e.key.toUpperCase()} ${e.value == 'real' ? 'réel' : 'mock'}').join(' · ')}',
+                'Sources: ${b.sources.entries.map((e) => '${e.key.toUpperCase()} ${e.value == 'real' ? 'real' : 'mock'}').join(' · ')}',
                 style: DmText.caption,
               ),
             ],
@@ -607,7 +586,7 @@ class _WardrobePicker extends ConsumerWidget {
         children: [
           for (final p in list)
             FilterChip(
-              label: Text('${_pieceName(p)} · porté ${p.wearCount}×'),
+              label: Text('${_pieceName(p)} · worn ${p.wearCount}×'),
               selected: selected.contains(p.itemId),
               onSelected: (_) => onToggle(p.itemId),
             ),
@@ -629,7 +608,7 @@ class _SentLooks extends ConsumerWidget {
       loading: () => const LinearProgressIndicator(),
       error: (e, _) => Text(describeError(e), style: DmText.body),
       data: (list) => list.isEmpty
-          ? const Text('Aucun look envoyé à ce client.', style: DmText.body)
+          ? const Text('No look sent to this client yet.', style: DmText.body)
           : Column(
               children: [
                 for (final l in list.reversed)
@@ -644,14 +623,14 @@ class _SentLooks extends ConsumerWidget {
                             Row(children: [
                               Expanded(
                                 child: Text(
-                                  '${l.itemIds.length} pièce(s) de sa garde-robe · '
-                                  '${l.products.length} pièce(s) de boutique',
+                                  '${l.itemIds.length} piece(s) from their wardrobe · '
+                                  '${l.products.length} piece(s) from shops',
                                   style: DmText.itemName,
                                 ),
                               ),
                               if (l.score != null)
                                 DmPill(
-                                    'compatibilité ${(l.score! * 100).round()} %',
+                                    'compatibility ${(l.score! * 100).round()} %',
                                     dark: true),
                             ]),
                             for (final p in l.products)
@@ -663,7 +642,7 @@ class _SentLooks extends ConsumerWidget {
                                   style: DmText.body
                                       .copyWith(fontStyle: FontStyle.italic)),
                             Text(
-                                'Score : M2 ${l.sources['m2'] == 'real' ? 'réel' : 'mock'}',
+                                'Score: M2 ${l.sources['m2'] == 'real' ? 'real' : 'mock'}',
                                 style: DmText.caption),
                           ],
                         ),
@@ -677,7 +656,7 @@ class _SentLooks extends ConsumerWidget {
 }
 
 /// Private conversation stylist <-> client (M14 /chat). Only these two people read it; the switch
-/// "Client (simulé)" stands for the client's app in the demo.
+/// "Client (simulated)" stands for the client's app in the demo.
 class _PrivateChat extends ConsumerStatefulWidget {
   const _PrivateChat({required this.proId, required this.clientId});
 
@@ -739,11 +718,11 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                     size: 16, color: DmColors.bronze),
                 const SizedBox(width: 6),
                 const Expanded(
-                    child: Text('CONVERSATION PRIVÉE', style: DmText.eyebrow)),
+                    child: Text('PRIVATE CONVERSATION', style: DmText.eyebrow)),
                 SegmentedButton<bool>(
                   segments: const [
-                    ButtonSegment(value: false, label: Text('Styliste')),
-                    ButtonSegment(value: true, label: Text('Client (simulé)')),
+                    ButtonSegment(value: false, label: Text('Stylist')),
+                    ButtonSegment(value: true, label: Text('Client (simulated)')),
                   ],
                   selected: {_asClient},
                   showSelectedIcon: false,
@@ -754,8 +733,8 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
             ),
             const SizedBox(height: 4),
             const Text(
-                'Visible seulement par toi et ce client : jamais par les autres stylistes, '
-                "ni par le tableau de bord, ni par l'assistant.",
+                'Only you and this client can read it: never other stylists, '
+                'the dashboard or the assistant.',
                 style: DmText.caption),
             const SizedBox(height: 10),
             chat.when(
@@ -765,7 +744,7 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (c.messages.isEmpty)
-                    const Text('Pas encore de message. Présente-toi au client.',
+                    const Text('No message yet. Introduce yourself to the client.',
                         style: DmText.body),
                   for (final m in c.messages)
                     _Bubble(m, mine: m.senderId == _me),
@@ -780,14 +759,14 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                             decoration: InputDecoration(
                               isDense: true,
                               hintText: _asClient
-                                  ? 'Message du client…'
-                                  : 'Message au client…',
+                                  ? "Client's message…"
+                                  : 'Message to the client…',
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         IconButton.filled(
-                          tooltip: 'Envoyer',
+                          tooltip: 'Send',
                           onPressed: _send,
                           icon: const Icon(Icons.send, size: 18),
                         ),
@@ -795,7 +774,7 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                     )
                   else
                     const Text(
-                        "Conversation fermée : le client a retiré l'accès.",
+                        'Conversation closed: the client removed access.',
                         style: DmText.body),
                   if (_asClient && c.messages.isNotEmpty)
                     Align(
@@ -805,7 +784,7 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                             .read(boutiqueRepositoryProvider)
                             .deleteConversation(widget.proId, widget.clientId)),
                         icon: const Icon(Icons.delete_outline, size: 16),
-                        label: const Text('Effacer la conversation (client)'),
+                        label: const Text('Delete the conversation (client)'),
                       ),
                     ),
                 ],
@@ -848,7 +827,7 @@ class _Bubble extends StatelessWidget {
                     size: 14,
                     color: mine ? DmColors.goldLight : DmColors.bronze),
                 const SizedBox(width: 4),
-                Text('Look envoyé',
+                Text('Look sent',
                     style: DmText.caption.copyWith(
                         color: mine ? DmColors.goldLight : DmColors.bronze,
                         fontWeight: FontWeight.w700)),
@@ -856,7 +835,7 @@ class _Bubble extends StatelessWidget {
             Text(m.text,
                 style: DmText.body.copyWith(
                     fontSize: 13, color: mine ? Colors.white : DmColors.text)),
-            Text('${m.role == 'stylist' ? 'Styliste' : 'Client'} · $time',
+            Text('${m.role == 'stylist' ? 'Stylist' : 'Client'} · $time',
                 style: DmText.caption
                     .copyWith(color: mine ? Colors.white60 : DmColors.muted)),
           ],

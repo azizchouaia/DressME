@@ -1,5 +1,5 @@
-// Owner: BO6 (@bo6-owner) — "Où trouver… ?" : search Tunisian shops through M7 (Local catalogue).
-// Look: DressMe design (docs/design/, "Local" tab and "Sélection locale" of the prototype).
+// Owner: BO6 (@bo6-owner) — "Where to find…?": search Tunisian shops through M7 (Local catalogue).
+// Look: DressMe design (docs/design/, "Local" tab and "Local selection" of the prototype). English UI.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,71 +22,55 @@ const _cities = [
   'Le Kef'
 ];
 const _examples = [
-  'baskets blanches à Tunis pour 80 TND',
-  'robe noire élégante moins de 150 dt',
-  'jebba brodée',
-  'sac en cuir camel',
-  'chemise en lin blanche à la Marsa',
+  'white sneakers in Tunis for 80 TND',
+  'elegant black dress under 150 dt',
+  'embroidered jebba',
+  'camel leather bag',
+  'white linen shirt in La Marsa',
 ];
-const _subcategoryFr = {
-  'sneakers': 'Baskets',
-  'shoes': 'Chaussures',
-  'sandals': 'Sandales',
-  'boots': 'Bottes',
-  'heels': 'Escarpins',
-  'bag': 'Sacs',
-  'accessory': 'Accessoires',
+const _subcategoryEn = {
+  'sneakers': 'Sneakers',
+  'shoes': 'Shoes',
+  'sandals': 'Sandals',
+  'boots': 'Boots',
+  'heels': 'Heels',
+  'bag': 'Bags',
+  'accessory': 'Accessories',
   'hijab': 'Hijabs',
-  'dress': 'Robes',
-  'jumpsuit': 'Combinaisons',
-  'set': 'Ensembles',
-  'swimwear': 'Maillots',
-  'skirt': 'Jupes',
+  'dress': 'Dresses',
+  'jumpsuit': 'Jumpsuits',
+  'set': 'Sets',
+  'swimwear': 'Swimwear',
+  'skirt': 'Skirts',
   'shorts': 'Shorts',
   'jeans': 'Jeans',
-  'trousers': 'Pantalons',
-  'coat': 'Manteaux',
-  'jacket': 'Vestes',
-  'sweater': 'Pulls',
+  'trousers': 'Trousers',
+  'coat': 'Coats',
+  'jacket': 'Jackets',
+  'sweater': 'Sweaters',
   'tshirt': 'T-shirts',
-  'shirt': 'Chemises',
+  'shirt': 'Shirts',
   'lingerie': 'Lingerie',
-  'traditional': 'Tenues traditionnelles',
-  'belt': 'Ceintures',
-  'jewelry': 'Bijoux',
-  'hat': 'Chapeaux',
-  'socks': 'Chaussettes',
-  'scarf': 'Foulards',
-  'sunglasses': 'Lunettes',
-  'wallet': 'Portefeuilles',
-  'watch': 'Montres',
-  'hair': 'Accessoires cheveux',
-  'suit': 'Costumes',
-  'necklace': 'Colliers',
+  'traditional': 'Traditional outfits',
+  'belt': 'Belts',
+  'jewelry': 'Jewellery',
+  'hat': 'Hats',
+  'socks': 'Socks',
+  'scarf': 'Scarves',
+  'sunglasses': 'Sunglasses',
+  'wallet': 'Wallets',
+  'watch': 'Watches',
+  'hair': 'Hair accessories',
+  'suit': 'Suits',
+  'necklace': 'Necklaces',
   'bracelet': 'Bracelets',
-  'ring': 'Bagues',
-  'earrings': "Boucles d'oreilles",
+  'ring': 'Rings',
+  'earrings': 'Earrings',
 };
-const _colorFr = {
-  'black': 'noir',
-  'white': 'blanc',
-  'grey': 'gris',
-  'beige': 'beige',
-  'camel': 'camel',
-  'brown': 'marron',
-  'blue': 'bleu',
-  'navy': 'bleu marine',
-  'light_blue': 'bleu ciel',
-  'red': 'rouge',
-  'burgundy': 'bordeaux',
-  'pink': 'rose',
-  'purple': 'violet',
-  'green': 'vert',
-  'khaki': 'kaki',
-  'yellow': 'jaune',
-  'orange': 'orange',
-  'gold': 'doré',
-  'multicolor': 'multicolore',
+const _colorEn = {
+  'navy': 'navy blue',
+  'light_blue': 'light blue',
+  'multicolor': 'multicolour',
 };
 
 /// "Tunis; Sousse; Sfax" -> "Tunis +2" (the API already keeps only the matching city under a city filter).
@@ -227,22 +211,22 @@ class _Hero extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('MODE TUNISIENNE',
+                            Text('TUNISIAN FASHION',
                                 style: DmText.eyebrow
                                     .copyWith(color: DmColors.gold)),
                             const SizedBox(height: 4),
-                            Text('Boutiques locales',
+                            Text('Local shops',
                                 style: DmText.display
                                     .copyWith(color: Colors.white)),
                             const SizedBox(height: 6),
                             Text(
-                                'Prix en dinars, disponibilité locale et affinité style.',
+                                'Prices in dinars, local availability and style match.',
                                 style: DmText.body.copyWith(color: onDark)),
                           ],
                         ),
                       ),
                       Tooltip(
-                        message: 'Espace pro (boutiques et stylistes)',
+                        message: 'Pro space (shops and stylists)',
                         child: InkResponse(
                           onTap: () => context.go('/bo6_boutique'),
                           child: Container(
@@ -261,7 +245,7 @@ class _Hero extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Tooltip(
-                        message: 'Boutiques du catalogue',
+                        message: 'Catalogue shops',
                         child: InkResponse(
                           onTap: onShops,
                           child: Container(
@@ -293,11 +277,11 @@ class _Hero extends StatelessWidget {
                               fontSize: 13, color: DmColors.text),
                           decoration: InputDecoration(
                             hintText:
-                                'Ex. baskets blanches à Tunis pour 80 TND',
+                                'e.g. white sneakers in Tunis for 80 TND',
                             prefixIcon: const Icon(Icons.search,
                                 color: DmColors.bronzeDark),
                             suffixIcon: IconButton(
-                              tooltip: 'Chercher',
+                              tooltip: 'Search',
                               icon: const Icon(Icons.arrow_forward,
                                   color: DmColors.ink),
                               onPressed: () => onSearch(),
@@ -343,7 +327,7 @@ class _CityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = <(String, String?)>[
-      ('Toutes', null),
+      ('All', null),
       for (final c in _cities) (c, c),
     ];
     return SizedBox(
@@ -385,11 +369,11 @@ class _Examples extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
         const DmSectionHeader(
-            eyebrow: 'Où trouver… ?', title: 'Que cherches-tu ?'),
+            eyebrow: 'Where to find…?', title: 'What are you looking for?'),
         const SizedBox(height: 6),
         const Text(
-          'Décris la pièce, ta ville et ton budget en TND : '
-          'DressMe cherche dans les boutiques tunisiennes.',
+          'Describe the piece, your city and your budget in TND: '
+          'DressMe searches the Tunisian shops.',
           style: DmText.body,
         ),
         const SizedBox(height: 14),
@@ -426,7 +410,7 @@ class _Loading extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
           SizedBox(height: 12),
-          Text('Recherche dans les boutiques…', style: DmText.caption),
+          Text('Searching the shops…', style: DmText.caption),
         ],
       ),
     );
@@ -467,12 +451,12 @@ class _Results extends ConsumerWidget {
     final parsed = result.parsed;
     final understood = <String>[
       if (parsed?.subcategory != null)
-        _subcategoryFr[parsed!.subcategory] ?? parsed.subcategory!,
+        _subcategoryEn[parsed!.subcategory] ?? parsed.subcategory!,
       if (parsed?.subcategory == null && parsed?.category != null)
         parsed!.category!,
-      if (parsed?.color != null) _colorFr[parsed!.color] ?? parsed.color!,
-      if (parsed?.gender == 'men') 'Homme',
-      if (parsed?.gender == 'women') 'Femme',
+      if (parsed?.color != null) _colorEn[parsed!.color] ?? parsed.color!.replaceAll('_', ' '),
+      if (parsed?.gender == 'men') 'Men',
+      if (parsed?.gender == 'women') 'Women',
       if (parsed?.minPriceTnd != null) '≥ ${formatTnd(parsed!.minPriceTnd!)}',
       if (parsed?.maxPriceTnd != null) '≤ ${formatTnd(parsed!.maxPriceTnd!)}',
       if (parsed?.city != null) parsed!.city!,
@@ -483,25 +467,24 @@ class _Results extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           sliver: SliverList.list(
             children: [
-              const Text('SÉLECTION LOCALE', style: DmText.eyebrow),
+              const Text('LOCAL SELECTION', style: DmText.eyebrow),
               const SizedBox(height: 2),
               Text(
-                '${result.totalMatches} article${result.totalMatches > 1 ? 's' : ''} trouvé'
-                '${result.totalMatches > 1 ? 's' : ''}'
-                '${result.totalMatches > result.results.length ? ' · ${result.results.length} affichés' : ''}',
+                '${result.totalMatches} piece${result.totalMatches > 1 ? 's' : ''} found'
+                '${result.totalMatches > result.results.length ? ' · ${result.results.length} shown' : ''}',
                 style: DmText.title,
               ),
               if (parsed?.translated != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Darija comprise : « ${parsed!.translated} »',
+                  'Darija understood: "${parsed!.translated}"',
                   style: DmText.caption.copyWith(fontStyle: FontStyle.italic),
                 ),
               ],
               if (parsed?.corrected != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Recherche corrigée : « ${parsed!.corrected} »',
+                  'Search corrected: "${parsed!.corrected}"',
                   style: DmText.caption.copyWith(fontStyle: FontStyle.italic),
                 ),
               ],
@@ -512,7 +495,7 @@ class _Results extends ConsumerWidget {
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text('Compris :', style: DmText.caption),
+                    const Text('Understood:', style: DmText.caption),
                     for (final u in understood) DmPill(u),
                   ],
                 ),
@@ -529,7 +512,7 @@ class _Results extends ConsumerWidget {
             hasScrollBody: false,
             child: _Message(
                 icon: Icons.search_off,
-                text: 'Aucun article. Élargis le budget ou la ville.'),
+                text: 'No piece. Widen the budget or the city.'),
           )
         else
           SliverPadding(
@@ -558,7 +541,7 @@ class _Results extends ConsumerWidget {
   }
 }
 
-/// "Voir plus" (next page) and "Tout afficher" (every remaining result) under the grid.
+/// "Show more" (next page) and "Show all" (every remaining result) under the grid.
 class _MoreButtons extends ConsumerStatefulWidget {
   const _MoreButtons({required this.remaining});
 
@@ -604,14 +587,14 @@ class _MoreButtonsState extends ConsumerState<_MoreButtons> {
                 children: [
                   FilledButton.icon(
                     icon: const Icon(Icons.expand_more, size: 18),
-                    label: Text('Voir $next de plus'),
+                    label: Text('Show $next more'),
                     onPressed: () => _load(all: false),
                   ),
                   if (widget.remaining > next)
                     OutlinedButton(
                       onPressed: () => _load(all: true),
                       child: Text(
-                          'Tout afficher (${widget.remaining} restants)'),
+                          'Show all (${widget.remaining} left)'),
                     ),
                 ],
               ),
@@ -724,7 +707,7 @@ class _ProductCard extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     product.priceTnd == null
-                        ? 'Prix ?'
+                        ? 'Price?'
                         : formatTnd(product.priceTnd!),
                     style: DmText.price,
                   ),
@@ -732,7 +715,7 @@ class _ProductCard extends ConsumerWidget {
                     const SizedBox(height: 8),
                     const Divider(height: 1),
                     const SizedBox(height: 6),
-                    const Text('Marque tunisienne',
+                    const Text('Tunisian brand',
                         style: TextStyle(fontSize: 9, color: DmColors.muted)),
                   ],
                 ],
@@ -756,7 +739,7 @@ class _StockBadge extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(DmRadius.pill),
       ),
-      child: const Text('Rupture de stock',
+      child: const Text('Sold out',
           style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
@@ -827,11 +810,11 @@ class _ProductSheet extends StatelessWidget {
             runSpacing: 6,
             children: [
               DmPill(product.priceTnd == null
-                  ? 'Prix ?'
+                  ? 'Price?'
                   : formatTnd(product.priceTnd!)),
-              DmPill('Correspondance ${(product.match * 100).round()} %'),
-              if (product.isLocalBrand) const DmPill('Marque tunisienne'),
-              if (!product.available) const DmPill('Rupture de stock'),
+              DmPill('Match ${(product.match * 100).round()} %'),
+              if (product.isLocalBrand) const DmPill('Tunisian brand'),
+              if (!product.available) const DmPill('Sold out'),
             ],
           ),
           if (product.size != null) ...[
@@ -843,12 +826,12 @@ class _ProductSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DmRadius.small),
                 border: Border.all(color: DmColors.border),
               ),
-              child: Text('Tailles disponibles : ${product.size}',
+              child: Text('Sizes available: ${product.size}',
                   style: DmText.body),
             ),
           ],
           const SizedBox(height: 20),
-          const Text('POURQUOI CETTE PIÈCE', style: DmText.eyebrow),
+          const Text('WHY THIS PIECE', style: DmText.eyebrow),
           const SizedBox(height: 8),
           for (final r in product.reasons)
             Padding(
@@ -864,32 +847,32 @@ class _ProductSheet extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 12),
-          const Text('FICHE PRODUIT', style: DmText.eyebrow),
+          const Text('PRODUCT PAGE', style: DmText.eyebrow),
           const SizedBox(height: 6),
           SelectableText(product.productUrl, style: DmText.caption),
           const SizedBox(height: 16),
           FilledButton.icon(
             icon: const Icon(Icons.open_in_new, size: 18),
-            label: const Text('Voir sur le site de la boutique'),
+            label: const Text("See it on the shop's site"),
             onPressed: () async {
               onShopLink?.call();
               final opened = await launchUrl(Uri.parse(product.productUrl),
                   mode: LaunchMode.externalApplication);
               if (!opened && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Impossible d'ouvrir le site : copie le lien")));
+                    content: Text('Could not open the site: copy the link')));
               }
             },
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.link, size: 18),
-            label: const Text('Copier le lien'),
+            label: const Text('Copy the link'),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: product.productUrl));
               if (context.mounted) {
                 ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('Lien copié')));
+                    .showSnackBar(const SnackBar(content: Text('Link copied')));
               }
             },
           ),
@@ -919,7 +902,7 @@ class _ShopsSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: DmSectionHeader(
                 eyebrow: 'Catalogue',
-                title: '${list.length} boutiques tunisiennes'),
+                title: '${list.length} Tunisian shops'),
           ),
           for (final s in list)
             ListTile(
@@ -933,7 +916,7 @@ class _ShopsSheet extends ConsumerWidget {
               ),
               title: Text(s.shop, style: DmText.itemName),
               subtitle: Text(
-                  [s.city ?? 'Ville non précisée', s.shopUrl].join(' · '),
+                  [s.city ?? 'City not given', s.shopUrl].join(' · '),
                   style: DmText.caption),
               trailing: DmPill('${s.products}'),
             ),

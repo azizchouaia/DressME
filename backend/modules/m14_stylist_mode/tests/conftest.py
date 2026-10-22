@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from modules.m07_local_catalogue import events as m7_events
+from modules.m07_local_catalogue import llm as bo6_llm
 from modules.m07_local_catalogue import memory as m7_memory
 from modules.m07_local_catalogue import service as m7_service
 from modules.m07_local_catalogue.agent import LocalShopAgent
@@ -57,4 +58,6 @@ def isolated(tmp_path, monkeypatch, m7_agent):
     monkeypatch.setattr(m7_service, "knowledge_base_ready", lambda: True)
     monkeypatch.setattr(m7_service, "_agent", m7_agent)
     monkeypatch.setattr(m7_service, "_memory", m7_agent.memory)
+    # Tests never call Ollama: the BO6 LLM is off unless a test installs a fake one
+    monkeypatch.setattr(bo6_llm, "_llm", bo6_llm.LLM({"enabled": False, "model": "off", "url": "http://off"}))
     return {"real_log": real_log, "sim_log": sim_log}

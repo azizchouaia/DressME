@@ -1,0 +1,21 @@
+# Requests the rules of parse.py do NOT understand (no piece, colour or photo found), to measure what the
+# BO6 LLM adds (evaluation/llm_eval.py). Intent written by hand. Same fields as queries.yaml; `type` may
+# list several acceptable subcategories (a "tenue de soirée" can be a dress, a set or a jumpsuit).
+# Caveat: written by the same person as the system; a set written by someone else would be fairer.
+
+- {id: h01, lang: darija, query: "nlawej 3la haja l 3ers mouch ghalia", expect: {type: [dress, set, jumpsuit, traditional]}}
+- {id: h02, lang: darija, query: "haja nlabesha l b7ar fi sif", expect: {type: [swimwear, shorts, sandals, dress]}}
+- {id: h03, lang: darija, query: "7ajti b haja n7otha 3la sa9aya f chta", expect: {type: [boots, shoes, sneakers, socks]}}
+- {id: h04, lang: darija, query: "nheb haja nlabesha l khedma", expect: {type: [shirt, trousers, suit, jacket, set]}}
+- {id: h05, lang: darija, query: "chnowa nlabes l soutenance mte3i a9al men 200", expect: {type: [suit, shirt, dress, set, jacket], max_price: 200}}
+- {id: h06, lang: darija, query: "7aja tdafini f chta", expect: {type: [coat, jacket, sweater]}}
+- {id: h07, lang: en, query: "something nice for my sister's engagement under 150 dinars", expect: {type: [dress, set, jumpsuit, traditional], max_price: 150}}
+- {id: h08, lang: en, query: "what can I wear to the gym", expect: {type: [tshirt, shorts, sneakers, set, trousers]}}
+- {id: h09, lang: en, query: "an outfit for a job interview", expect: {type: [suit, shirt, trousers, jacket, set]}}
+- {id: h10, lang: en, query: "I need something to keep me warm this winter", expect: {type: [coat, jacket, sweater]}}
+- {id: h11, lang: fr, query: "une tenue pour le hammam", expect: {type: [set, lingerie, traditional, dress]}}
+- {id: h12, lang: fr, query: "quelque chose pour la plage cet été", expect: {type: [swimwear, shorts, sandals, dress]}}
+- {id: h13, lang: fr, query: "un cadeau pour ma mère moins de 80 dt", expect: {type: [bag, accessory, scarf, jewelry, necklace, bracelet], max_price: 80}}
+- {id: h14, lang: fr, query: "de quoi protéger mes yeux du soleil", expect: {type: [sunglasses]}}
+- {id: h15, lang: arabic, query: "عندي عرس في سوسة نحب حاجة باهية", expect: {type: [dress, set, jumpsuit, traditional], city: Sousse}}
+- {id: h16, lang: arabic, query: "حاجة للبحر في الصيف", expect: {type: [swimwear, shorts, sandals, dress]}}

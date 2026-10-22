@@ -99,6 +99,7 @@ class ParsedQuery(BaseModel):
     prompt_en: str | None = None
     translated: str | None = None  # request after darija -> French ("sabbat ahmar" -> "chaussures rouge")
     corrected: str | None = None  # request after typo correction ("colier" -> "collier"), None if unchanged
+    understood_by: Literal["rules", "llm"] = "rules"  # llm: the rules understood nothing, Qwen read it
 
 
 class NextAction(BaseModel):
