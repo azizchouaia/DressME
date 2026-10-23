@@ -75,6 +75,12 @@ ajoutées) et `mobile/tool/serve_app.py`. Rien dans `backend/shared/` ni dans `b
   `agent`, `decision_id`, `question` + `question_key`, `memory_notes`, `next_actions[]`.
 - `next_actions` : `ask_user`, `open_shop`, `judge` → **smartbuy**, `show_outfits` → **stylist**,
   `more_results` → localshop, `feedback`.
+- **Exemple dans l'app** (écran « Local shops », client de démo `usr_042`) : « jean » → carte « The agent
+  asks: For women or for men? » ; un clic envoie `answer` dans la même `session_id` (130 → 79 jeans
+  femme) et la réponse est gardée en mémoire (« Forget my answers » = `DELETE /m07/memory/{user}`). Dans
+  la fiche d'un produit : « Talk to a stylist » crée un vrai hand-off M14 ; « Is it a good buy? » montre
+  ce qui est passé à Smart Buy (`judge`), dont l'écran BO5 n'est pas encore fusionné. C'est ce que
+  l'assistant BO8 doit faire avec `question` et `next_actions`.
 
 ### 2.4 Qui appelle M7 aujourd'hui
 

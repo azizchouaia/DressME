@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design/dressme_design.dart';
+import '../../bo6_boutique/logic/bo6_boutique_provider.dart'
+    show boutiqueRepositoryProvider, handoffQueueProvider;
 import '../data/bo6_local_market_repository.dart';
 import '../logic/bo6_local_market_provider.dart';
 
@@ -276,8 +278,7 @@ class _Hero extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 13, color: DmColors.text),
                           decoration: InputDecoration(
-                            hintText:
-                                'e.g. white sneakers in Tunis for 80 TND',
+                            hintText: 'e.g. white sneakers in Tunis for 80 TND',
                             prefixIcon: const Icon(Icons.search,
                                 color: DmColors.bronzeDark),
                             suffixIcon: IconButton(
@@ -454,7 +455,8 @@ class _Results extends ConsumerWidget {
         _subcategoryEn[parsed!.subcategory] ?? parsed.subcategory!,
       if (parsed?.subcategory == null && parsed?.category != null)
         parsed!.category!,
-      if (parsed?.color != null) _colorEn[parsed!.color] ?? parsed.color!.replaceAll('_', ' '),
+      if (parsed?.color != null)
+        _colorEn[parsed!.color] ?? parsed.color!.replaceAll('_', ' '),
       if (parsed?.gender == 'men') 'Men',
       if (parsed?.gender == 'women') 'Women',
       if (parsed?.minPriceTnd != null) '≥ ${formatTnd(parsed!.minPriceTnd!)}',
@@ -503,6 +505,16 @@ class _Results extends ConsumerWidget {
               if (result.note != null) ...[
                 const SizedBox(height: 12),
                 _NoteCard(text: result.note!),
+              ],
+              if (result.memoryNotes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _MemoryNotes(notes: result.memoryNotes),
+              ],
+              if (result.question != null) ...[
+                const SizedBox(height: 12),
+                _QuestionCard(
+                    question: result.question!,
+                    questionKey: result.questionKey),
               ],
             ],
           ),
@@ -593,12 +605,121 @@ class _MoreButtonsState extends ConsumerState<_MoreButtons> {
                   if (widget.remaining > next)
                     OutlinedButton(
                       onPressed: () => _load(all: true),
-                      child: Text(
-                          'Show all (${widget.remaining} left)'),
+                      child: Text('Show all (${widget.remaining} left)'),
                     ),
                 ],
               ),
       ),
+    );
+  }
+}
+
+/// The agent's ONE question (M7 asks only when the answer changes the results). Answered here, it
+/// is applied to the same search through the agent's session memory: the request is not retyped.
+class _QuestionCard extends ConsumerStatefulWidget {
+  const _QuestionCard({required this.question, this.questionKey});
+
+  final String question;
+  final String? questionKey; // gender / max_price_tnd / query
+
+  @override
+  ConsumerState<_QuestionCard> createState() => _QuestionCardState();
+}
+
+class _QuestionCardState extends ConsumerState<_QuestionCard> {
+  final _budget = TextEditingController();
+
+  @override
+  void dispose() {
+    _budget.dispose();
+    super.dispose();
+  }
+
+  void _answer(String value) {
+    final key = widget.questionKey;
+    if (key == null || value.trim().isEmpty) return;
+    ref.read(localSearchProvider.notifier).answer(key, value.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DmColors.surface,
+        borderRadius: BorderRadius.circular(DmRadius.card),
+        border: Border.all(color: DmColors.ink),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('THE AGENT ASKS', style: DmText.eyebrow),
+          const SizedBox(height: 4),
+          Text(widget.question, style: DmText.itemName),
+          const SizedBox(height: 10),
+          switch (widget.questionKey) {
+            'gender' => Wrap(spacing: 8, children: [
+                FilledButton(
+                    onPressed: () => _answer('women'),
+                    child: const Text('Women')),
+                FilledButton(
+                    onPressed: () => _answer('men'), child: const Text('Men')),
+              ]),
+            'max_price_tnd' => Row(children: [
+                SizedBox(
+                  width: 140,
+                  child: TextField(
+                    controller: _budget,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onSubmitted: _answer,
+                    decoration: const InputDecoration(
+                        hintText: 'Budget', suffixText: 'TND', isDense: true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                    onPressed: () => _answer(_budget.text),
+                    child: const Text('Apply')),
+              ]),
+            _ => const Text('Type the piece in the search bar above.',
+                style: DmText.caption),
+          },
+        ],
+      ),
+    );
+  }
+}
+
+/// What the agent took from its memory ("Pieces for women: your previous answer is remembered."),
+/// with a way to make it forget (M7 DELETE /memory).
+class _MemoryNotes extends ConsumerWidget {
+  const _MemoryNotes({required this.notes});
+
+  final List<String> notes;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        const Icon(Icons.history, size: 16, color: DmColors.bronze),
+        const SizedBox(width: 6),
+        Expanded(child: Text(notes.join(' '), style: DmText.caption)),
+        TextButton(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              await ref.read(localMarketRepositoryProvider).forget();
+              messenger.showSnackBar(const SnackBar(
+                  content: Text(
+                      'The agent forgot your answers: it will ask again.')));
+            } catch (e) {
+              messenger.showSnackBar(SnackBar(content: Text(describeError(e))));
+            }
+          },
+          child: const Text('Forget my answers'),
+        ),
+      ],
     );
   }
 }
@@ -771,7 +892,7 @@ class _Photo extends StatelessWidget {
   }
 }
 
-class _ProductSheet extends StatelessWidget {
+class _ProductSheet extends ConsumerWidget {
   const _ProductSheet(
       {required this.product, required this.photoUrl, this.onShopLink});
 
@@ -781,8 +902,80 @@ class _ProductSheet extends StatelessWidget {
   /// Called when the user takes the shop's link (logged as a shop click for M14).
   final VoidCallback? onShopLink;
 
+  /// Next action "judge": Smart Buy (BO5) gets the piece's photo, price and shop. Its screen is not
+  /// merged yet, so the app shows what is handed over.
+  void _smartBuy(BuildContext context) {
+    final router = GoRouter.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Smart Buy (BO5)'),
+        content: Text(
+          'The agent hands this piece over to Smart Buy, which judges it against your '
+          "wardrobe. BO5's screen is not in this app yet; Smart Buy receives:\n\n"
+          '• the product photo\n'
+          '• price_tnd: ${product.priceTnd == null ? '?' : formatTnd(product.priceTnd!)}\n'
+          '• shop_brand: ${product.shop}',
+          style: DmText.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialog).pop();
+              router.go('/bo5_smart_buy');
+            },
+            child: const Text('Open Smart Buy'),
+          ),
+          TextButton(
+              onPressed: () => Navigator.of(dialog).pop(),
+              child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  /// Next action "stylist": a real M14 hand-off with the search and the piece, sent to the best stylist.
+  Future<void> _askStylist(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final query = ref.read(localSearchProvider.notifier).query;
+    Navigator.of(context).pop();
+    messenger.showSnackBar(
+        const SnackBar(content: Text('Sending your request to a stylist…')));
+    try {
+      final h = await ref.read(boutiqueRepositoryProvider).createHandoff(
+          userId: demoUserId,
+          userMessages: [
+            if (query.isNotEmpty) query,
+            // no price here: M14 reads amounts in TND in the chat as the client's budget
+            "I would like a stylist's advice about ${product.item} (${product.shop})",
+          ],
+          force: true);
+      ref.invalidate(handoffQueueProvider);
+      final to = h.candidates
+              .where((c) => c.proId == h.proId)
+              .map((c) => c.name)
+              .firstOrNull ??
+          'a stylist';
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text(h.alreadyOpen
+              ? 'Added to your open request with $to.'
+              : 'Request sent to $to.'),
+          action: SnackBarAction(
+              label: 'See it',
+              onPressed: () => router.go('/bo6_boutique?tab=1')),
+        ));
+    } catch (e) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(describeError(e))));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.85,
@@ -826,8 +1019,8 @@ class _ProductSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DmRadius.small),
                 border: Border.all(color: DmColors.border),
               ),
-              child: Text('Sizes available: ${product.size}',
-                  style: DmText.body),
+              child:
+                  Text('Sizes available: ${product.size}', style: DmText.body),
             ),
           ],
           const SizedBox(height: 20),
@@ -876,6 +1069,20 @@ class _ProductSheet extends StatelessWidget {
               }
             },
           ),
+          const SizedBox(height: 20),
+          const Text('ASK FOR ADVICE', style: DmText.eyebrow),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.verified_outlined, size: 18),
+            label: const Text('Is it a good buy for me? (Smart Buy)'),
+            onPressed: () => _smartBuy(context),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.support_agent, size: 18),
+            label: const Text('Talk to a stylist about this piece'),
+            onPressed: () => _askStylist(context, ref),
+          ),
         ],
       ),
     );
@@ -901,8 +1108,7 @@ class _ShopsSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: DmSectionHeader(
-                eyebrow: 'Catalogue',
-                title: '${list.length} Tunisian shops'),
+                eyebrow: 'Catalogue', title: '${list.length} Tunisian shops'),
           ),
           for (final s in list)
             ListTile(

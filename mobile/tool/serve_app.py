@@ -13,6 +13,8 @@ forwarded call waited ~2 s before falling back to the API, which listens on IPv4
 
 import argparse
 import functools
+import socket
+import threading
 import urllib.error
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -24,6 +26,8 @@ HOP_HEADERS = {"connection", "keep-alive", "transfer-encoding", "content-length"
 
 class Handler(SimpleHTTPRequestHandler):
     api = "http://127.0.0.1:8010"
+    # Keep-alive: the browser reuses its connections instead of opening one per photo and per search.
+    protocol_version = "HTTP/1.1"
 
     def _forward(self):
         length = int(self.headers.get("Content-Length") or 0)
@@ -73,7 +77,18 @@ def main():
     Handler.api = args.api.rstrip("/")
     handler = functools.partial(Handler, directory=args.web)
     print(f"DressMe app on http://localhost:{args.port}/#/bo6_local_market (API {Handler.api}, files {args.web})")
-    ThreadingHTTPServer(("127.0.0.1", args.port), handler).serve_forever()
+    # "localhost" is ::1 first on Windows: a server on 127.0.0.1 only made every request wait ~2 s for
+    # the refused IPv6 connection. Listen on both loopback addresses (still not on the network).
+    servers = [ThreadingHTTPServer(("127.0.0.1", args.port), handler)]
+    if socket.has_ipv6:
+        servers.append(_IPv6Server(("::1", args.port), handler))
+    for server in servers[1:]:
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+    servers[0].serve_forever()
+
+
+class _IPv6Server(ThreadingHTTPServer):
+    address_family = socket.AF_INET6
 
 
 if __name__ == "__main__":

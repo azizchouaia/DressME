@@ -246,6 +246,8 @@ async def recent_searches(user_id: str, n: int = 5):
     from modules.m07_local_catalogue import service as m7
 
     def real():
-        return [h["request"] for h in m7.memory().history(user_id, n) if h.get("request")]
+        # a search and the answer to its question are two history entries of the same request
+        requests = [h["request"] for h in m7.memory().history(user_id, 3 * n) if h.get("request")]
+        return list(dict.fromkeys(requests))[:n]
 
     return await _try("m7", real, lambda: [])

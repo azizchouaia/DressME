@@ -3,9 +3,11 @@
 M7 is implemented, so the router always serves service.py (mock.py stays for other BOs' offline tests).
 """
 
+import asyncio
 import re
+from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 from shared.base_agent import AgentError
@@ -13,11 +15,24 @@ from shared.base_agent import AgentError
 from . import events, service
 from .contract import ClickEvent, Feedback, LocalShopInput, LocalShopOutput
 from .identity import CARD
-from .paths import IMAGES_DIR
+from .paths import CONFIG, IMAGES_DIR
 
 _IMAGE_NAME = re.compile(r"[0-9a-f]{16}\.jpg")  # names written by scraper/images.py, nothing else
 
-router = APIRouter(prefix="/m07", tags=["M7 Local catalogue"])
+
+@asynccontextmanager
+async def _warm_up(app: FastAPI):
+    """Load the catalogue and FashionCLIP as soon as the API starts (config.yaml warm_up), so the
+    first search does not wait ~13 s for them."""
+    task = None
+    if CONFIG.get("warm_up") and service.knowledge_base_ready():
+        task = asyncio.create_task(service.get_agent())
+    yield
+    if task is not None and not task.done():
+        task.cancel()
+
+
+router = APIRouter(prefix="/m07", tags=["M7 Local catalogue"], lifespan=_warm_up)
 
 
 @router.post("/search", response_model=LocalShopOutput)

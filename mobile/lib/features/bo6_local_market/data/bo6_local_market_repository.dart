@@ -12,6 +12,9 @@ String defaultApiUrl() {
   return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
 }
 
+/// Demo client of the app (no login yet): M7 keeps its memory and M14 its stylist requests under it.
+const demoUserId = 'usr_042';
+
 /// One piece sold by a Tunisian shop (M7 `ShopResult`).
 class LocalProduct {
   const LocalProduct({
@@ -118,13 +121,40 @@ class ParsedQuery {
       );
 }
 
+/// What the agent proposes next (M7 `NextAction`): ask the user, open the shop, Smart Buy, the stylist…
+class NextAction {
+  const NextAction(
+      {required this.action,
+      required this.label,
+      this.tool,
+      this.args = const {}});
+
+  final String action;
+  final String label;
+
+  /// Agent to call next (localshop, smartbuy, stylist); null when the app does it itself.
+  final String? tool;
+  final Map<String, dynamic> args;
+
+  factory NextAction.fromJson(Map<String, dynamic> j) => NextAction(
+        action: j['action'] as String,
+        label: j['label'] as String,
+        tool: j['tool'] as String?,
+        args: (j['args'] as Map?)?.cast<String, dynamic>() ?? const {},
+      );
+}
+
 class LocalSearchResult {
   const LocalSearchResult(
       {required this.results,
       required this.totalMatches,
       this.parsed,
       this.note,
-      this.searchId});
+      this.searchId,
+      this.question,
+      this.questionKey,
+      this.memoryNotes = const [],
+      this.nextActions = const []});
 
   final List<LocalProduct> results;
   final int totalMatches;
@@ -134,16 +164,28 @@ class LocalSearchResult {
   /// Id of this search in M7's event log, sent back with the clicks (boutique dashboard, M14).
   final String? searchId;
 
-  /// More results can be loaded ("Voir plus" / "Tout afficher").
+  /// ONE question of the agent ("For women or for men?") and its key, to send back with the answer.
+  final String? question;
+  final String? questionKey;
+
+  /// What the agent took from its memory ("Pieces for women: your previous answer is remembered.").
+  final List<String> memoryNotes;
+  final List<NextAction> nextActions;
+
+  /// More results can be loaded ("Show more" / "Show all").
   bool get hasMore => results.length < totalMatches;
 
-  /// This result followed by the next page of the same search (same id, filters and note).
+  /// This result followed by the next page of the same search (same id, filters, note and question).
   LocalSearchResult append(LocalSearchResult next) => LocalSearchResult(
         results: [...results, ...next.results],
         totalMatches: totalMatches,
         parsed: parsed,
         note: note,
         searchId: searchId,
+        question: question,
+        questionKey: questionKey,
+        memoryNotes: memoryNotes,
+        nextActions: nextActions,
       );
 
   factory LocalSearchResult.fromJson(Map<String, dynamic> j) =>
@@ -157,6 +199,12 @@ class LocalSearchResult {
             : ParsedQuery.fromJson(j['parsed'] as Map<String, dynamic>),
         note: j['note'] as String?,
         searchId: j['search_id'] as String?,
+        question: j['question'] as String?,
+        questionKey: j['question_key'] as String?,
+        memoryNotes: (j['memory_notes'] as List? ?? const []).cast<String>(),
+        nextActions: (j['next_actions'] as List? ?? const [])
+            .map((e) => NextAction.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -209,22 +257,45 @@ class LocalMarketRepository {
 
   /// POST /m07/search — free text ("baskets blanches à Tunis 80 TND") plus optional explicit filters.
   /// [offset]: skip the first results — the next page is the same request with offset += k.
+  /// [sessionId]: the agent's memory key, so the user can then just answer its question.
   Future<LocalSearchResult> search(
       {required String query,
       String? city,
       double? maxPriceTnd,
+      String? gender,
+      String? sessionId,
       int k = 24,
       int offset = 0}) async {
     final res = await _dio.post<Map<String, dynamic>>('/m07/search', data: {
       'query': query,
       'language': 'en', // notes and reasons in English, as the app
+      'user_id': demoUserId,
+      if (sessionId != null) 'session_id': sessionId,
       'k': k,
       if (offset > 0) 'offset': offset,
       if (city != null) 'city': city,
       if (maxPriceTnd != null) 'max_price_tnd': maxPriceTnd,
+      if (gender != null) 'gender': gender,
     });
     return LocalSearchResult.fromJson(res.data!);
   }
+
+  /// The user answers the agent's last question ("women", "150"): M7 reuses the session's request.
+  Future<LocalSearchResult> answer(
+      {required String sessionId,
+      required String questionKey,
+      required String value}) async {
+    final res = await _dio.post<Map<String, dynamic>>('/m07/search', data: {
+      'session_id': sessionId,
+      'user_id': demoUserId,
+      'language': 'en',
+      'answer': {'question_key': questionKey, 'value': value},
+    });
+    return LocalSearchResult.fromJson(res.data!);
+  }
+
+  /// DELETE /m07/memory/{user} — the agent forgets the user's answers and searches.
+  Future<void> forget() => _dio.delete<void>('/m07/memory/$demoUserId');
 
   /// POST /m07/events — "product_view" (a result was opened) or "shop_click" (the shop's link was taken).
   /// Fire and forget: a lost click must never bother the user.

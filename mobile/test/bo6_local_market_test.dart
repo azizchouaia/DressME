@@ -15,6 +15,8 @@ class _FakeRepository extends LocalMarketRepository {
       {required String query,
       String? city,
       double? maxPriceTnd,
+      String? gender,
+      String? sessionId,
       int k = 24,
       int offset = 0}) async {
     lastQuery = query;
@@ -62,6 +64,8 @@ class _PagedRepository extends LocalMarketRepository {
       {required String query,
       String? city,
       double? maxPriceTnd,
+      String? gender,
+      String? sessionId,
       int k = 24,
       int offset = 0}) async {
     offsets.add(offset);
@@ -86,6 +90,62 @@ class _PagedRepository extends LocalMarketRepository {
             available: true,
           ),
       ],
+    );
+  }
+}
+
+/// Jeans for both genders: the agent asks "For women or for men?", then applies the answer.
+class _AskingRepository extends LocalMarketRepository {
+  final answers = <String>[];
+  String? session;
+
+  static LocalProduct _jean(String id, String item) => LocalProduct(
+        productId: id,
+        shop: 'Ms. Marion',
+        item: item,
+        priceTnd: 79,
+        match: 0.9,
+        category: 'bottom',
+        subcategory: 'jeans',
+        imageUrl: 'https://example.invalid/$id.jpg',
+        productUrl: 'https://example.invalid/p/$id',
+        shopUrl: 'https://example.invalid',
+        originType: 'local_brand',
+        available: true,
+      );
+
+  @override
+  Future<LocalSearchResult> search(
+      {required String query,
+      String? city,
+      double? maxPriceTnd,
+      String? gender,
+      String? sessionId,
+      int k = 24,
+      int offset = 0}) async {
+    session = sessionId;
+    return LocalSearchResult(
+      totalMatches: 2,
+      parsed: const ParsedQuery(subcategory: 'jeans'),
+      question: 'For women or for men?',
+      questionKey: 'gender',
+      results: [_jean('w1', 'Jean femme'), _jean('m1', 'Jean homme')],
+    );
+  }
+
+  @override
+  Future<LocalSearchResult> answer(
+      {required String sessionId,
+      required String questionKey,
+      required String value}) async {
+    answers.add('$sessionId $questionKey=$value');
+    return LocalSearchResult(
+      totalMatches: 1,
+      parsed: const ParsedQuery(subcategory: 'jeans', gender: 'women'),
+      memoryNotes: const [
+        'Your answer “women” is applied to your previous search.'
+      ],
+      results: [_jean('w1', 'Jean femme')],
     );
   }
 }
@@ -153,5 +213,30 @@ void main() {
     await tester.scrollUntilVisible(find.text('Robe 29'), 300,
         scrollable: find.byType(Scrollable).last);
     expect(find.text('Robe 29'), findsOneWidget); // last piece of page 2
+  });
+
+  testWidgets(
+      'the agent asks for women or men and the answer is applied to the same search',
+      (tester) async {
+    final repo = _AskingRepository();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [localMarketRepositoryProvider.overrideWithValue(repo)],
+      child: const MaterialApp(home: LocalMarketScreen()),
+    ));
+    await tester.enterText(find.byKey(const Key('bo6-query')), 'jean');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('For women or for men?'), findsOneWidget);
+    await tester.tap(find.text('Women'));
+    await tester.pumpAndSettle();
+
+    expect(repo.answers,
+        ['${repo.session} gender=women']); // same session, request not repeated
+    expect(find.text('For women or for men?'), findsNothing);
+    expect(find.text('Jean homme'), findsNothing);
+    expect(
+        find.textContaining('applied to your previous search'), findsOneWidget);
+    expect(find.text('Forget my answers'), findsOneWidget);
   });
 }
