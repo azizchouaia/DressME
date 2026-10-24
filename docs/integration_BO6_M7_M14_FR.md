@@ -14,7 +14,7 @@ Branche : `BO6/local_catalogue`.*
 | Agent | **`localshop`** = l'agent BO6 (un agent par BO). `tool.py` trouvé par `orchestrator/registry.py` | **Pas d'agent** : compétence `boutique` de `localshop`. Pas de `tool.py` |
 | État | Réel et complet (données, FashionCLIP, évaluation, mémoire, `next_actions`) ; **M1 et M2 simulés** pour les idées 3, 4 et 10 tant qu'ils ne sont pas fusionnés | Réel pour M7 ; **M1, M2, M3, M5, M6, M10 sur mock** tant qu'ils ne sont pas fusionnés |
 | LLM | **Qwen 2.5 7B en local (Ollama)**, un seul pour M7 et M14 (`m07_local_catalogue/llm.py`) : comprend les requêtes difficiles | Le même LLM : résumé pour la styliste, escalade, conseils boutique |
-| Tests | `pytest modules/m07_local_catalogue` (193) | `pytest modules/m14_stylist_mode` (41) |
+| Tests | `pytest modules/m07_local_catalogue` (197) | `pytest modules/m14_stylist_mode` (51) |
 | App | `/#/bo6_local_market` | `/#/bo6_boutique` (Espace pro) et `/#/bo6_boutique/help/:pro/:client` |
 
 **Ce qu'il reste à faire pour M14, par priorité** (détails au §4) :
@@ -90,6 +90,7 @@ gardées ouvertes). Rien dans `backend/shared/` ni dans `backend/orchestrator/`.
 | `POST /m07/search` | Corps `LocalShopInput`, réponse `LocalShopOutput` (+ `search_id`) |
 | `POST /m07/outfits` | Tenues avec la garde-robe autour d'une pièce locale (idée 3) : `{user_id, product_id, occasion?, n}` |
 | `POST /m07/local-pieces` | Pièces locales pour une tenue du jour (idée 4) : `{user_id, item_ids, occasion?, season?, city?, max_price_tnd?}` |
+| `POST /m07/try-on` · `GET /m07/try-on/{id}.glb` | Une pièce locale en 3D pour l'avatar (idée 6, service du BO9) : `{product_id}` → `model_url` |
 | `GET /m07/card` · `GET /m07/identity` | Fiche de l'agent (lue par l'orchestrateur) |
 | `POST /m07/events` | Clics de l'app : `product_view`, `shop_click` (alimente le tableau de bord M14) |
 | `POST /m07/feedback` · `GET /m07/history/{user}` · `DELETE /m07/memory/{user}` | Mémoire long terme, droit à l'oubli |
@@ -143,10 +144,81 @@ sortie). Chaque réponse dit d'où viennent les données : `sources: {"m1": "moc
 Smart Buy (BO5) n'est pas appelé directement par M7 : c'est un agent, et un agent n'en appelle pas un autre.
 L'action suivante `judge` laisse l'orchestrateur (BO8) le chaîner.
 
+### 2.3 ter Les 3 idées qui dépendaient d'un autre BO : comment elles sont réalisées
+
+Même principe que §2.3 bis : le BO6 fait sa partie maintenant, l'autre module est **simulé avec son vrai
+format**, et à l'intégration on ajoute ce module à `real: [...]`.
+
+**Selected 6 · Essai 3D des pièces locales (BO9)**
+- *Comment* : `POST /m07/try-on {product_id}` prend la photo de la pièce (copie locale du catalogue) et
+  l'envoie au service 3D du BO9 : `POST http://127.0.0.1:8766/reconstruct` (TripoSR, `ai/triposr_server.py`
+  sur la branche `feat/bo9-avatar-3d`), qui renvoie un **modèle 3D (GLB)**. M7 le garde en cache
+  (`ml/data/bo6/tryon/`, jamais dans git) et le sert à `GET /m07/try-on/<id>.glb` (`model_url`) pour la
+  visionneuse de l'avatar. L'action suivante `try_on` (outil `tryon`) contient `endpoint: "/m07/try-on"`.
+- *Aujourd'hui* : simulé → `model_url: null`, `sources.m9 = "mock"`, une note le dit ; l'app affiche
+  « Simulation: BO9 3D service not connected yet ».
+- *À l'intégration* : lancer le service TripoSR du BO9 (port 8766), puis `real: [m9]` dans
+  `m07_local_catalogue/config.yaml` (réglages `tryon.url`, `tryon.resolution`, `tryon.timeout_s`). Vérifier :
+  `POST /m07/try-on` → `model_url` rempli, `sources.m9 = "real"`, le GLB se télécharge. Le BO9 affiche ce
+  GLB sur l'avatar (Three.js / `avatar_studio`). Compter ~1 minute par pièce sur processeur (une seule fois,
+  ensuite le cache répond).
+
+**Backup 2 · Codes fidélité des boutiques locales (BO6 + M13)**
+- *Comment* : l'accord avec une boutique, c'est son **compte boutique de l'Espace pro (M14)**. La boutique y
+  met son code : `PATCH /m14/pro/{id} {"loyalty": {"code": "MANUELLA10", "discount_pct": 10, "until":
+  "2026-12-31", "conditions": "dès 100 TND"}}` (ou la carte « Loyalty code » de l'onglet Clients de l'app :
+  code, %, date de fin, conditions ; la liste « Another shop » ouvre le compte de n'importe laquelle des 43
+  boutiques du catalogue) ;
+  `DELETE /m14/pro/{id}/loyalty` l'arrête. M7 l'affiche sur **toutes les pièces de cette boutique**
+  (`results[i].loyalty` + raison « Code fidélité MANUELLA10 : −10 % »). `GET /m14/loyalty` donne les codes
+  valides (date `until` non passée).
+- *Aujourd'hui* : **réel côté BO6**. Les 4 comptes de démo ont des codes fictifs marqués `-DEMO10`
+  (`simulate/pros.py`) : aucun vrai accord.
+- *À l'intégration* : M13 (BO5, buy links) lit `GET /m14/loyalty` et met le `promo_code` de la boutique sur
+  ses liens (aujourd'hui M13 met `promo_code: null` pour les boutiques du catalogue M7). Pour la vraie vie :
+  supprimer les codes `-DEMO10` et laisser chaque boutique saisir le sien.
+
+**Backup 5 · Défis de marques locales (M15, BO7)**
+- *Comment* : un compte boutique sponsorise un défi : `POST /m14/challenges {pro_id, duration_days: 7,
+  min_local_pieces: 1, no_repeat: true}`. **Un seul défi actif par boutique** : un second renvoie 409 tant
+  que le premier n'est pas fini (`ends_on` passé) ou terminé par `POST /m14/challenges/{id}/end` (bouton
+  « End challenge »). Chaque défi a `status` (`active` / `ended`), `ends_on` et `ended_at`. M14 construit le `ChallengeDraft` de M15 (règle M15
+  `local_brand` : au moins une pièce de marque locale par jour, + `no_repeat`, `sponsor` = la boutique),
+  le publie sur `POST /m15/challenges/create` et ajoute 6 pièces de la boutique (M7) à suggérer aux
+  participants. `GET /m14/challenges?pro_id=` liste les défis de la boutique.
+- *Aujourd'hui* : M15 simulé → `challenge_id` commence par `sim_chl_`, `sources.m15 = "mock"` ; l'app
+  (onglet Clients, compte boutique) affiche « Simulation: M15 not connected yet ».
+- *À l'intégration* : fusionner `feat/bo7-m10-m15`, puis `real: [..., m15]` dans
+  `m14_stylist_mode/config.yaml`. Vérifier : `challenge_id` donné par M15, le défi apparaît dans l'onglet
+  Challenges du BO7. Pour que la règle `local_brand` fonctionne, les pièces achetées dans une boutique
+  locale doivent avoir `local_tag` dans la garde-robe (M1) : M7 donne le nom de la boutique (`shop`).
+  M15 n'a pas encore de route pour **clore** un défi : aujourd'hui « End » le termine côté BO6 et M15 le
+  clôt à la fin de `duration_days`. Proposition au BO7 : `POST /m15/challenges/{id}/end` ; M14 l'appellera
+  depuis `service.end_challenge` (même schéma `clients._try` que la création).
+- *Comment le client le voit* : **dans l'écran Challenges du BO7**, pas dans l'app BO6 (l'Espace pro sert à
+  la boutique). Sur la branche `feat/bo7-m10-m15` :
+  - liste (`bo7_sharing/ui/challenges_screen.dart`) : une carte avec le titre (« 7 days with Manuella »), la
+    description, « N joined » et l'icône boutique + **Manuella** (champ `sponsor`, déjà envoyé par M14) ;
+  - détail (`challenge_detail_screen.dart`) : « Sponsored by Manuella », les règles (`local_brand` : au
+    moins une pièce de marque tunisienne par jour, `no_repeat`), le bouton « Join · 7 days », puis les
+    onglets My progress (la tenue du jour, vérifiée par M15), Leaderboard et Posts.
+- *Ce que le BO7 doit ajouter à l'intégration* : une section **« Pieces from Manuella »** dans le détail du
+  défi. Le `ChallengeDraft` de M15 n'a pas de champ pour des pièces, donc elles restent dans M14 :
+  `GET /m14/challenges/{challenge_id}` (même identifiant que M15) renvoie `pieces` (jusqu'à 6 pièces de la
+  boutique : `item`, `price_tnd`, `image_path` servi par M7 à `GET /m07/{image_path}`, `product_url`),
+  `status` et `ends_on`. Afficher seulement si `sponsor` est rempli ; 404 = défi qui ne vient pas d'une
+  boutique, ne rien afficher. Chaque pièce ouvre `product_url` (site de la boutique) et peut envoyer
+  `POST /m07/events {type: "shop_click"}` pour que la boutique voie ce clic dans son tableau de bord.
+  Afficher aussi le code fidélité de la boutique s'il existe (`GET /m14/loyalty?shop=Manuella`).
+
+Tests : `m07_local_catalogue/tests/test_last_ideas.py` (4) et `m14_stylist_mode/tests/test_local_brand.py`
+(6) ; le chemin réel est testé avec un faux BO9 et un faux M15.
+
+
 ### 2.4 Les 16 idées du BO6 : état, code et intégration
 
 Légende : ✅ fait et réel · 🟡 fait, **simulé** jusqu'à la fusion d'un autre BO (la simulation devient réelle à
-l'intégration) · ❌ pas fait (dépend entièrement d'un autre BO).
+l'intégration) · ❌ pas fait. **Les 16 idées ont maintenant leur partie BO6 faite.**
 
 **Selected (10)**
 
@@ -157,7 +229,7 @@ l'intégration) · ❌ pas fait (dépend entièrement d'un autre BO).
 | 3 | Local piece photo → complete outfit | 🟡 | `POST /m07/outfits` (M1 + M2 `/complete`) ; une photo → `image_embedding` dans `/m07/search` | `real: [m1, m2]` dans `m07_local_catalogue/config.yaml` (§2.3 bis) |
 | 4 | Outfits featuring Tunisian brands | 🟡 | `POST /m07/local-pieces` (tenue du jour → pièce locale qui complète ou remplace, M2 `/score`) ; looks M14 avec pièces locales | `real: [m1, m2]` **et** le BO1 affiche les suggestions dans son écran « tenue du jour » en appelant `/m07/local-pieces` avec les `item_ids` de la tenue |
 | 5 | Assistant: “where in Tunis can I find…?” | ✅ | Outil `localshop` (`tool.py`, carte `identity.py`), FR / EN / darija / arabe, question + mémoire + `next_actions` | Fusionner `feat/bo8-orchestrator` ; l'assistant doit poser `question` et suivre `next_actions` (§2.3) |
-| 6 | 3D try-on of local pieces | 🟡 (côté BO6) | Action suivante `try_on` (outil `tryon`, args : `image_url`, `image_path`, `category`, `subcategory`, `color`) ; bouton « Try it on my avatar » dans l'app | BO9 : l'agent `tryon` reçoit ces arguments et pose la pièce sur l'avatar ; l'orchestrateur suit l'action |
+| 6 | 3D try-on of local pieces | 🟡 | `POST /m07/try-on` : photo → modèle 3D (GLB) par le service TripoSR du BO9, servi à `GET /m07/try-on/{id}.glb` ; action `try_on` ; bouton « Try it on my avatar » | Lancer le service du BO9, puis `real: [m9]` dans M7 ; le BO9 affiche le GLB sur l'avatar (§2.3 ter) |
 | 7 | Tunisian-aware clothing categories | ✅ (catalogue) | `taxonomy.py` : jebba, kachabia, sefsari, hijab, tenues traditionnelles ; abaya, caftan, qamis disent aussi le genre | M1 (garde-robe) doit utiliser les mêmes codes de catégories pour les pièces de l'utilisateur |
 | 8 | Outfits for Tunisian occasions and seasons | ✅ | `pipeline/context.py` : mariage, henné, Aïd, Ramadan, plage… ; été / hiver ; partagé avec M14 | Rien |
 | 9 | Budget-aware suggestions in dinars | ✅ | Budget en TND dans la requête ; budget habituel appris (`memory.budget_samples`, `agent._usual_budget`) | Rien. Plus tard : lire aussi les achats réels (feedback `bought_product_id`) |
@@ -168,10 +240,10 @@ l'intégration) · ❌ pas fait (dépend entièrement d'un autre BO).
 | # | Idée | État | Où dans le code | Ce qu'il faut à l'intégration |
 |---|---|---|---|---|
 | 1 | Direct links to Tunisian online shops | ✅ | Chaque résultat a `product_url` ; action `open_shop` ; clics journalisés (`POST /m07/events`) | Rien (les partenariats et codes sont l'idée Backup 2) |
-| 2 | Local boutique loyalty codes | ❌ | — | Il faut M13 (codes partenaires, BO5) et de vrais accords avec les boutiques |
+| 2 | Local boutique loyalty codes | ✅ (côté BO6) | Code saisi par la boutique dans son compte M14 (`PATCH /m14/pro/{id}`), affiché par M7 sur ses pièces ; `GET /m14/loyalty` | M13 (BO5) lit `GET /m14/loyalty` pour ses liens ; remplacer les codes `-DEMO10` par de vrais codes (§2.3 ter) |
 | 3 | Boutique-owner dashboard of local demand | ✅ | M14 `GET /m14/dashboard` + conseils `GET /m14/dashboard/insights` | Comptes boutique réels ; données réelles au lieu du simulateur (§4) |
 | 4 | Looks tagged with local brands | 🟡 | Chaque look M14 garde la boutique de chaque pièce et l'envoie à M10 (`clients.share_card`, champ `brand`) | Fusionner `feat/bo7-m10-m15`, puis `real: [m7, m10]` dans `m14_stylist_mode/config.yaml` |
-| 5 | Local brand style challenges | ❌ | — | Challenges = M15 (BO7). M15 peut chercher des pièces locales avec `/m07/search` |
+| 5 | Local brand style challenges | 🟡 | `POST /m14/challenges` : la boutique sponsorise un défi (règle M15 `local_brand`) avec ses pièces suggérées | Fusionner `feat/bo7-m10-m15`, puis `real: [..., m15]` dans M14 (§2.3 ter) |
 | 6 | Aggregated local trend insights | ✅ | M14 tendances (z-score) et thèmes (FashionCLIP + k-means) à partir des recherches anonymes | Données réelles ; plus tard, les garde-robes agrégées (M1) comme le dit l'idée |
 
 ### 2.5 Qui appelle M7 aujourd'hui
@@ -221,6 +293,8 @@ attributs les recalculent.
 | F5 Vendeur en magasin | `POST /m14/instore/session` | BO5 |
 | F6 Tableau de bord | `GET /m14/dashboard?shop=&days=&source=`, `GET /m14/pro/{id}/dashboard` | BO6 |
 | F7 Hand-off | `POST /m14/handoff/check`, `POST /m14/handoff`, `GET /m14/handoff/queue`, `GET/PATCH /m14/handoff/{id}` | BO8 |
+| Codes fidélité (Backup 2) | `PATCH /m14/pro/{id}` (`loyalty`), `DELETE /m14/pro/{id}/loyalty`, `GET /m14/loyalty` | BO5 (M13), M7 |
+| Défis de marques locales (Backup 5) | `POST/GET /m14/challenges`, `GET /m14/challenges/{id}` (pièces pour l'écran du BO7), `POST /m14/challenges/{id}/end` | BO7 (M15) |
 
 Formes exactes : `contract.py`. Réponses fixes pour les tests des autres BO : `mock.py`.
 
@@ -251,6 +325,7 @@ sinon (ou en cas d'erreur) réponse mock. Chaque réponse de M14 indique `source
 | **M2** (BO1/2) | `POST /m02/score {user_id, payload:{items, outfits:[[ids]]}}` | `result.outfits[0].score` | mock |
 | **M6** (BO5) | `POST /m06/verdict {user_id, probe_image, price_tnd, shop_brand, language, session_id}` | `verdict`, `score`, `reasons`, `explanation` | mock |
 | **M10** (BO7) | `POST /m10/cards {user_id, kind:"outfit", caption, language, items:[CardItem]}` | `image_url`, `share_url` | mock |
+| **M15** (BO7) | `POST /m15/challenges/create {user_id, title, description, rules, duration_days, tags, sponsor}` | `challenge_id`, `participants` | mock |
 
 Les corps envoyés à **M2** et **M10** ont été validés contre leurs vrais contrats (branches
 `feat/m02-m03-m04-m17` et `feat/bo7-m10-m15`). Pour M2, les pièces sont envoyées **en ligne**
@@ -455,10 +530,10 @@ la demande (bouton « Générer » dans l'app), pas à chaque ouverture du table
 |---|---|---|
 | `garde-robe` (M1, BO3) | `real: [m1]` dans **M7** ; `real: [m7, m1]` dans **M14** | `POST /m07/outfits` → `sources.m1 = "real"` ; fiche client M14 → « Sources : M1 réel » |
 | `feat/m02-m03-m04-m17` (M2, M3) | `real: [m1, m2]` dans **M7** ; `[m7, m1, m3, m2]` dans **M14** | `POST /m07/local-pieces` → `sources.m2 = "real"`, scores différents de 0,8 ; looks M14 notés par M2 |
-| `feat/bo5-smartbuy` (M6, M13) | `real: […, m6]` dans **M14** | Vendeur en magasin (`POST /m14/instore/session`) → verdict réel ; Smart Buy affiche des `buy_links` venant de M7 |
-| `feat/bo7-m10-m15` (M10, M15) | `real: […, m10]` dans **M14** | Look envoyé → `card_url` et `share_url` remplis |
+| `feat/bo5-smartbuy` (M6, M13) | `real: […, m6]` dans **M14** ; M13 lit `GET /m14/loyalty` pour mettre le code de la boutique sur ses liens | Vendeur en magasin (`POST /m14/instore/session`) → verdict réel ; Smart Buy affiche des `buy_links` venant de M7, avec le code fidélité de la boutique |
+| `feat/bo7-m10-m15` (M10, M15) | `real: […, m10, m15]` dans **M14** | Look envoyé → `card_url` et `share_url` remplis ; `POST /m14/challenges` → `challenge_id` donné par M15, `sources.m15 = "real"` |
 | `feat/bo8-orchestrator` | garder les dossiers M7/M14 du BO6 (§5) | `localshop` apparaît dans les outils ; une `question` de M7 est posée au client ; `next_actions` suivies |
-| BO9 (avatar) | rien côté BO6 | l'action `try_on` (outil `tryon`) pose une pièce M7 sur l'avatar |
+| `feat/bo9-avatar-3d` (BO9) | lancer `ai/triposr_server.py` (port 8766), puis `real: [..., m9]` dans **M7** | `POST /m07/try-on` → `model_url` rempli, `sources.m9 = "real"` ; l'action `try_on` (outil `tryon`) pose le GLB sur l'avatar |
 | BO1 (écran « tenue du jour ») | appeler `POST /m07/local-pieces` avec les `item_ids` de la tenue | des pièces tunisiennes s'affichent sous la tenue du jour |
 
 Après chaque ligne : `pytest modules/m07_local_catalogue modules/m14_stylist_mode` (les tests forcent la
@@ -485,7 +560,7 @@ chiffres honnêtes, sans code en plus : chaque recherche et chaque clic sont dé
 
 ```bash
 cd backend
-pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 235 tests sur la branche BO6
+pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 249 tests sur la branche BO6
 python -m modules.m14_stylist_mode.simulate.pros --reset
 python -m modules.m14_stylist_mode.simulate.traffic
 uvicorn api.main:app --port 8000                                           # http://localhost:8000/docs
@@ -519,6 +594,7 @@ Contrôles rapides après chaque intégration :
 | `warm_up` | charger le catalogue et FashionCLIP au démarrage de l'API |
 | `llm.*` | Qwen 2.5 7B : activé, modèle, délai, un interrupteur par usage (§4.11) |
 | `memory_*` | mémoire de l'agent : dossier, historique, sessions |
+| `tryon.*` | service 3D du BO9 : adresse, résolution, délai, dossier du cache GLB (idée 6) |
 
 ### 7.2 M14 (`backend/modules/m14_stylist_mode/config.yaml`)
 
@@ -529,6 +605,8 @@ Contrôles rapides après chaque intégration :
 | `min_group` | taille minimale d'un groupe affiché dans le tableau de bord (confidentialité) |
 | `dashboard.*` | période, sources, nombre de thèmes, seuils de tendance, couverture du stock |
 | `handoff.*` | seuil et poids de l'escalade, poids du choix du styliste, charge maximale |
+| `challenge_pieces` | nombre de pièces de la boutique suggérées dans un défi de marque locale (Backup 5) |
+| `dashboard.themes.cache_minutes` | durée pendant laquelle les thèmes du tableau de bord sont gardés (10 min) ; ensuite ils sont recalculés en arrière-plan ; 0 = toujours recalculés |
 
 ## 8. Contacts
 

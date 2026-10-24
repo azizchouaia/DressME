@@ -101,3 +101,20 @@ def local_pieces(req: dict) -> dict:
         ],
         "sources": {"m1": "mock", "m2": "mock"},
     }
+
+
+def try_on(req: dict) -> dict:
+    """Fixed TryOnOutput (simulation: no 3D model), so BO9 and the app can code against /m07/try-on."""
+    product = search({"query": "baskets"})["results"][0]
+    return {
+        "product_id": req.get("product_id", product["product_id"]),
+        "piece": f"{product['item']} · {product['shop']}",
+        "image_url": product["image_url"],
+        "image_path": None,
+        "category": product["category"],
+        "subcategory": product["subcategory"],
+        "color": product.get("color"),
+        "model_url": None,
+        "note": "Simulation : le service 3D du BO9 n'est pas encore branché.",
+        "sources": {"m9": "mock"},
+    }

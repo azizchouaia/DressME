@@ -63,6 +63,7 @@ links = Collection("links")
 reviews = Collection("reviews")
 looks = Collection("looks")
 handoffs = Collection("handoffs")
+challenges = Collection("challenges")  # local brand challenges sponsored by boutiques (Backup 5)
 chats = Collection("chats")  # private conversations, key "<pro_id>__<client_id>"
 
 

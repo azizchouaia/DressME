@@ -64,6 +64,20 @@ async def seed(reset: bool = False) -> dict:
                 made["boutiques"] += 1
             except ValueError as exc:  # shop not in this catalogue
                 print("skipped:", exc)
+    # Demo loyalty codes (Backup 2), marked DEMO: no real agreement with these shops.
+    for pro in store.pros.find(type="boutique"):
+        if not pro.get("loyalty"):
+            slug = "".join(ch for ch in pro["shop"].upper() if ch.isalnum())[:12]
+            service.update_pro(
+                pro["pro_id"],
+                {
+                    "loyalty": {
+                        "code": f"{slug}-DEMO10",
+                        "discount_pct": 10,
+                        "conditions": "Démo : code fictif",
+                    }
+                },
+            )
     pros = list(store.pros.all().values())  # every demo pro has the demo clients
     for pro in pros:
         for client in CLIENTS:

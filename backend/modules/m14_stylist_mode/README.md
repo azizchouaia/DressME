@@ -34,6 +34,8 @@ Data (never git): `ml/data/bo6/m14/*.json` (pros, links, reviews, looks, handoff
 | `POST /m14/instore/session` | F5 M6 verdict for a boutique piece on the client's wardrobe | BO5 |
 | `GET /m14/dashboard?shop=&days=&source=` · `GET /m14/pro/{id}/dashboard` | F6 demand dashboard | BO6 |
 | `GET /m14/dashboard/insights?shop=&days=` | F6 2-3 tips written by the BO6 LLM from the figures (rules when off) | BO6 |
+| `PATCH /m14/pro/{id}` (`loyalty`) · `DELETE /m14/pro/{id}/loyalty` · `GET /m14/loyalty?shop=` | F8 loyalty code of a boutique account (code, %, end date, conditions); valid codes for M7 and M13 | BO5 BO6 |
+| `POST /m14/challenges` · `GET /m14/challenges?pro_id=` · `GET /m14/challenges/{id}` · `POST /m14/challenges/{id}/end` | F9 local brand challenge sponsored by a boutique, published on M15 (simulated until merged); one active per shop (409) | BO7 |
 | `POST /m14/handoff/check` · `POST /m14/handoff` · `GET /m14/handoff/queue?pro_id=` · `GET/PATCH /m14/handoff/{id}` | F7 hand-off (escalate, stylist, summary, queue, accept / decline / close) | BO8 |
 
 Shapes: `contract.py`; fixed answers for offline tests: `mock.py`.
@@ -218,7 +220,7 @@ m14_stylist_mode/
   dashboard/          # F6: data.py (logs) themes.py (FashionCLIP + KMeans) metrics.py (unmet, prices, trends, funnel)
   handoff/            # F7: escalate.py (rules, noisy-OR) match.py (weighted score) summary.py (5 lines)
   simulate/           # traffic.py (synthetic searches through the real M7) pros.py (demo accounts)
-  tests/              # 30 tests: contract, consent, features, dashboard signals, hand-off lifecycle
+  tests/              # 51 tests: contract, consent, features, dashboard signals and cache, hand-off, LLM, loyalty codes, challenges
 ```
 
 ## How each block is computed (as implemented)
@@ -313,9 +315,10 @@ cd backend && pytest modules/m14_stylist_mode
 - [x] request → accept → help page (app); one open request per client; accepting opens the client file
 - [x] private conversation stylist ↔ client (looks appear in it; revoke closes it; client can delete it)
 - [x] report: `rapport/rapport_M14_stylist_boutique_FR.md` (+ PDF)
+- [x] F8 loyalty codes (boutique account, shown by M7, read by M13) and F9 local brand challenges (M15 simulated, one active per shop, end)
+- [x] dashboard themes kept `dashboard.themes.cache_minutes` and refreshed in the background (13 s -> 0.5 s)
 - [ ] switch M1 / M2 / M3 / M5 / M6 / M10 to `real` once their branches are merged (no code change)
 - [ ] `localshop` next_action "talk to a stylist" -> `POST /m14/handoff` (orchestrator flow)
-- [ ] BO6 Flutter screens: boutique dashboard, stylist queue
 - [ ] new event types in the shared schema (PR reviewed by M6)
 - [ ] F6.e forecast, F8 segments, escalation classifier (stage 2)
 - [ ] evaluation notebooks (`ml/notebooks/boutique/`)

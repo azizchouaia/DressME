@@ -33,7 +33,9 @@ async def build(
     period = data.searches(period_events)
 
     # Themes on the trend window (so trends and themes are the same groups), figures on the period.
-    groups, _, method = themes.build(all_searches, encoder, config)
+    logs = tuple(str(data.log_paths().get(s)) for s in sources)
+    cache_key = (logs, (until - window_start).days)
+    groups, _, method = themes.build(all_searches, encoder, config, cache_key)
     period_ids = {s["event_id"] for s in period}
     not_understood = sum(themes.prompt_of(s) is None for s in period)
     pieces = {p["product_id"]: (p["subcategory"], p.get("color") or None) for p in catalogue.products}

@@ -101,6 +101,7 @@ class ShopResult(BaseModel):
     available: bool
     reasons: list[str] = []
     wardrobe_matches: list[str] = []  # pieces of the user's wardrobe it goes with (M1 + M2, or simulated)
+    loyalty: dict | None = None  # the shop's loyalty code (its boutique account, M14): code, discount_pct...
 
 
 class ParsedQuery(BaseModel):
@@ -235,3 +236,24 @@ class LocalPiecesOutput(BaseModel):
     outfit: list[str]  # the outfit's pieces, e.g. ["jean (bleu)", "chemise (blanc)"]
     suggestions: list[LocalSuggestion]
     sources: dict[str, str] = {}  # m1 / m2 -> real | mock
+
+
+class TryOnInput(BaseModel):
+    """A local piece on the avatar (POST /m07/try-on): its photo becomes a 3D model by BO9's service."""
+
+    product_id: str
+    user_id: str | None = None
+    language: Literal["en", "fr", "ar"] = "fr"
+
+
+class TryOnOutput(BaseModel):
+    product_id: str
+    piece: str
+    image_url: str
+    image_path: str | None = None
+    category: str
+    subcategory: str
+    color: str | None = None
+    model_url: str | None = None  # GET /m07/try-on/<id>.glb once BO9 built it; None in simulation
+    note: str
+    sources: dict[str, str] = {}  # m9 -> real | mock

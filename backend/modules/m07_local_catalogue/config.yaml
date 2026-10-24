@@ -51,6 +51,14 @@ wardrobe:
   match_top: 3      # how many results
   min_score: 0.6    # M2 compatibility for "goes with"
   max_named: 3      # wardrobe pieces named in the reason
+# 3D try-on of a local piece (Selected 6, POST /m07/try-on): BO9's TripoSR service turns the photo into a
+# GLB put on the avatar. Add m9 to `real` once BO9 runs it (ai/triposr_server.py, port 8766).
+tryon:
+  url: http://127.0.0.1:8766
+  resolution: 256     # mesh resolution sent to TripoSR (64-320)
+  timeout_s: 300      # CPU reconstruction is slow
+  dir: ml/data/bo6/tryon   # GLB cache, never git
+
 # Tunisian pieces for an outfit of the day (Selected 4, POST /m07/local-pieces)
 local_pieces:
   pool: 12          # local candidates per slot, from the normal search

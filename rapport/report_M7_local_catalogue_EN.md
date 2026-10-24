@@ -929,6 +929,19 @@ Tests: `tests/test_wardrobe.py` (10 tests).
 
 Tests: `tests/test_improvements.py` (11 tests).
 
+### 5.17 3D try-on and loyalty codes (BO6 ideas Selected 6 and Backup 2)
+
+- **3D try-on**: `POST /m07/try-on {product_id}` sends the piece's photo to BO9's 3D service (TripoSR,
+  `POST /reconstruct`, port 8766), which returns a 3D model (GLB). M7 caches it (`ml/data/bo6/tryon/`) and
+  serves it at `GET /m07/try-on/{id}.glb`; BO9 shows it on the avatar. Until BO9's service is connected the
+  answer is simulated (`model_url: null`, `sources.m9 = "mock"`); adding `m9` to `real:` in `config.yaml`
+  is enough. About 1 minute per piece on a CPU, once thanks to the cache.
+- **Loyalty codes**: when a shop has a valid code in its M14 account (same BO), every piece of that shop
+  carries it (`results[i].loyalty`) with the reason "Loyalty code MANUELLA10: −10%". A code past its end
+  date is no longer shown.
+
+Tests: `tests/test_last_ideas.py` (4 tests, including the real path with a fake 3D service).
+
 ---
 
 ## 6. Evaluation
@@ -1043,9 +1056,9 @@ Backend commands run from `backend/`, app commands from `mobile/`.
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest modules/m07_local_catalogue -q     # expected: 128 passed
-pytest -q                                 # whole backend: 153 passed
-cd ../mobile && flutter test              # BO6 screen: 5 tests
+pytest modules/m07_local_catalogue -q     # expected: 197 passed
+pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator -q   # all of BO6: 249 passed
+cd ../mobile && flutter test              # BO6 screens: 6 tests
 ```
 
 These tests use a tiny catalogue and a fake encoder: they need neither `torch`, nor the model, nor the data.
@@ -1199,7 +1212,7 @@ backend/modules/m07_local_catalogue/
 │   ├── queries.yaml    72 requests with their hand-written intent
 │   ├── run.py          understanding, ranking, ablation, human grades
 │   └── RESULTS.md      generated results
-└── tests/              128 tests
+└── tests/              197 tests
 ml/data/shops/          module data (in git, branch BO6/local_catalogue)
 ├── local_catalogue.csv / .xlsx   raw scraping data (6,760 products)
 ├── local_catalogue_clean.csv     cleaned knowledge base (6,375 products)

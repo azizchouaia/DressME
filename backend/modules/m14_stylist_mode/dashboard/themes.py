@@ -9,6 +9,8 @@ and gender, so names are facts, not LLM text. Searches where nothing was underst
 
 import hashlib
 import statistics
+import threading
+import time
 from collections import Counter
 
 import numpy as np
@@ -55,6 +57,82 @@ def _choose_k(vectors: np.ndarray, weights: np.ndarray, k_min: int, k_max: int) 
     return best[2], f"KMeans on FashionCLIP text embeddings, k={best[1]} by silhouette ({best[0]:.2f})"
 
 
+# The clustering is the slow part (~10 s for 300 distinct requests on a CPU). It is kept `cache_minutes`
+# (config.yaml) per log set: a request first seen since then joins the theme of its nearest centroid.
+# Older themes are still used while a new clustering runs in the background, so only the very first
+# dashboard of the server waits. The FashionCLIP vector of a request is computed once.
+_vectors: dict[tuple[int, str], np.ndarray] = {}
+_clusters: dict[tuple, dict] = {}
+_refreshing: set[tuple] = set()
+_lock = threading.Lock()
+
+
+def reset_cache() -> None:
+    _vectors.clear()
+    _clusters.clear()
+
+
+def _embed(encoder, prompts: list[str]) -> np.ndarray:
+    missing = [p for p in prompts if (id(encoder), p) not in _vectors]
+    if missing:
+        for p, v in zip(missing, encoder.encode_texts(missing), strict=True):
+            _vectors[(id(encoder), p)] = np.asarray(v, dtype=np.float32)
+    return np.stack([_vectors[(id(encoder), p)] for p in prompts])
+
+
+def _remember(key: tuple, distinct: list[str], vectors: np.ndarray, weights: np.ndarray, cfg: dict) -> dict:
+    labels, method = _choose_k(vectors, weights, cfg["k_min"], cfg["k_max"])
+    centroids = np.zeros((int(labels.max()) + 1, vectors.shape[1]), dtype=np.float32)
+    for label in set(labels.tolist()):
+        c = (vectors[labels == label] * weights[labels == label, None]).sum(axis=0)
+        centroids[label] = c / max(float(np.linalg.norm(c)), 1e-12)
+    entry = {
+        "at": time.monotonic(),
+        "label_of": dict(zip(distinct, labels.tolist(), strict=True)),
+        "centroids": centroids,
+        "method": method,
+    }
+    _clusters[key] = entry
+    return entry
+
+
+def _refresh(key: tuple, distinct: list[str], vectors: np.ndarray, weights: np.ndarray, cfg: dict) -> None:
+    with _lock:
+        if key in _refreshing:
+            return
+        _refreshing.add(key)
+
+    def run():
+        try:
+            _remember(key, distinct, vectors, weights, cfg)
+        finally:
+            _refreshing.discard(key)
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+def _cluster(
+    distinct: list[str], vectors: np.ndarray, weights: np.ndarray, cfg: dict, key: tuple | None
+) -> tuple[np.ndarray, str]:
+    minutes = cfg.get("cache_minutes", 0)
+    if not minutes or key is None:
+        return _choose_k(vectors, weights, cfg["k_min"], cfg["k_max"])
+    entry = _clusters.get(key)
+    if entry is None:
+        entry = _remember(key, distinct, vectors, weights, cfg)
+    elif time.monotonic() - entry["at"] > minutes * 60:
+        _refresh(key, distinct, vectors, weights, cfg)
+    labels = np.array([entry["label_of"].get(p, -1) for p in distinct])
+    new = labels < 0
+    if new.any():
+        labels[new] = np.argmax(vectors[new] @ entry["centroids"].T, axis=1)
+    age = int((time.monotonic() - entry["at"]) // 60)
+    method = entry["method"] + f"; themes of {age} min ago (cache {minutes} min)"
+    if new.any():
+        method += f", {int(new.sum())} new request(s) joined the nearest theme"
+    return labels, method
+
+
 def _label(members: list[dict]) -> tuple[str, str | None, str | None, str | None, str | None]:
     """Name, subcategory, colour, gender and category of a group, from its most frequent values."""
     parsed = [m["data"].get("parsed") or {} for m in members]
@@ -80,9 +158,11 @@ def _label(members: list[dict]) -> tuple[str, str | None, str | None, str | None
     return " · ".join(p for p in parts if p), subcategory, color, gender, category
 
 
-def build(searches: list[dict], encoder, config: dict) -> tuple[list[dict], int, str]:
+def build(
+    searches: list[dict], encoder, config: dict, cache_key: tuple | None = None
+) -> tuple[list[dict], int, str]:
     """Themes over these searches: [{label, subcategory, color, gender, members, centroid}], number of
-    searches not understood, and how the themes were made."""
+    searches not understood, and how the themes were made. `cache_key` names the logs read (see _cluster)."""
     prompts = [prompt_of(s) for s in searches]
     understood = [(s, p) for s, p in zip(searches, prompts, strict=True) if p]
     not_understood = len(searches) - len(understood)
@@ -95,8 +175,8 @@ def build(searches: list[dict], encoder, config: dict) -> tuple[list[dict], int,
     if encoder is None:  # no FashionCLIP (fresh clone without the model): one theme per distinct prompt
         vectors, labels, method = None, np.arange(len(distinct)), "no encoder: one theme per distinct request"
     else:
-        vectors = np.asarray(encoder.encode_texts(distinct), dtype=np.float32)
-        labels, method = _choose_k(vectors, weights, cfg["k_min"], cfg["k_max"])
+        vectors = _embed(encoder, distinct)
+        labels, method = _cluster(distinct, vectors, weights, cfg, cache_key)
     of_prompt = dict(zip(distinct, labels, strict=True))
 
     # Clusters that get the same name ("Sandales · Doré" for weddings and for a budget) are one demand

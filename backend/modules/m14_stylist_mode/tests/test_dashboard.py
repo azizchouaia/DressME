@@ -66,3 +66,44 @@ def test_unknown_shop_is_404_and_boutique_dashboard(simulated):
 def test_empty_logs_give_an_empty_dashboard():
     out = asyncio.run(service.get_dashboard(None, 30))
     assert out["n_searches"] == 0 and out["themes"] == [] and out["simulated_share"] == 0.0
+
+
+def test_themes_are_kept_then_refreshed_in_the_background(simulated, monkeypatch):
+    from modules.m14_stylist_mode.dashboard import themes
+    from modules.m14_stylist_mode.paths import CONFIG
+
+    monkeypatch.setitem(CONFIG["dashboard"]["themes"], "cache_minutes", 10)
+    runs = []
+    choose_k = themes._choose_k
+    monkeypatch.setattr(themes, "_choose_k", lambda *a: runs.append(1) or choose_k(*a))
+
+    class NowThread:  # the background refresh, run at once
+        def __init__(self, target, daemon):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    monkeypatch.setattr(themes.threading, "Thread", NowThread)
+    market = asyncio.run(service.get_dashboard(None, 30))
+    shop = asyncio.run(service.get_dashboard("Manuella", 30))  # same logs: the themes are reused
+    assert len(runs) == 1 and "cache 10 min" in shop["method"]["themes"]
+    assert [t["label"] for t in shop["themes"]] == [t["label"] for t in market["themes"]]
+    for entry in themes._clusters.values():
+        entry["at"] -= 11 * 60  # older than the cache: still shown, recomputed behind
+    asyncio.run(service.get_dashboard(None, 30))
+    assert len(runs) == 2
+
+
+def test_a_new_request_joins_the_nearest_theme():
+    import numpy as np
+
+    from modules.m14_stylist_mode.dashboard import themes
+
+    cfg = {"k_min": 2, "k_max": 2, "cache_minutes": 10}  # 2 requests: one theme each
+    vectors = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+    labels, _ = themes._cluster(["red", "blue"], vectors, np.ones(2), cfg, ("logs",))
+    later = np.array([[1.0, 0.0], [0.0, 1.0], [0.1, 0.9]], dtype=np.float32)
+    again, method = themes._cluster(["red", "blue", "navy"], later, np.ones(3), cfg, ("logs",))
+    assert list(labels) == [0, 1] and list(again) == [0, 1, 1]  # navy is nearer blue
+    assert "1 new request(s) joined the nearest theme" in method

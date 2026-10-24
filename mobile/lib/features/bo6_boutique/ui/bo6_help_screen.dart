@@ -188,8 +188,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
                     ),
                     const SizedBox(height: 22),
                     const DmSectionHeader(
-                        eyebrow: 'Step 2',
-                        title: 'In Tunisian shops'),
+                        eyebrow: 'Step 2', title: 'In Tunisian shops'),
                     const SizedBox(height: 8),
                     _searchBar(),
                     const SizedBox(height: 10),
@@ -270,8 +269,7 @@ class _HelpClientScreenState extends ConsumerState<HelpClientScreen> {
             dense: true,
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
-            title:
-                Text('Only shops in $_city', style: DmText.body),
+            title: Text('Only shops in $_city', style: DmText.body),
           ),
       ],
     );
@@ -722,7 +720,8 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                 SegmentedButton<bool>(
                   segments: const [
                     ButtonSegment(value: false, label: Text('Stylist')),
-                    ButtonSegment(value: true, label: Text('Client (simulated)')),
+                    ButtonSegment(
+                        value: true, label: Text('Client (simulated)')),
                   ],
                   selected: {_asClient},
                   showSelectedIcon: false,
@@ -744,7 +743,8 @@ class _PrivateChatState extends ConsumerState<_PrivateChat> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (c.messages.isEmpty)
-                    const Text('No message yet. Introduce yourself to the client.',
+                    const Text(
+                        'No message yet. Introduce yourself to the client.',
                         style: DmText.body),
                   for (final m in c.messages)
                     _Bubble(m, mine: m.senderId == _me),

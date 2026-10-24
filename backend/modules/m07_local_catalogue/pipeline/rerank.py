@@ -118,6 +118,7 @@ REASONS = {
         "occasion": "Pour {o}",
         "season": "Pièce pour {s}",
         "usual_budget": "Dans ton budget habituel (≤ {max:g} TND)",
+        "loyalty": "Code fidélité {code} : −{pct} %",
     },
     "en": {
         "colour": "Colour: {c}",
@@ -137,6 +138,7 @@ REASONS = {
         "occasion": "For {o}",
         "season": "A piece for {s}",
         "usual_budget": "Within your usual budget (≤ {max:g} TND)",
+        "loyalty": "Loyalty code {code}: −{pct}%",
     },
     "ar": {
         "colour": "اللون: {c}",
@@ -156,6 +158,7 @@ REASONS = {
         "occasion": "لـ{o}",
         "season": "قطعة لـ{s}",
         "usual_budget": "ضمن ميزانيتك المعتادة (≤ {max:g} دينار)",
+        "loyalty": "رمز الوفاء {code}: −{pct}٪",
     },
 }
 

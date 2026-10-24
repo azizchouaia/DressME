@@ -955,6 +955,20 @@ Tests : `tests/test_wardrobe.py` (10 tests).
 
 Tests : `tests/test_improvements.py` (11 tests).
 
+### 5.17 Essai 3D et codes fidélité (idées Selected 6 et Backup 2 du BO6)
+
+- **Essai 3D** : `POST /m07/try-on {product_id}` envoie la photo de la pièce au service 3D du BO9 (TripoSR,
+  `POST /reconstruct`, port 8766), qui renvoie un modèle 3D (GLB). M7 le garde en cache
+  (`ml/data/bo6/tryon/`) et le sert à `GET /m07/try-on/{id}.glb` ; le BO9 l'affiche sur l'avatar. Tant que
+  le service du BO9 n'est pas branché, la réponse est simulée (`model_url: null`, `sources.m9 = "mock"`) ;
+  il suffit d'ajouter `m9` à `real:` dans `config.yaml`. Environ 1 minute par pièce sur processeur, une
+  seule fois grâce au cache.
+- **Codes fidélité** : quand une boutique a un code valide dans son compte M14 (même BO), chaque pièce de
+  cette boutique le porte (`results[i].loyalty`) avec la raison « Code fidélité MANUELLA10 : −10 % ». Un code
+  dont la date de fin est passée n'est plus montré.
+
+Tests : `tests/test_last_ideas.py` (4 tests, dont le chemin réel avec un faux service 3D).
+
 ---
 
 ## 6. Évaluation
@@ -1072,9 +1086,9 @@ Les commandes backend se lancent depuis `backend/`, celles de l'application depu
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest modules/m07_local_catalogue -q     # résultat attendu : 128 passed
-pytest -q                                 # tout le backend : 153 passed
-cd ../mobile && flutter test              # écran BO6 : 5 tests
+pytest modules/m07_local_catalogue -q     # résultat attendu : 197 passed
+pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator -q   # tout le BO6 : 249 passed
+cd ../mobile && flutter test              # écrans BO6 : 6 tests
 ```
 
 Ces tests utilisent un mini-catalogue et un faux encodeur : ils n'ont besoin ni de `torch`, ni du modèle,
@@ -1230,7 +1244,7 @@ backend/modules/m07_local_catalogue/
 │   ├── queries.yaml    72 requêtes avec leur intention écrite à la main
 │   ├── run.py          compréhension, classement, ablation, notes humaines
 │   └── RESULTS.md      résultats générés
-└── tests/              128 tests
+└── tests/              197 tests
 ml/data/shops/          données du module (dans git, branche BO6/local_catalogue)
 ├── local_catalogue.csv / .xlsx   données brutes du scraping (6 760 produits)
 ├── local_catalogue_clean.csv     base de connaissances nettoyée (6 375 produits)

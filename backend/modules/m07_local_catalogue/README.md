@@ -167,6 +167,9 @@ Tests never call Ollama (a fake LLM in `tests/test_llm.py`). Measured gain: `eva
 - `GET /m07/products/{product_id}` — one product
 - `GET /m07/images/{name}` — local copy of a product photo (`image_path` of a result), so apps do not
   depend on the shops' websites
+- `POST /m07/try-on` · `GET /m07/try-on/{product_id}.glb` — a piece as a 3D model for the avatar (BO9's
+  TripoSR service, simulated until `m9` is in `real:`; GLB cached in `ml/data/bo6/tryon/`)
+- `POST /m07/local-pieces` — local pieces for an outfit of the day (M1 + M2)
 
 The router serves the real `service.py`. When the knowledge base is not on the machine (fresh clone
 without `dvc pull`), the service answers with `mock.py`'s fixed data instead of failing. `tool.py`
@@ -285,4 +288,6 @@ unbiased figure.
 - [x] search and click log for M14 (`events.py`, `POST /m07/events`)
 - [x] agent shape of the DressMe Agent Guide: card, memory (session + long term + forget), question /
   answer, next page, `next_actions`, FR / EN / AR labels (`tests/test_agent_memory.py`)
+- [x] BO6 ideas: occasions, usual budget, wardrobe fit (M1 + M2), 3D try-on (BO9), loyalty codes of the
+  shops (from their M14 account) — see `docs/integration_BO6_M7_M14_FR.md`
 - [ ] human grades (`judgments.csv`) and a second, unseen set of requests

@@ -4,7 +4,7 @@ Who uses what: BO4 -> review (F3) · BO5 -> instore (F5) · BO6 -> dashboard (F6
 BO8 -> handoff (F7). Every answer that used another module says in `sources` whether it was real or mock.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -14,6 +14,15 @@ Language = Literal["en", "fr", "ar"]
 
 
 # ---------- F1 · professional accounts ----------
+class Loyalty(BaseModel):
+    """A boutique's loyalty code, set by the shop itself (its agreement with DressMe), shown on its pieces."""
+
+    code: str = Field(pattern=r"^[A-Z0-9-]{3,24}$", description="Said at the till, e.g. MANUELLA10")
+    discount_pct: int = Field(ge=1, le=70)
+    until: date | None = Field(None, description="Last valid day; none = until removed")
+    conditions: str | None = Field(None, max_length=120, description="e.g. from 100 TND, in the shop only")
+
+
 class ProIn(BaseModel):
     type: ProType
     name: str = Field(min_length=2, max_length=80)
@@ -39,6 +48,7 @@ class Pro(ProIn):
     pro_id: str
     verified: bool = False  # set by hand by the team for the demo
     available: bool = True
+    loyalty: Loyalty | None = None  # boutique accounts only (BO6 Backup 2)
     created_at: datetime
 
 
@@ -47,6 +57,7 @@ class ProUpdate(BaseModel):
     specialities: list[str] | None = None
     languages: list[str] | None = None
     bio: str | None = None
+    loyalty: Loyalty | None = None  # boutique accounts only; remove it with DELETE /m14/pro/{id}/loyalty
 
 
 # ---------- F2 · client link (consent) + brief ----------
@@ -379,3 +390,45 @@ class HandoffUpdate(BaseModel):
     pro_id: str
     status: Literal["accepted", "declined", "closed"]
     note: str | None = Field(None, max_length=500)
+
+
+# ---------- Backup 2 · loyalty codes, read by M7 (on the shop's pieces) and M13 (BO5, buy links) ----------
+class LoyaltyCode(Loyalty):
+    shop: str
+    pro_id: str
+
+
+# ---------- Backup 5 · local brand challenges, published through M15 (BO7) ----------
+class ChallengeIn(BaseModel):
+    """A boutique sponsors a community challenge: wear at least one of its pieces every day."""
+
+    pro_id: str = Field(description="The boutique account sponsoring the challenge")
+    title: str | None = Field(None, min_length=3, max_length=60, description="Default: '7 jours avec <shop>'")
+    duration_days: int = Field(7, ge=3, le=31)
+    min_local_pieces: int = Field(1, ge=1, le=3, description="Pieces of a local brand per day")
+    no_repeat: bool = True
+    language: Language = "fr"
+
+
+class ChallengeRuleOut(BaseModel):
+    type: str  # M15 rule types: local_brand, no_repeat...
+    params: dict = {}
+
+
+class LocalChallenge(BaseModel):
+    challenge_id: str  # M15's id, or sim_... while M15 is simulated
+    title: str
+    description: str
+    rules: list[ChallengeRuleOut]
+    duration_days: int
+    tags: list[str] = []
+    sponsor: str
+    participants: int = 0
+    pro_id: str
+    shop: str
+    pieces: list[LookProduct] = []  # the shop's pieces suggested to the participants (M7)
+    sources: dict[str, str] = {}  # m15 / m7 -> real | mock
+    created_at: datetime
+    ends_on: date | None = None  # last day: created_at + duration_days
+    status: Literal["active", "ended"] = "active"  # ended: past ends_on, or ended by the shop
+    ended_at: datetime | None = None  # when the shop ended it early (POST /m14/challenges/{id}/end)

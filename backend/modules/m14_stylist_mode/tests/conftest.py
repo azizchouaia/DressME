@@ -69,3 +69,15 @@ def fresh_catalogue(monkeypatch):
     from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
 
     monkeypatch.setitem(M7_CONFIG, "stale_after_days", 10**6)
+
+
+@pytest.fixture(autouse=True)
+def no_theme_cache(monkeypatch):
+    """Each dashboard is computed from its own logs (test_dashboard checks the cache on its own)."""
+    from modules.m14_stylist_mode.dashboard import themes
+    from modules.m14_stylist_mode.paths import CONFIG
+
+    monkeypatch.setitem(CONFIG["dashboard"]["themes"], "cache_minutes", 0)
+    themes.reset_cache()
+    yield
+    themes.reset_cache()

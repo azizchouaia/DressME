@@ -711,4 +711,58 @@ class BoutiqueRepository {
         queryParameters: {'pro_id': proId});
     return ClientBrief.fromJson(res.data!);
   }
+
+  /// POST /m14/pro — boutique account of a shop of the M7 catalogue (one account per shop).
+  Future<Pro> createBoutique(String shop, {String? city}) async {
+    final res = await _dio.post<Map<String, dynamic>>('/m14/pro', data: {
+      'type': 'boutique',
+      'name': shop,
+      'shop': shop,
+      if (city != null) 'city': city,
+    });
+    return Pro.fromJson(res.data!);
+  }
+
+  /// GET /m14/loyalty?shop= — the shop's valid loyalty code (BO6 Backup 2), or null.
+  Future<Map<String, dynamic>?> loyalty(String shop) async {
+    final res = await _dio
+        .get<List<dynamic>>('/m14/loyalty', queryParameters: {'shop': shop});
+    final codes = res.data!.cast<Map<String, dynamic>>();
+    return codes.isEmpty ? null : codes.first;
+  }
+
+  /// PATCH /m14/pro/{id} {loyalty} — the boutique sets its code (the shop's own agreement).
+  Future<void> setLoyalty(String proId, String code, int discountPct,
+          {DateTime? until, String? conditions}) =>
+      _dio.patch<void>('/m14/pro/$proId', data: {
+        'loyalty': {
+          'code': code,
+          'discount_pct': discountPct,
+          if (until != null) 'until': until.toIso8601String().substring(0, 10),
+          if (conditions != null && conditions.isNotEmpty)
+            'conditions': conditions,
+        }
+      });
+
+  /// DELETE /m14/pro/{id}/loyalty
+  Future<void> removeLoyalty(String proId) =>
+      _dio.delete<void>('/m14/pro/$proId/loyalty');
+
+  /// POST /m14/challenges — the boutique sponsors a local brand challenge (BO6 Backup 5, M15).
+  Future<Map<String, dynamic>> createChallenge(String proId) async {
+    final res = await _dio.post<Map<String, dynamic>>('/m14/challenges',
+        data: {'pro_id': proId, 'language': 'en'});
+    return res.data!;
+  }
+
+  /// POST /m14/challenges/{id}/end — one active challenge per shop: end it to start another.
+  Future<void> endChallenge(String challengeId) =>
+      _dio.post<void>('/m14/challenges/$challengeId/end');
+
+  /// GET /m14/challenges?pro_id=
+  Future<List<Map<String, dynamic>>> challenges(String proId) async {
+    final res = await _dio.get<List<dynamic>>('/m14/challenges',
+        queryParameters: {'pro_id': proId});
+    return res.data!.cast<Map<String, dynamic>>();
+  }
 }

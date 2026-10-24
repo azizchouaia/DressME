@@ -10,7 +10,7 @@ from collections import Counter
 
 from . import events, mock
 from .agent import LocalShopAgent
-from .contract import LocalPiecesInput, OutfitsInput
+from .contract import LocalPiecesInput, OutfitsInput, TryOnInput
 from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV
 
@@ -67,6 +67,14 @@ async def outfits(req: dict) -> dict:
         return mock.outfits(req)
     agent = await get_agent()
     return (await agent.outfits(OutfitsInput.model_validate(req))).model_dump(mode="json")
+
+
+async def try_on(req: dict) -> dict:
+    """TryOnInput (dict) -> TryOnOutput (dict): a local piece as a 3D model for the avatar (BO9)."""
+    if not knowledge_base_ready():
+        return mock.try_on(req)
+    agent = await get_agent()
+    return (await agent.try_on(TryOnInput.model_validate(req))).model_dump(mode="json")
 
 
 async def local_pieces(req: dict) -> dict:

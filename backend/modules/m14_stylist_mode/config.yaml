@@ -6,6 +6,7 @@ simulated_log: ml/data/logs/m14_simulated_events.jsonl     # synthetic traffic r
 # Modules called for real; the others answer with their mock (mock.py), and the answer says which one was used.
 # m7 is in-process (same BO). The others are called over HTTP on api_url once their branch is merged.
 real: [m7]
+# Integration: add m1, m3, m2 (feat/m02-m03-m04-m17), m6 (feat/bo5-smartbuy), m10 + m15 (feat/bo7-m10-m15).
 api_url: http://127.0.0.1:8000
 timeout_s: 20
 
@@ -19,6 +20,7 @@ dashboard:
     k_min: 12                  # KMeans: number of themes chosen by silhouette in [k_min, k_max]
     k_max: 30                  # (silhouette is flat from 8 to 40 on the simulated month: finer themes keep colours)
     examples: 3                # most frequent requests shown per theme
+    cache_minutes: 10          # themes reused this long, then recomputed in the background (0 = never kept)
   unmet:
     low_match: 0.5             # a result under this match is not an exact answer (weak_answer_rate)
     full_stock: 3              # a shop with this many matching pieces in stock covers the theme by its catalogue
@@ -52,3 +54,6 @@ handoff:
   same_governorate: 0.5        # city part for a stylist in the client's governorate but not the same city
   max_load: 5                  # a stylist with this many open hand-offs is not proposed
   candidates: 3
+
+# Local brand challenges (Backup 5): pieces of the sponsoring shop suggested to the participants.
+challenge_pieces: 6

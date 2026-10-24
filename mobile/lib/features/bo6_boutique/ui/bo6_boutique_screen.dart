@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/design/dressme_design.dart';
 import '../../bo6_local_market/data/bo6_local_market_repository.dart'
-    show LocalSearchResult, describeError;
+    show LocalSearchResult, LocalShop, describeError;
 import '../../bo6_local_market/logic/bo6_local_market_provider.dart'
     show localMarketRepositoryProvider, localShopsProvider;
 import '../data/bo6_boutique_repository.dart';
@@ -321,8 +321,7 @@ class _DashboardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     if (d.searches == 0) {
       return ListView(children: const [
-        _Message(
-            'No search in this period. Run the traffic simulator '
+        _Message('No search in this period. Run the traffic simulator '
             '(python -m modules.m14_stylist_mode.simulate.traffic).'),
       ]);
     }
@@ -950,9 +949,12 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
   Widget build(BuildContext context) {
     final stylists = ref.watch(stylistsProvider).valueOrNull ?? const <Pro>[];
     final boutiques = ref.watch(boutiquesProvider).valueOrNull ?? const <Pro>[];
-    final pros = [...stylists, ...boutiques];
+    // Shops first: their tools (loyalty code, challenges) must be visible
+    // without scrolling the picker.
+    final pros = [...boutiques, ...stylists];
     if (pros.isEmpty) return const _Loading();
-    final selected = _proId ?? pros.first.proId;
+    final selected =
+        pros.any((p) => p.proId == _proId) ? _proId! : pros.first.proId;
     final repo = ref.read(boutiqueRepositoryProvider);
     final links = ref.watch(clientLinksProvider(selected));
     return ListView(
@@ -960,10 +962,21 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
       children: [
         const SizedBox(height: 10),
         _Picker<String>(
-          options: [for (final p in pros) (p.name, p.proId)],
+          options: [
+            for (final p in pros)
+              (p.isBoutique ? '${p.name} · shop' : p.name, p.proId)
+          ],
           selected: selected,
           onPick: (v) => setState(() => _proId = v),
         ),
+        _ShopAccountPicker(
+          boutiques: boutiques,
+          onPick: (pro) => setState(() => _proId = pro.proId),
+        ),
+        if (pros.firstWhere((p) => p.proId == selected).isBoutique)
+          _BoutiqueTools(
+              key: ValueKey(selected),
+              pro: pros.firstWhere((p) => p.proId == selected)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
@@ -972,8 +985,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                 child: TextField(
                   controller: _invite,
                   decoration: const InputDecoration(
-                      hintText: 'Client id (e.g. usr_050)',
-                      isDense: true),
+                      hintText: 'Client id (e.g. usr_050)', isDense: true),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1002,8 +1014,7 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
           error: (e, _) =>
               _Message(describeError(e), icon: Icons.cloud_off_outlined),
           data: (items) => items.isEmpty
-              ? const _Message(
-                  'No client for this account: invite a client id '
+              ? const _Message('No client for this account: invite a client id '
                   'above, then accept on the client side.')
               : Column(
                   children: [
@@ -1055,8 +1066,8 @@ class _ClientsTabState extends ConsumerState<_ClientsTab> {
                                   OutlinedButton(
                                       onPressed: () =>
                                           _run(() => repo.revoke(l)),
-                                      child: const Text(
-                                          'Remove access (client)')),
+                                      child:
+                                          const Text('Remove access (client)')),
                                 ],
                               ]),
                             ],
@@ -1110,8 +1121,7 @@ class _BriefSheet extends ConsumerWidget {
               ]),
               if (b.recentSearches.isNotEmpty) ...[
                 const SizedBox(height: 14),
-                const Text('SEARCHED IN THE SHOPS',
-                    style: DmText.eyebrow),
+                const Text('SEARCHED IN THE SHOPS', style: DmText.eyebrow),
                 const SizedBox(height: 6),
                 for (final s in b.recentSearches)
                   Text('« $s »', style: DmText.body),
@@ -1226,8 +1236,7 @@ class _InsightsCardState extends ConsumerState<_InsightsCard> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: DmColors.gold)),
               SizedBox(width: 8),
-              Text(
-                  'Qwen is writing the tips (on the CPU, up to a minute)…',
+              Text('Qwen is writing the tips (on the CPU, up to a minute)…',
                   style: TextStyle(fontSize: 12, color: Colors.white70)),
             ]),
           if (_error != null)
@@ -1255,6 +1264,340 @@ class _InsightsCardState extends ConsumerState<_InsightsCard> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// A boutique account's own tools (BO6): its loyalty code shown on its pieces in the search (Backup 2), and a
+/// local brand challenge it sponsors, published on M15 (Backup 5, simulated until BO7 is merged).
+/// Any shop of the M7 catalogue: picking one opens its boutique account (created on
+/// first use, one account per shop), so its loyalty code and challenges can be managed.
+class _ShopAccountPicker extends ConsumerStatefulWidget {
+  const _ShopAccountPicker({required this.boutiques, required this.onPick});
+
+  final List<Pro> boutiques;
+  final ValueChanged<Pro> onPick;
+
+  @override
+  ConsumerState<_ShopAccountPicker> createState() => _ShopAccountPickerState();
+}
+
+class _ShopAccountPickerState extends ConsumerState<_ShopAccountPicker> {
+  bool _busy = false;
+
+  Future<void> _open(LocalShop shop) async {
+    final existing =
+        widget.boutiques.where((p) => p.shop == shop.shop).firstOrNull;
+    if (existing != null) return widget.onPick(existing);
+    setState(() => _busy = true);
+    try {
+      final pro = await ref
+          .read(boutiqueRepositoryProvider)
+          .createBoutique(shop.shop, city: shop.city);
+      ref.invalidate(boutiquesProvider);
+      await ref.read(boutiquesProvider.future);
+      widget.onPick(pro);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Boutique account opened for ${shop.shop}.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(describeError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shops = ref.watch(localShopsProvider).valueOrNull;
+    if (shops == null) return const SizedBox.shrink();
+    final withAccount = {for (final p in widget.boutiques) p.shop};
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: LayoutBuilder(
+        builder: (context, box) => DropdownMenu<LocalShop>(
+          width: box.maxWidth,
+          enabled: !_busy,
+          enableFilter: true,
+          requestFocusOnTap: true,
+          menuHeight: 360,
+          leadingIcon: const Icon(Icons.storefront_outlined, size: 20),
+          label: Text('Another shop (${shops.length} in the catalogue)'),
+          helperText: 'Pick a shop to manage its loyalty code and challenges.',
+          onSelected: (s) {
+            if (s != null) _open(s);
+          },
+          dropdownMenuEntries: [
+            for (final s in shops)
+              DropdownMenuEntry(
+                value: s,
+                label: s.shop,
+                trailingIcon: Text(
+                    withAccount.contains(s.shop)
+                        ? 'account'
+                        : '${s.city ?? 'online'} · ${s.products} pieces',
+                    style: DmText.caption),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BoutiqueTools extends ConsumerStatefulWidget {
+  const _BoutiqueTools({super.key, required this.pro});
+
+  final Pro pro;
+
+  @override
+  ConsumerState<_BoutiqueTools> createState() => _BoutiqueToolsState();
+}
+
+class _BoutiqueToolsState extends ConsumerState<_BoutiqueTools> {
+  final _code = TextEditingController();
+  final _pct = TextEditingController(text: '10');
+  final _conditions = TextEditingController();
+  DateTime? _until;
+  Map<String, dynamic>? _current;
+  Map<String, dynamic>? _challenge;
+  int _challenges = 0;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _code.dispose();
+    _pct.dispose();
+    _conditions.dispose();
+    super.dispose();
+  }
+
+  BoutiqueRepository get _repo => ref.read(boutiqueRepositoryProvider);
+
+  Future<void> _load() async {
+    final current = await _repo.loyalty(widget.pro.shop!);
+    final challenges = await _repo.challenges(widget.pro.proId);
+    if (mounted) {
+      setState(() {
+        _current = current;
+        _challenge = challenges.isEmpty ? null : challenges.first;
+        _challenges = challenges.length;
+      });
+    }
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(describeError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Same rules as the M14 contract (`Loyalty`), checked here for a readable message.
+  void _save() {
+    final code = _code.text.trim().toUpperCase();
+    final pct = int.tryParse(_pct.text.trim());
+    final conditions = _conditions.text.trim();
+    final problem = !RegExp(r'^[A-Z0-9-]{3,24}$').hasMatch(code)
+        ? 'The code needs 3 to 24 characters: letters, digits or "-" (e.g. MANUELLA10).'
+        : (pct == null || pct < 1 || pct > 70)
+            ? 'The discount must be between 1 and 70 %.'
+            : conditions.length > 120
+                ? 'The conditions must fit in 120 characters.'
+                : null;
+    if (problem != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(problem)));
+      return;
+    }
+    _run(() async {
+      await _repo.setLoyalty(widget.pro.proId, code, pct!,
+          until: _until, conditions: conditions);
+      _code.clear();
+      _conditions.clear();
+      setState(() => _until = null);
+    });
+  }
+
+  Future<void> _pickUntil() async {
+    final today = DateTime.now();
+    final day = await showDatePicker(
+      context: context,
+      initialDate: _until ?? today.add(const Duration(days: 30)),
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 730)),
+      helpText: 'Last day of the code',
+    );
+    if (day != null) setState(() => _until = day);
+  }
+
+  static String _day(DateTime d) => d.toIso8601String().substring(0, 10);
+
+  String _currentText() {
+    final c = _current;
+    if (c == null) return 'No code: the shop can offer one to DressMe users.';
+    return 'Shown on your pieces: ${c['code']} · −${c['discount_pct']} %'
+        '${c['until'] == null ? '' : ' · until ${c['until']}'}'
+        '${c['conditions'] == null ? '' : ' (${c['conditions']})'}';
+  }
+
+  Future<void> _endChallenge(String id) => _run(() async {
+        await _repo.endChallenge(id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Challenge ended: the shop can start a new one.')));
+        }
+      });
+
+  Future<void> _createChallenge() => _run(() async {
+        final c = await _repo.createChallenge(widget.pro.proId);
+        if (!mounted) return;
+        final where = (c['sources'] as Map)['m15'] == 'real'
+            ? 'published on M15'
+            : 'simulated, M15 not connected yet';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Challenge "${c['title']}" created '
+                '(${c['challenge_id']}, $where).')));
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _challenge;
+    final active = c != null && c['status'] == 'active';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: _Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('LOYALTY CODE · ${widget.pro.shop!.toUpperCase()}',
+                style: DmText.eyebrow),
+            const SizedBox(height: 6),
+            Text(_currentText(), style: DmText.body),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _code,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                      hintText: 'New code, e.g. MANUELLA10', isDense: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 70,
+                child: TextField(
+                  controller: _pct,
+                  keyboardType: TextInputType.number,
+                  decoration:
+                      const InputDecoration(suffixText: '%', isDense: true),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _conditions,
+              maxLength: 120,
+              decoration: const InputDecoration(
+                  hintText: 'Conditions (optional), e.g. from 100 TND',
+                  counterText: '',
+                  isDense: true),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.event_outlined, size: 18),
+                  label: Text(_until == null
+                      ? 'No end date'
+                      : 'Until ${_day(_until!)}'),
+                  onPressed: _busy ? null : _pickUntil,
+                ),
+                if (_until != null)
+                  TextButton(
+                    onPressed: () => setState(() => _until = null),
+                    child: const Text('No end date'),
+                  ),
+                FilledButton(
+                  onPressed: _busy ? null : _save,
+                  child: const Text('Save'),
+                ),
+                if (_current != null)
+                  TextButton(
+                    onPressed: _busy
+                        ? null
+                        : () =>
+                            _run(() => _repo.removeLoyalty(widget.pro.proId)),
+                    child: const Text('Remove'),
+                  ),
+              ],
+            ),
+            const Divider(height: 28),
+            const Text('LOCAL BRAND CHALLENGE', style: DmText.eyebrow),
+            const SizedBox(height: 6),
+            if (c == null)
+              const Text(
+                  'Sponsor a 7-day challenge: participants wear at least one '
+                  'Tunisian piece every day (published on the challenges of BO7).',
+                  style: DmText.body)
+            else ...[
+              Text(c['title'] as String, style: DmText.itemName),
+              Text(c['description'] as String, style: DmText.body),
+              const SizedBox(height: 6),
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                if ((c['sources'] as Map)['m15'] != 'real')
+                  const DmPill('Simulation: M15 not connected yet'),
+                DmPill(active
+                    ? 'Active until ${c['ends_on']}'
+                    : 'Ended · ${c['ends_on']}'),
+                DmPill('Id ${c['challenge_id']}'),
+                DmPill('$_challenges sponsored by the shop'),
+                DmPill('${c['participants']} participants'),
+                for (final p in (c['pieces'] as List).take(4))
+                  DmPill((p as Map)['item'] as String),
+              ]),
+            ],
+            const SizedBox(height: 8),
+            // One active challenge per shop (M14 answers 409 otherwise).
+            if (active)
+              OutlinedButton.icon(
+                icon: const Icon(Icons.stop_circle_outlined, size: 18),
+                label: const Text('End challenge'),
+                onPressed: _busy
+                    ? null
+                    : () => _endChallenge(c['challenge_id'] as String),
+              )
+            else
+              OutlinedButton.icon(
+                icon: const Icon(Icons.emoji_events_outlined, size: 18),
+                label: const Text('Create a 7-day challenge'),
+                onPressed: _busy ? null : _createChallenge,
+              ),
+          ],
+        ),
       ),
     );
   }

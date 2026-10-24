@@ -6,11 +6,12 @@ A real call that fails also falls back to the mock, so M14 always answers. Every
 
 M7 (same BO) is called in-process; the others over HTTP on `api_url`, with their own contracts:
 M1 POST /m01/items · M3 POST /m03/stats · M5 POST /m05/profile, /m05/feedback, /m05/gaps ·
-M2 POST /m02/score · M6 POST /m06/verdict · M10 POST /m10/cards.
+M2 POST /m02/score · M6 POST /m06/verdict · M10 POST /m10/cards · M15 POST /m15/challenges/create.
 """
 
 import asyncio
 import logging
+import uuid
 from collections.abc import Callable
 
 import httpx
@@ -249,5 +250,34 @@ async def recent_searches(user_id: str, n: int = 5):
         # a search and the answer to its question are two history entries of the same request
         requests = [h["request"] for h in m7.memory().history(user_id, 3 * n) if h.get("request")]
         return list(dict.fromkeys(requests))[:n]
+
+    return await _try("m7", real, lambda: [])
+
+
+# ---------------------------------------------------------------- M15 (BO7): community challenges
+async def create_challenge(pro_id: str, draft: dict):
+    """Publish a local brand challenge on M15 (ChallengeDraft + user_id); simulated until M15 is merged."""
+
+    def real():
+        return _post("/m15/challenges/create", {"user_id": pro_id, **draft})
+
+    def mock():
+        return {**draft, "challenge_id": f"sim_chl_{uuid.uuid4().hex[:8]}", "participants": 0}
+
+    return await _try("m15", real, mock)
+
+
+async def shop_pieces(shop: str, n: int):
+    """Pieces of the shop in stock, one per type first (dresses, shoes, bags...), for a challenge (M7)."""
+    from modules.m07_local_catalogue import service as m7
+
+    async def real():
+        products = (await m7.get_agent()).catalogue.products
+        mine = [p for p in products if p["shop_name"] == shop and p.get("available")]
+        seen, first, rest = set(), [], []
+        for p in mine:
+            (rest if p["subcategory"] in seen else first).append(p)
+            seen.add(p["subcategory"])
+        return (first + rest)[:n]
 
     return await _try("m7", real, lambda: [])

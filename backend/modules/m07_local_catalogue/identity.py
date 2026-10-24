@@ -5,7 +5,7 @@ The orchestrator (BO8) reads the card to know WHEN to call it and WHAT to do wit
 Served at GET /m07/card. The tool description is built from it, so they never drift apart.
 """
 
-VERSION = "1.6.0"
+VERSION = "1.7.0"
 
 CARD = {
     "id": "dressme.bo6.localshop",
@@ -51,6 +51,8 @@ CARD = {
         "wardrobe_fit": "results of a user: which pieces of their wardrobe (M1) each one goes with (M2)",
         "outfits": "POST /m07/outfits: outfits from the wardrobe around one local piece (M2 /complete)",
         "local_pieces": "POST /m07/local-pieces: Tunisian pieces to complete or change an outfit of the day",
+        "try_on": "POST /m07/try-on: the piece's photo -> a 3D model (GLB) by BO9's service, for the avatar",
+        "loyalty": "shops with a boutique account show their loyalty code on their pieces (M14)",
         "answer": "answer to the last question (gender, budget, piece) -> refined results",
         "more": "next page of the last search of the session",
         "feedback": "useful / bought -> the user's memory",

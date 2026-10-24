@@ -5,7 +5,8 @@ answer with a simulation below, and every answer says which one was used (`sourc
 fails also falls back to the simulation, so localshop always answers.
 
 M1 POST /m01/items (the user's wardrobe) · M2 POST /m02/score and /m02/complete (compatibility and outfits,
-OutfitTransformer) · M5 style vector (in-process, through M5's mock or service).
+OutfitTransformer) · M5 style vector (in-process, through M5's mock or service) · M9 BO9's 3D service
+POST <tryon.url>/reconstruct (photo -> GLB) · M14 loyalty codes of the boutique accounts (same BO).
 """
 
 import logging
@@ -204,3 +205,33 @@ def outfit_scores(user_id: str, outfit: list[dict], candidates: list[dict]) -> t
         }
 
     return _try("m2", real, mock)
+
+
+# ---------------------------------------------------------------- M9 (BO9): photo -> 3D model
+def reconstruct(image: bytes) -> tuple[bytes | None, str]:
+    """GLB of the piece from its photo (BO9's TripoSR service); None while it is simulated."""
+    cfg = CONFIG["tryon"]
+
+    def real():
+        r = httpx.post(
+            cfg["url"].rstrip("/") + "/reconstruct",
+            content=image,
+            headers={"Content-Type": "image/jpeg", "X-TripoSR-Resolution": str(cfg["resolution"])},
+            timeout=cfg["timeout_s"],
+        )
+        r.raise_for_status()
+        return r.content
+
+    return _try("m9", real, lambda: None)
+
+
+# ---------------------------------------------------------------- M14 (same BO): loyalty codes of shops
+def loyalty_by_shop() -> dict[str, dict]:
+    """shop -> its valid loyalty code, set by the shop in its boutique account (M14). Empty if none."""
+    try:
+        from modules.m14_stylist_mode import service as m14
+
+        return {c["shop"]: c for c in m14.loyalty_codes()}
+    except Exception as exc:  # M14 data missing or unreadable: the search still answers
+        log.info("loyalty codes unavailable: %s", exc)
+        return {}

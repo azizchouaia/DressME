@@ -1019,23 +1019,50 @@ class _ProductSheet extends ConsumerWidget {
 
   /// Next action "judge": Smart Buy (BO5) gets the piece's photo, price and shop. Its screen is not
   /// merged yet, so the app shows what is handed over.
-  /// Next action "try_on" (BO6 idea 6): the try-on agent (BO9) shows the local piece on the avatar.
-  /// BO9's screen is not merged yet, so the app shows what is handed over.
-  void _tryOn(BuildContext context) {
+  /// Next action "try_on" (BO6 Selected 6): M7 sends the photo to BO9's 3D service and serves the GLB
+  /// for the avatar. While BO9's service is simulated, the dialog says so.
+  Future<void> _tryOn(BuildContext context, WidgetRef ref) async {
     final router = GoRouter.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(localMarketRepositoryProvider);
+    messenger.showSnackBar(
+        const SnackBar(content: Text('Preparing the 3D model of this piece…')));
+    TryOnResult result;
+    try {
+      result = await repo.tryOn(product.productId);
+    } catch (e) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(describeError(e))));
+      return;
+    }
+    messenger.hideCurrentSnackBar();
+    if (!context.mounted) return;
     showDialog<void>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: const Text('Try it on my avatar (BO9)'),
-        content: Text(
-          'The agent hands this piece over to the 3D try-on, which puts it on your faceless '
-          "avatar. BO9's screen is not in this app yet; it receives:\n\n"
-          '• the product photo\n'
-          '• category: ${product.category} / ${product.subcategory}'
-          '${product.color == null ? '' : '\n• colour: ${product.color}'}',
-          style: DmText.body,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (result.simulated) ...[
+              const DmPill('Simulation: BO9 3D service not connected yet'),
+              const SizedBox(height: 10),
+            ],
+            Text(result.piece, style: DmText.itemName),
+            const SizedBox(height: 6),
+            Text(result.note, style: DmText.body),
+          ],
         ),
         actions: [
+          if (result.modelUrl != null)
+            TextButton(
+              onPressed: () => launchUrl(
+                  Uri.parse('${repo.baseUrl}${result.modelUrl}'),
+                  mode: LaunchMode.externalApplication),
+              child: const Text('Download the 3D model'),
+            ),
           TextButton(
             onPressed: () {
               Navigator.of(dialog).pop();
@@ -1154,6 +1181,10 @@ class _ProductSheet extends ConsumerWidget {
                   : formatTnd(product.priceTnd!)),
               DmPill('Match ${(product.match * 100).round()} %'),
               if (product.isLocalBrand) const DmPill('Tunisian brand'),
+              if (product.loyaltyCode != null)
+                DmPill(
+                    'Loyalty code ${product.loyaltyCode}: −${product.loyaltyPct} %',
+                    dark: true),
               if (!product.available) const DmPill('Sold out'),
             ],
           ),
@@ -1253,7 +1284,7 @@ class _ProductSheet extends ConsumerWidget {
           OutlinedButton.icon(
             icon: const Icon(Icons.accessibility_new, size: 18),
             label: const Text('Try it on my avatar (3D try-on)'),
-            onPressed: () => _tryOn(context),
+            onPressed: () => _tryOn(context, ref),
           ),
         ],
       ),

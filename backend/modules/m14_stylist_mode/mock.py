@@ -216,3 +216,38 @@ def handoff() -> dict:
         "updated_at": _AT,
         "history": [{"status": "queued", "pro_id": "pro_demo0001", "at": _AT}],
     }
+
+
+def loyalty_codes() -> list[dict]:
+    return [
+        {
+            "shop": "Manuella",
+            "pro_id": "pro_demo_manuella",
+            "code": "MANUELLA-DEMO10",
+            "discount_pct": 10,
+            "until": None,
+            "conditions": "Démo : code fictif",
+        }
+    ]
+
+
+def local_challenge() -> dict:
+    return {
+        "challenge_id": "sim_chl_demo",
+        "title": "7 jours avec Manuella",
+        "description": "Porte au moins 1 pièce(s) de Manuella ou d'une autre marque tunisienne chaque jour "
+        "pendant 7 jours, sans répéter une tenue.",
+        "rules": [{"type": "local_brand", "params": {"min": 1}}, {"type": "no_repeat", "params": {}}],
+        "duration_days": 7,
+        "tags": ["local", "tunisie"],
+        "sponsor": "Manuella",
+        "participants": 0,
+        "pro_id": "pro_demo_manuella",
+        "shop": "Manuella",
+        "pieces": [],
+        "sources": {"m15": "mock", "m7": "real"},
+        "created_at": _AT,
+        "ends_on": "2026-10-27",
+        "status": "active",
+        "ended_at": None,
+    }

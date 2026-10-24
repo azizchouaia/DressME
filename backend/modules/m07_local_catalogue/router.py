@@ -22,11 +22,14 @@ from .contract import (
     LocalShopOutput,
     OutfitsInput,
     OutfitsOutput,
+    TryOnInput,
+    TryOnOutput,
 )
 from .identity import CARD
-from .paths import CONFIG, IMAGES_DIR
+from .paths import CONFIG, IMAGES_DIR, REPO_ROOT
 
 _IMAGE_NAME = re.compile(r"[0-9a-f]{16}\.jpg")  # names written by scraper/images.py, nothing else
+_PRODUCT_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")  # never a path
 
 
 @asynccontextmanager
@@ -71,6 +74,25 @@ async def local_pieces(body: LocalPiecesInput):
         return await service.local_pieces(body.model_dump())
     except AgentError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/try-on", response_model=TryOnOutput)
+async def try_on(body: TryOnInput):
+    """A local piece on the avatar (BO6 Selected 6): its photo is sent to BO9's 3D service (TripoSR), the GLB
+    is cached and served at `model_url`. Simulated until m9 is listed in `real` (`sources.m9`)."""
+    try:
+        return await service.try_on(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/try-on/{product_id}.glb")
+async def try_on_model(product_id: str):
+    """The 3D model (GLB) of a local piece, built by BO9's service, for the avatar viewer."""
+    path = REPO_ROOT / CONFIG["tryon"]["dir"] / f"{product_id}.glb"
+    if not _PRODUCT_ID.fullmatch(product_id) or not path.is_file():
+        raise HTTPException(status_code=404, detail="no 3D model for this product yet (POST /m07/try-on)")
+    return FileResponse(path, media_type="model/gltf-binary")
 
 
 @router.get("/card")

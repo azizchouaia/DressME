@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from . import service
 from .contract import (
     Agreement,
+    ChallengeIn,
     ChatMessage,
     ChatMessageIn,
     ClientBrief,
@@ -26,8 +27,10 @@ from .contract import (
     InstoreIn,
     InstoreOut,
     LinkIn,
+    LocalChallenge,
     Look,
     LookIn,
+    LoyaltyCode,
     Pro,
     ProIn,
     ProUpdate,
@@ -51,6 +54,8 @@ async def _call(fn, *args):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except service.Forbidden as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except service.Conflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -81,6 +86,43 @@ async def get_pro(pro_id: str):
 @router.patch("/pro/{pro_id}", response_model=Pro)
 async def update_pro(pro_id: str, body: ProUpdate):
     return await _call(service.update_pro, pro_id, body.model_dump())
+
+
+@router.delete("/pro/{pro_id}/loyalty", response_model=Pro)
+async def remove_loyalty(pro_id: str):
+    """The boutique stops its loyalty code."""
+    return await _call(service.remove_loyalty, pro_id)
+
+
+@router.get("/loyalty", response_model=list[LoyaltyCode])
+async def loyalty_codes(shop: str | None = None):
+    """Valid loyalty codes of the boutique accounts (BO6 Backup 2): shown by M7 on the shop's pieces,
+    readable by M13 (BO5) for its buy links. Set with PATCH /m14/pro/{id} {"loyalty": {...}}."""
+    return await _call(service.loyalty_codes, shop)
+
+
+@router.post("/challenges", response_model=LocalChallenge)
+async def create_challenge(body: ChallengeIn):
+    """A boutique sponsors a local brand challenge (BO6 Backup 5), published on M15 (BO7): simulated until
+    M15 is merged (`sources.m15`), with pieces of the shop suggested from M7."""
+    return await _call(service.create_challenge, body.model_dump())
+
+
+@router.get("/challenges", response_model=list[LocalChallenge])
+async def list_challenges(pro_id: str | None = None):
+    return await _call(service.list_challenges, pro_id)
+
+
+@router.get("/challenges/{challenge_id}", response_model=LocalChallenge)
+async def get_challenge(challenge_id: str):
+    """One challenge (same id as in M15) with the shop's suggested pieces, for BO7's challenge screen."""
+    return await _call(service.get_challenge, challenge_id)
+
+
+@router.post("/challenges/{challenge_id}/end", response_model=LocalChallenge)
+async def end_challenge(challenge_id: str):
+    """One active challenge per shop (409 on a second one): the shop ends it here to start another."""
+    return await _call(service.end_challenge, challenge_id)
 
 
 # ---------------------------------------------------------------- F2 · clients (consent) + brief

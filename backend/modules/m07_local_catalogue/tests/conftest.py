@@ -32,3 +32,13 @@ def fresh_catalogue(monkeypatch):
     from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
 
     monkeypatch.setitem(M7_CONFIG, "stale_after_days", 10**6)
+
+
+@pytest.fixture(autouse=True)
+def m14_and_tryon_dirs(tmp_path, monkeypatch):
+    """Loyalty codes come from a temporary M14 folder; 3D models go to a temporary cache."""
+    from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
+    from modules.m14_stylist_mode import paths as m14_paths
+
+    monkeypatch.setattr(m14_paths, "data_dir", lambda: tmp_path / "m14")
+    monkeypatch.setitem(M7_CONFIG, "tryon", {**M7_CONFIG["tryon"], "dir": str(tmp_path / "tryon")})

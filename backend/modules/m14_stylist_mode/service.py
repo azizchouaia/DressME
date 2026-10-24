@@ -5,6 +5,7 @@ F6 dashboard · F7 hand-off. Other modules are reached through clients.py (real 
 """
 
 from collections import Counter
+from datetime import date, timedelta
 
 from modules.m07_local_catalogue.llm import get_llm
 
@@ -19,6 +20,10 @@ class NotFound(ValueError):
 
 
 class Forbidden(ValueError):
+    pass
+
+
+class Conflict(ValueError):
     pass
 
 
@@ -57,7 +62,10 @@ def list_pros(type_: str | None = None, city: str | None = None) -> list[dict]:
 
 
 def update_pro(pro_id: str, changes: dict) -> dict:
-    pro = _pro(pro_id) | {k: v for k, v in changes.items() if v is not None}
+    pro = _pro(pro_id)
+    if changes.get("loyalty") and pro["type"] != "boutique":
+        raise ValueError("only a boutique account has a loyalty code")
+    pro |= {k: v for k, v in changes.items() if v is not None}
     return store.pros.put(pro_id, pro)
 
 
@@ -572,3 +580,125 @@ def update_handoff(handoff_id: str, body: dict) -> dict:
         h |= {"status": "queued" if nxt else "no_stylist", "pro_id": nxt["pro_id"] if nxt else None}
         h["history"].append({"status": h["status"], "pro_id": h["pro_id"], "at": at})
     return store.handoffs.put(handoff_id, h)
+
+
+# ---------------------------------------------------------------- Backup 2 · loyalty codes of boutiques
+def remove_loyalty(pro_id: str) -> dict:
+    pro = _pro(pro_id)
+    pro["loyalty"] = None
+    return store.pros.put(pro_id, pro)
+
+
+def loyalty_codes(shop: str | None = None) -> list[dict]:
+    """Valid codes of the boutique accounts (`until` not passed): M7 shows them, M13 can add them to links."""
+    today = store.now().date().isoformat()
+    out = []
+    for p in store.pros.all().values():
+        code = p.get("loyalty")
+        if p["type"] != "boutique" or not code or (shop and p["shop"] != shop):
+            continue
+        if code.get("until") and str(code["until"])[:10] < today:
+            continue
+        out.append({**code, "shop": p["shop"], "pro_id": p["pro_id"]})
+    return out
+
+
+# ---------------------------------------------------------------- Backup 5 · local brand challenges (M15)
+_CHALLENGE_TEXT = {
+    "fr": (
+        "{n} jours avec {shop}",
+        "Porte au moins {k} pièce(s) de {shop} ou d'une autre marque tunisienne "
+        "chaque jour pendant {n} jours{repeat}.",
+    ),
+    "en": (
+        "{n} days with {shop}",
+        "Wear at least {k} piece(s) from {shop} or another Tunisian brand every day for {n} days{repeat}.",
+    ),
+    "ar": (
+        "{n} أيام مع {shop}",
+        "ارتدِ كل يوم {k} قطعة على الأقل من {shop} أو من علامة تونسية أخرى لمدة {n} أيام{repeat}.",
+    ),
+}
+_NO_REPEAT = {
+    "fr": ", sans répéter une tenue",
+    "en": ", never the same outfit twice",
+    "ar": "، دون تكرار الإطلالة",
+}
+
+
+async def create_challenge(body: dict) -> dict:
+    """A boutique sponsors a challenge (M15 rule `local_brand`), with pieces of its shop suggested (M7)."""
+    pro = _pro(body["pro_id"])
+    if pro["type"] != "boutique":
+        raise ValueError("only a boutique account can sponsor a local brand challenge")
+    shop, n, k, lang = pro["shop"], body["duration_days"], body["min_local_pieces"], body["language"]
+    title, text = _CHALLENGE_TEXT[lang]
+    rules = [{"type": "local_brand", "params": {"min": k}}]
+    if body["no_repeat"]:
+        rules.append({"type": "no_repeat", "params": {}})
+    draft = {
+        "title": (body.get("title") or title.format(n=n, shop=shop))[:60],
+        "description": text.format(k=k, shop=shop, n=n, repeat=_NO_REPEAT[lang] if body["no_repeat"] else "")[
+            :280
+        ],
+        "rules": rules,
+        "duration_days": n,
+        "tags": ["local", "tunisie"],
+        "sponsor": shop[:40],
+    }
+    active = [c for c in list_challenges(pro["pro_id"]) if c["status"] == "active"]
+    if active:  # one challenge at a time per shop: participants are not split between two
+        raise Conflict(
+            f"{shop} already has an active challenge ({active[0]['challenge_id']}, until "
+            f"{active[0]['ends_on']}): end it first (POST /m14/challenges/{{id}}/end)"
+        )
+    created, src_m15 = await clients.create_challenge(pro["pro_id"], draft)
+    pieces, src_m7 = await clients.shop_pieces(shop, CONFIG["challenge_pieces"])
+    record = {
+        **draft,
+        "challenge_id": created["challenge_id"],
+        "participants": created.get("participants", 0),
+        "pro_id": pro["pro_id"],
+        "shop": shop,
+        "pieces": [_look_product(p) for p in pieces],
+        "sources": {"m15": src_m15, "m7": src_m7},
+        "created_at": store.now(),
+    }
+    record["ends_on"] = record["created_at"].date() + timedelta(days=n - 1)
+    return _with_status(store.challenges.put(record["challenge_id"], record))
+
+
+def _with_status(c: dict) -> dict:
+    """active until its last day, unless the shop ended it before."""
+    created = date.fromisoformat(str(c["created_at"])[:10])
+    ends_on = date.fromisoformat(
+        str(c.get("ends_on") or created + timedelta(days=c["duration_days"] - 1))[:10]
+    )
+    over = c.get("ended_at") or ends_on < store.now().date()
+    return {**c, "ends_on": ends_on, "status": "ended" if over else "active"}
+
+
+def list_challenges(pro_id: str | None = None) -> list[dict]:
+    """The shop's challenges, newest first, each with its status."""
+    found = [_with_status(c) for c in store.challenges.all().values() if not pro_id or c["pro_id"] == pro_id]
+    return sorted(found, key=lambda c: str(c["created_at"]), reverse=True)
+
+
+def get_challenge(challenge_id: str) -> dict:
+    """One challenge with its status and the shop's suggested pieces: what BO7's challenge screen shows
+    under "Pieces from <shop>" (M15's own challenge has no pieces)."""
+    c = store.challenges.get(challenge_id)
+    if c is None:
+        raise NotFound(f"unknown challenge_id {challenge_id!r}")
+    return _with_status(c)
+
+
+def end_challenge(challenge_id: str) -> dict:
+    """The shop stops its challenge early: no more suggested as active, and a new one can be created.
+    M15 has no route to close a challenge yet (it ends after duration_days): see the integration guide."""
+    c = store.challenges.get(challenge_id)
+    if c is None:
+        raise NotFound(f"unknown challenge_id {challenge_id!r}")
+    if not c.get("ended_at"):
+        c = store.challenges.put(challenge_id, {**c, "ended_at": store.now()})
+    return _with_status(c)

@@ -2,6 +2,7 @@
 
 import re
 from datetime import date
+from pathlib import Path
 
 import numpy as np
 
@@ -22,11 +23,13 @@ from .contract import (
     OutfitsOutput,
     ParsedQuery,
     ShopResult,
+    TryOnInput,
+    TryOnOutput,
 )
 from .identity import CARD, VERSION, tool_description
 from .llm import get_llm
 from .memory import ANONYMOUS, AgentMemory
-from .paths import CATALOGUE_CSV, CONFIG, INDEX_DIR, model_source
+from .paths import CATALOGUE_CSV, CONFIG, IMAGES_DIR, INDEX_DIR, REPO_ROOT, model_source
 from .pipeline import context, filter, parse, rerank, retrieve, understand
 from .pipeline.catalogue import Catalogue
 from .scraper.normalize import fold
@@ -191,6 +194,9 @@ NOTES = {
         "rewritten": "requête reformulée",
         "context": "Pour {o} : {pieces}.",
         "stale": "Prix et stocks relevés le {day} : à vérifier sur le site de la boutique.",
+        "tryon_real": "Modèle 3D prêt : le service du BO9 l'a construit à partir de la photo, pour l'avatar.",
+        "tryon_mock": "Simulation : le service 3D du BO9 n'est pas encore branché. À l'intégration, la photo "
+        "de la pièce devient un modèle 3D (GLB) posé sur l'avatar.",
         "and": "et",
     },
     "en": {
@@ -206,6 +212,9 @@ NOTES = {
         "rewritten": "request rewritten",
         "context": "For {o}: {pieces}.",
         "stale": "Prices and stock as of {day}: check them on the shop's website.",
+        "tryon_real": "3D model ready: BO9's service built it from the photo, for the avatar.",
+        "tryon_mock": "Simulation: BO9's 3D service is not connected yet. At the integration, the piece's "
+        "photo becomes a 3D model (GLB) put on the avatar.",
         "and": "and",
     },
     "ar": {
@@ -221,6 +230,9 @@ NOTES = {
         "rewritten": "طلب أعيدت صياغته",
         "context": "لـ{o}: {pieces}.",
         "stale": "الأسعار والمخزون بتاريخ {day}: يُرجى التحقق منها على موقع المتجر.",
+        "tryon_real": "النموذج ثلاثي الأبعاد جاهز: بناه خدمة BO9 من الصورة، للأفاتار.",
+        "tryon_mock": "محاكاة: خدمة BO9 ثلاثية الأبعاد غير متصلة بعد. عند الدمج تصبح صورة القطعة نموذجًا "
+        "ثلاثي الأبعاد (GLB) على الأفاتار.",
         "and": "و",
     },
 }
@@ -428,6 +440,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
             out.question, out.question_key = self._question(search, out, ask_gender=remembered is None)
 
         self._wardrobe_fit(out, uid, inp.language)
+        self._loyalty(out, inp.language)
         out.agent = AgentInfo(name=self.name, version=VERSION)
         out.session_id = inp.session_id
         out.decision_id = self.memory.remember(uid, inp.session_id, request, out.model_dump(mode="json"))
@@ -490,6 +503,52 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                 named = ", ".join(r.wardrobe_matches[: cfg["max_named"]])
                 r.reasons.append(texts["goes_with"].format(pieces=named))
         out.sources = {"m1": src_m1, "m2": src_m2}
+
+    @staticmethod
+    def _loyalty(out: LocalShopOutput, language: str) -> None:
+        """Backup 2: a shop with a boutique account and a loyalty code shows it on its pieces."""
+        codes = clients.loyalty_by_shop() if out.results else {}
+        t = rerank.REASONS.get(language, rerank.REASONS["fr"])
+        for r in out.results:
+            code = codes.get(r.shop)
+            if code:
+                r.loyalty = {k: code.get(k) for k in ("code", "discount_pct", "until", "conditions")}
+                r.reasons.append(t["loyalty"].format(code=code["code"], pct=code["discount_pct"]))
+
+    # ------------------------------------------------------------------ 3D try-on (BO9), Selected 6
+    async def try_on(self, inp: TryOnInput) -> TryOnOutput:
+        """The piece's photo -> a 3D model (GLB) by BO9's service, cached and served by M7 for the avatar."""
+        if self.catalogue is None:
+            await self.setup()
+        if inp.product_id not in self.catalogue.row_of:
+            raise AgentError(f"unknown product_id {inp.product_id!r}")
+        p = self.catalogue.products[self.catalogue.row_of[inp.product_id]]
+        cache = REPO_ROOT / self.config["tryon"]["dir"] / f"{inp.product_id}.glb"
+        source = "real" if cache.is_file() else "mock"
+        if not cache.is_file():
+            photo = IMAGES_DIR / Path(p.get("image_path") or "").name if p.get("image_path") else None
+            image = photo.read_bytes() if photo and photo.is_file() else None
+            if image is None and clients.is_real("m9"):
+                import httpx
+
+                image = httpx.get(p["image_url"], timeout=30, follow_redirects=True).content
+            glb, source = clients.reconstruct(image) if image else (None, "mock")
+            if glb:
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                cache.write_bytes(glb)
+        texts = notes_for(inp.language)
+        return TryOnOutput(
+            product_id=inp.product_id,
+            piece=f"{p['product_name']} · {p['shop_name']}",
+            image_url=p["image_url"],
+            image_path=p.get("image_path") or None,
+            category=p["category"],
+            subcategory=p["subcategory"],
+            color=p.get("color") or None,
+            model_url=f"/m07/try-on/{inp.product_id}.glb" if cache.is_file() else None,
+            note=texts["tryon_real" if cache.is_file() else "tryon_mock"],
+            sources={"m9": source},
+        )
 
     async def outfits(self, inp: OutfitsInput) -> OutfitsOutput:
         """Idea 3: outfits from the user's wardrobe around one local piece (M2 /complete, piece pinned)."""
@@ -766,6 +825,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                     label=texts["try_on"],
                     tool="tryon",
                     args={
+                        "endpoint": "/m07/try-on",
                         "product_id": top.product_id,
                         "image_url": top.image_url,
                         "image_path": top.image_path,

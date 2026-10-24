@@ -3,7 +3,7 @@
 **Rapport technique court · BO6 Marché tunisien · ESPRIT 2026**
 Le côté professionnel de DressMe : les boutiques tunisiennes et les stylistes humains.
 
-*Version du 22/10/2026 (ajout du LLM Qwen 2.5 7B). Les données clients et le trafic sont simulés (aucun vrai utilisateur avant la
+*Version du 24/10/2026 (codes fidélité, défis de marques locales, tableau de bord plus rapide). Les données clients et le trafic sont simulés (aucun vrai utilisateur avant la
 démo) ; la recherche dans les boutiques, elle, est réelle (catalogue M7 : 43 boutiques, 6 375 produits).*
 
 ---
@@ -43,7 +43,7 @@ App (Espace pro BO6)  ──►  /m14/*  ──►  service.py ─┬─ store.p
 | Aucune constante cachée | seuils, poids et plages dans `config.yaml` |
 | Mémoire | `store.py`, un fichier JSON par collection dans `ml/data/bo6/m14/` (jamais dans git) |
 | LLM | Qwen 2.5 7B local (Ollama), partagé avec M7 : il lit et rédige, le code décide (§6) |
-| Tests + README | 40 tests, README à jour |
+| Tests + README | 51 tests, README à jour |
 
 ## 3. Fonctionnalités
 
@@ -57,6 +57,23 @@ App (Espace pro BO6)  ──►  /m14/*  ──►  service.py ─┬─ store.p
 | F5 | Vendeur en magasin (BO5) | Verdict Smart Buy (M6) sur la garde-robe du client, seulement pour les pièces de la boutique |
 | F6 | Tableau de bord (BO6) | Voir §4 |
 | F7 | Hand-off (BO8) | Escalade → choix de la styliste → résumé → file : accepter / refuser (styliste suivante) / clore |
+| F8 | **Codes fidélité** (idée Backup 2) | La boutique saisit son code dans son compte : code, remise (1 à 70 %), date de fin et conditions (« dès 100 TND »). M7 l'affiche sur toutes ses pièces ; `GET /m14/loyalty` donne les codes valides à M13 (BO5) pour ses liens d'achat |
+| F9 | **Défis de marques locales** (idée Backup 5) | La boutique sponsorise un défi de 7 jours publié sur M15 (BO7), avec la règle M15 `local_brand` et 6 de ses pièces proposées. **Un seul défi actif par boutique** (sinon 409) ; « End challenge » le termine avant la fin |
+
+**Codes fidélité et défis (24/10).** Un code ou un défi appartient au **compte boutique** : on ne peut pas
+en créer pour une boutique sans compte, et un styliste n'en a pas (refus 422). Dans l'app, l'onglet
+*Clients* permet de choisir n'importe laquelle des 43 boutiques du catalogue ; son compte est ouvert à la
+première utilisation. Le code est vérifié (3 à 24 lettres, chiffres ou « - ») et n'est plus montré après
+sa date de fin. Un défi dure `duration_days` jours : il est *actif* jusqu'à son dernier jour (`ends_on`),
+puis *terminé* ; la boutique peut aussi le terminer avant (`POST /m14/challenges/{id}/end`). Un seul défi
+actif évite de partager les participants entre deux défis de la même boutique. M15 est **simulé** tant que
+la branche du BO7 n'est pas fusionnée (identifiant `sim_chl_…`, `sources.m15 = "mock"`) ; le format envoyé
+est déjà celui de `POST /m15/challenges/create`.
+
+**Côté client**, le défi s'affiche dans l'écran *Challenges* du BO7 : titre, description, « Sponsored by
+Manuella », règles, bouton « Join · 7 days », progression, classement. Les pièces suggérées n'existent pas
+dans le format de M15 : le BO7 les lit à `GET /m14/challenges/{id}` (même identifiant) pour une section
+« Pieces from Manuella » avec un lien vers la boutique (détails dans le guide d'intégration).
 
 **Le parcours de la styliste** : une demande arrive dans sa file → *Accepter* ouvre la page **« Aider un
 client »** : sa demande et sa conversation avec l'assistant, sa fiche, la conversation privée, puis
@@ -84,6 +101,15 @@ dernières semaines, et une demande régulière de costumes homme.
 | **Prix** | Budgets demandés (quartiles) comparés aux prix de la boutique ; part des budgets servis. |
 | **Tendances** | 7 derniers jours comparés aux 8 semaines précédentes (z-score). |
 | **Entonnoir** | Pièces affichées, ouvertes, visites du site, rang de la boutique. |
+
+**Temps de réponse (24/10).** Le calcul des thèmes prenait l'essentiel du temps (environ 13 s sur un
+processeur : ~3 s pour les vecteurs FashionCLIP des ~300 requêtes distinctes, ~10 s pour KMeans essayé de
+12 à 30 thèmes). Désormais, le vecteur d'une requête est calculé une seule fois, et les thèmes sont gardés
+`cache_minutes` (10 min, `config.yaml`) : une requête apparue depuis rejoint le thème dont le centre est le
+plus proche. Passé ce délai, les anciens thèmes sont encore affichés pendant qu'un nouveau calcul tourne en
+arrière-plan. Résultat : **0,5 s au lieu de 13 s**, sauf le tout premier affichage après le démarrage du
+serveur. Les chiffres (recherches, prix, entonnoir) sont toujours recalculés ; seul le regroupement en
+thèmes peut avoir jusqu'à 10 minutes. La ligne `method.themes` de la réponse dit l'âge des thèmes.
 
 **Résultats sur le mois simulé (30 derniers jours)** : 626 recherches (95 % simulées, affiché en
 bandeau), 23 thèmes visibles (k = 26, silhouette 0,26), 14 groupes trop petits masqués, 3 recherches non
@@ -169,16 +195,17 @@ pour cela que les conseils restent des suggestions pour la propriétaire.
 
 ## 7. Tests
 
-40 tests automatiques, environ 35 secondes, sur un catalogue de 8 produits avec un faux encodeur et un faux
+51 tests automatiques, environ 70 secondes, sur un catalogue de 8 produits avec un faux encodeur et un faux
 LLM (sans modèle, sans internet, sans Ollama) et des dossiers temporaires (les vraies données ne sont jamais touchées).
 
 | Fichier | Tests | Ce qui est vérifié |
 |---|---|---|
 | `test_mock.py` | 8 | Chaque réponse du mock respecte le contrat |
 | `test_pros_clients.py` | 8 | Comptes boutique, consentement et retrait, fiche, accord M5/stylistes, looks, vendeur en magasin, **conversation privée** (accès, look dans la conversation, retrait, effacement) |
-| `test_dashboard.py` | 5 | Le simulateur écrit son propre journal ; le tableau de bord retrouve le signal injecté ; boutique (message, entonnoir, prix) ; erreurs 404 / 403 ; journal vide |
-| `test_handoff.py` | 13 | Escalade FR / EN / darija, cas sans escalade, choix de la styliste et résumé, cycle accepter / refuser / clore, une seule demande ouverte (un nouveau message s'y ajoute), occasion principale d'un message |
+| `test_dashboard.py` | 7 | Le simulateur écrit son propre journal ; le tableau de bord retrouve le signal injecté ; boutique (message, entonnoir, prix) ; erreurs 404 / 403 ; journal vide ; **thèmes gardés puis recalculés en arrière-plan ; nouvelle requête rattachée au thème le plus proche** |
+| `test_handoff.py` | 14 | Escalade FR / EN / darija, cas sans escalade, choix de la styliste et résumé, cycle accepter / refuser / clore, une seule demande ouverte (un nouveau message s'y ajoute), occasion principale d'un message |
 | `test_llm.py` | 6 | Avec un faux LLM : phrase du résumé utilisée, phrase avec un chiffre inventé rejetée, escalade par le LLM, citation inventée ignorée, conseils gardés seulement avec des chiffres réels, conseils par règles sans LLM |
+| `test_local_brand.py` | 8 | Codes de démo lus par M7, code saisi / retiré / expiré, code refusé pour un styliste ou mal écrit ; défi simulé, défi publié sur un faux M15 (chemin, règles, titre), **un seul défi actif puis « End », défi terminé après son dernier jour** |
 
 ```bash
 cd backend && pytest modules/m14_stylist_mode
@@ -193,6 +220,9 @@ cd backend && pytest modules/m14_stylist_mode
 - **Tendance à la limite.** La vague de sandales dorées est nette (× 2,9) mais son z-score (1,99) reste
   juste sous le seuil de 2 : la vague dure deux semaines et la première gonfle déjà la référence. Exclure
   la semaine précédente de la référence, ou utiliser un test de Poisson, la ferait ressortir.
+- **Défis et M15.** M15 n'a pas encore de route pour clore un défi : « End challenge » le termine côté
+  BO6 (il n'est plus proposé), et M15 le clôt à la fin de sa durée. À l'intégration, le BO7 peut ajouter
+  `POST /m15/challenges/{id}/end`, que M14 appellera (voir le guide).
 - **Pas encore relié au chat.** L'agent `localshop` doit proposer « Parler à un styliste » (next_action
   vers le hand-off) pour que le parcours parte aussi de l'assistant.
 - **LLM sur processeur.** Sans carte graphique, Qwen 2.5 7B met 7 à 30 s par réponse : il n'est appelé

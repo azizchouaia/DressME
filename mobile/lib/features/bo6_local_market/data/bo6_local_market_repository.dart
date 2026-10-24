@@ -36,6 +36,8 @@ class LocalProduct {
     this.imagePath,
     this.reasons = const [],
     this.wardrobeMatches = const [],
+    this.loyaltyCode,
+    this.loyaltyPct,
   });
 
   final String productId;
@@ -59,6 +61,10 @@ class LocalProduct {
   /// Pieces of the user's wardrobe it goes with (M1 + M2, simulated until they are merged).
   final List<String> wardrobeMatches;
 
+  /// The shop's loyalty code, set in its boutique account (M14), e.g. MANUELLA10 and -10 %.
+  final String? loyaltyCode;
+  final int? loyaltyPct;
+
   bool get isLocalBrand => originType == 'local_brand';
 
   factory LocalProduct.fromJson(Map<String, dynamic> j) => LocalProduct(
@@ -79,6 +85,8 @@ class LocalProduct {
         originType: j['origin_type'] as String,
         available: j['available'] as bool? ?? true,
         reasons: (j['reasons'] as List? ?? const []).cast<String>(),
+        loyaltyCode: (j['loyalty'] as Map?)?['code'] as String?,
+        loyaltyPct: ((j['loyalty'] as Map?)?['discount_pct'] as num?)?.toInt(),
         wardrobeMatches:
             (j['wardrobe_matches'] as List? ?? const []).cast<String>(),
       );
@@ -317,6 +325,18 @@ class LocalMarketRepository {
   Future<void> forget() => _dio.delete<void>('/m07/memory/$demoUserId');
 
   /// POST /m07/outfits — outfits from the user's wardrobe around one local piece (BO6 idea 3).
+  /// POST /m07/try-on — the piece's photo becomes a 3D model by BO9's service (BO6 Selected 6).
+  Future<TryOnResult> tryOn(String productId) async {
+    final res = await _dio.post<Map<String, dynamic>>('/m07/try-on',
+        data: {
+          'product_id': productId,
+          'user_id': demoUserId,
+          'language': 'en'
+        },
+        options: Options(receiveTimeout: const Duration(minutes: 6)));
+    return TryOnResult.fromJson(res.data!);
+  }
+
   /// POST /m07/local-pieces — Tunisian pieces for an outfit of the day (BO6 Selected 4).
   Future<LocalPieces> localPieces(List<String> itemIds) async {
     final res =
@@ -447,5 +467,28 @@ class LocalPieces {
             .toList(),
         simulated:
             ((j['sources'] as Map?) ?? const {}).values.any((v) => v == 'mock'),
+      );
+}
+
+/// POST /m07/try-on answer: a 3D model of the piece for the avatar, or the simulation's note.
+class TryOnResult {
+  const TryOnResult(
+      {required this.piece,
+      required this.note,
+      required this.modelUrl,
+      required this.simulated});
+
+  final String piece;
+  final String note;
+
+  /// Path of the GLB served by M7 (/m07/try-on/<id>.glb); null while BO9's service is simulated.
+  final String? modelUrl;
+  final bool simulated;
+
+  factory TryOnResult.fromJson(Map<String, dynamic> j) => TryOnResult(
+        piece: j['piece'] as String,
+        note: j['note'] as String,
+        modelUrl: j['model_url'] as String?,
+        simulated: ((j['sources'] as Map?) ?? const {})['m9'] != 'real',
       );
 }
