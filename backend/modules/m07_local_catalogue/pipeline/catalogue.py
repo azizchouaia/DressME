@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from ..scraper.normalize import fold
-from .context import season_hint
+from .context import is_casual, season_hint
 from .retrieve import BM25, tokenize
 
 
@@ -41,10 +41,21 @@ class Catalogue:
         self.governorates = [set(filter(None, p.get("governorate", "").split("; "))) for p in self.products]
         self.cities = [set(filter(None, p.get("city", "").split("; "))) for p in self.products]
         # +1 summer piece, -1 winter piece, 0 neither (name words + type): re-ranks a seasonal request
+        # (the photo's season, attributes.py, fills in when the name and the type say nothing)
+        photo = {"summer": 1, "winter": -1}
         self.season = np.array(
-            [season_hint(fold(p.get("product_name", "")), p.get("subcategory", "")) for p in self.products]
+            [
+                season_hint(fold(p.get("product_name", "")), p.get("subcategory", ""))
+                or (photo.get(p.get("season", ""), 0) if p.get("season_source") == "photo" else 0)
+                for p in self.products
+            ]
         )
         self.row_of = {p["product_id"]: i for i, p in enumerate(self.products)}
+        self.casual = np.array(
+            [is_casual(fold(p.get("product_name", "")), p.get("subcategory", "")) for p in self.products]
+        )
+        # newest check of the shops' pages (YYYY-MM-DD): prices and stock are as of this day
+        self.checked_on = max((p.get("last_checked") or "" for p in self.products), default="") or None
         # Words actually used by the shops (names, labels, colours, shop names): targets for typo correction.
         self.vocabulary = {
             w for p in self.products for w in re.findall(r"\w+", fold(self.document(p))) if len(w) >= 3

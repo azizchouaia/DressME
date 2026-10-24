@@ -24,3 +24,11 @@ def memory_dir(tmp_path, monkeypatch):
 def no_llm(monkeypatch):
     """Tests never call Ollama: the LLM is off unless a test installs a fake one (test_llm.py)."""
     monkeypatch.setattr(llm, "_llm", llm.LLM({"enabled": False, "model": "off", "url": "http://off"}))
+
+
+@pytest.fixture(autouse=True)
+def fresh_catalogue(monkeypatch):
+    """The test catalogues are dated 2026-10-14: never "prices to check" because of today's date."""
+    from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
+
+    monkeypatch.setitem(M7_CONFIG, "stale_after_days", 10**6)

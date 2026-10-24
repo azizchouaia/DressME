@@ -61,3 +61,11 @@ def isolated(tmp_path, monkeypatch, m7_agent):
     # Tests never call Ollama: the BO6 LLM is off unless a test installs a fake one
     monkeypatch.setattr(bo6_llm, "_llm", bo6_llm.LLM({"enabled": False, "model": "off", "url": "http://off"}))
     return {"real_log": real_log, "sim_log": sim_log}
+
+
+@pytest.fixture(autouse=True)
+def fresh_catalogue(monkeypatch):
+    """The test catalogues are dated 2026-10-14: never "prices to check" because of today's date."""
+    from modules.m07_local_catalogue.paths import CONFIG as M7_CONFIG
+
+    monkeypatch.setitem(M7_CONFIG, "stale_after_days", 10**6)

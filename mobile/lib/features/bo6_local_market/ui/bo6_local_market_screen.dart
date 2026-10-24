@@ -1019,6 +1019,38 @@ class _ProductSheet extends ConsumerWidget {
 
   /// Next action "judge": Smart Buy (BO5) gets the piece's photo, price and shop. Its screen is not
   /// merged yet, so the app shows what is handed over.
+  /// Next action "try_on" (BO6 idea 6): the try-on agent (BO9) shows the local piece on the avatar.
+  /// BO9's screen is not merged yet, so the app shows what is handed over.
+  void _tryOn(BuildContext context) {
+    final router = GoRouter.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Try it on my avatar (BO9)'),
+        content: Text(
+          'The agent hands this piece over to the 3D try-on, which puts it on your faceless '
+          "avatar. BO9's screen is not in this app yet; it receives:\n\n"
+          '• the product photo\n'
+          '• category: ${product.category} / ${product.subcategory}'
+          '${product.color == null ? '' : '\n• colour: ${product.color}'}',
+          style: DmText.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialog).pop();
+              router.go('/bo9_try_on');
+            },
+            child: const Text('Open the try-on'),
+          ),
+          TextButton(
+              onPressed: () => Navigator.of(dialog).pop(),
+              child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   void _smartBuy(BuildContext context) {
     final router = GoRouter.of(context);
     showDialog<void>(
@@ -1216,6 +1248,12 @@ class _ProductSheet extends ConsumerWidget {
             icon: const Icon(Icons.support_agent, size: 18),
             label: const Text('Talk to a stylist about this piece'),
             onPressed: () => _askStylist(context, ref),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.accessibility_new, size: 18),
+            label: const Text('Try it on my avatar (3D try-on)'),
+            onPressed: () => _tryOn(context),
           ),
         ],
       ),

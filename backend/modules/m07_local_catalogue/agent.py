@@ -1,6 +1,7 @@
 """BO6 agent `localshop`: memory in, search (M7), memory out, question + next_actions for the orchestrator."""
 
 import re
+from datetime import date
 
 import numpy as np
 
@@ -41,6 +42,7 @@ TEXTS = {
         "open_shop": "Voir chez {shop}",
         "judge": "Est-ce un bon achat pour moi ?",
         "outfits": "Des tenues avec cette pièce",
+        "try_on": "L'essayer sur mon avatar",
         "more": "Voir plus de résultats",
         "feedback": "Ces résultats t'ont été utiles ?",
         "gender_memory": "Pièces pour {gender} : ta réponse précédente est gardée en mémoire.",
@@ -67,6 +69,7 @@ TEXTS = {
         "open_shop": "See it at {shop}",
         "judge": "Is it a good buy for me?",
         "outfits": "Outfits with this piece",
+        "try_on": "Try it on my avatar",
         "more": "Show more results",
         "feedback": "Were these results useful?",
         "gender_memory": "Pieces for {gender}: your previous answer is remembered.",
@@ -93,6 +96,7 @@ TEXTS = {
         "open_shop": "عرض في {shop}",
         "judge": "هل هي شراء جيد لي؟",
         "outfits": "إطلالات مع هذه القطعة",
+        "try_on": "جرّبها على الأفاتار",
         "more": "عرض نتائج أخرى",
         "feedback": "هل كانت هذه النتائج مفيدة؟",
         "gender_memory": "قطع {gender}: تم تذكر إجابتك السابقة.",
@@ -186,6 +190,7 @@ NOTES = {
         "llm_note": "Demande comprise avec l'IA ({model}) : {what}.",
         "rewritten": "requête reformulée",
         "context": "Pour {o} : {pieces}.",
+        "stale": "Prix et stocks relevés le {day} : à vérifier sur le site de la boutique.",
         "and": "et",
     },
     "en": {
@@ -200,7 +205,23 @@ NOTES = {
         "llm_note": "Request understood with AI ({model}): {what}.",
         "rewritten": "request rewritten",
         "context": "For {o}: {pieces}.",
+        "stale": "Prices and stock as of {day}: check them on the shop's website.",
         "and": "and",
+    },
+    "ar": {
+        "no_style": "متجه الأسلوب «{style}» غير متوفر بعد (M5): الترتيب دون الأسلوب.",
+        "other_cities": "لم نجد شيئًا في {city}: نتائج من مدن أخرى أو من متاجر على الإنترنت.",
+        "sold_out": "لا توجد قطع متوفرة حاليًا: {n} قطعة نفدت من المخزون، يُرجى التحقق مع المتجر.",
+        "no_colour": "لا توجد {what} باللون {colour}{where}: إليك {what} الأخرى المتوفرة.",
+        "in_city": " في {city}",
+        "items": "قطع",
+        "nothing_for": "لم أجد أي قطعة تطابق «{asked}» في المتاجر المحلية.",
+        "no_match": "لا توجد قطعة تطابق هذه المعايير.",
+        "llm_note": "تم فهم الطلب بالذكاء الاصطناعي ({model}): {what}.",
+        "rewritten": "طلب أعيدت صياغته",
+        "context": "لـ{o}: {pieces}.",
+        "stale": "الأسعار والمخزون بتاريخ {day}: يُرجى التحقق منها على موقع المتجر.",
+        "and": "و",
     },
 }
 
@@ -331,16 +352,26 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                 return round(float(np.median(values)), 1), len(values), kind
         return None
 
+    def _stale_note(self, language: str) -> str | None:
+        """The catalogue is older than `stale_after_days`: say prices and stock may have changed."""
+        day = self.catalogue.checked_on
+        if not day:
+            return None
+        try:
+            age = (date.today() - date.fromisoformat(day[:10])).days
+        except ValueError:
+            return None
+        if age <= self.config["stale_after_days"]:
+            return None
+        return notes_for(language)["stale"].format(day=day[:10])
+
     @staticmethod
     def _context_note(parsed: ParsedQuery, language: str) -> str | None:
         """'Pour un mariage : robes, ensembles, costumes… et talons.' when the occasion chose the pieces."""
         if not parsed.occasion_pieces:
             return None
-        t, lang = notes_for(language), "en" if language == "en" else "fr"
-        if parsed.occasion:
-            what = context.OCCASIONS[parsed.occasion]["fr" if lang == "fr" else "for_en"]
-        else:
-            what = context.SEASONS[parsed.season][lang]
+        t = notes_for(language)
+        what = context.phrase(parsed.occasion or parsed.season, language)
         names = [label(p, language).lower() for p in parsed.occasion_pieces]
         pieces = f"{', '.join(names[:-1])} {t['and']} {names[-1]}" if len(names) > 1 else names[0]
         return t["context"].format(o=what, pieces=pieces)
@@ -545,7 +576,6 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         outfit = [by_id[i] for i in inp.item_ids if i in by_id]
         if not outfit:
             raise AgentError("none of item_ids is in the user's wardrobe (M1)")
-        lang = "fr" if inp.language == "ar" else inp.language
         suggestions, src_m2 = [], "mock"
         for slot, replaced in self._slots_to_try(outfit):
             search = LocalShopInput(
@@ -575,7 +605,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
             first = (
                 texts["replaces"].format(piece=self._wardrobe_label(replaced, inp.language))
                 if replaced
-                else texts["completes"].format(slot=label(slot, lang).lower())
+                else texts["completes"].format(slot=label(slot, inp.language).lower())
             )
             names = ", ".join(self._wardrobe_label(g, inp.language) for g in base)
             suggestions.append(
@@ -730,6 +760,21 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
                     },
                 )
             )
+            acts.append(  # BO6 idea 6: the try-on agent (BO9) shows the local piece on the avatar
+                NextAction(
+                    action="try_on",
+                    label=texts["try_on"],
+                    tool="tryon",
+                    args={
+                        "product_id": top.product_id,
+                        "image_url": top.image_url,
+                        "image_path": top.image_path,
+                        "category": top.category,
+                        "subcategory": top.subcategory,
+                        "color": top.color,
+                    },
+                )
+            )
         if out.total_matches > inp.offset + len(out.results):
             acts.append(
                 NextAction(
@@ -762,11 +807,13 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         if parsed.max_price_tnd is None and (usual := self._usual_budget(inp.user_id or ANONYMOUS, parsed)):
             parsed.usual_budget_tnd, n, kind = usual  # re-ranks only (rerank.py); a budget said always wins
             if memory_notes is not None:
-                what = label(kind, "fr" if inp.language == "ar" else inp.language).lower()
+                what = label(kind, inp.language).lower()
                 memory_notes.append(texts["usual_budget"].format(what=what, max=parsed.usual_budget_tnd, n=n))
         notes, t = [], notes_for(inp.language)
         if context_note := self._context_note(parsed, inp.language):
             notes.append(context_note)
+        if stale := self._stale_note(inp.language):
+            notes.append(stale)
         style_values = inp.style_vector
         if isinstance(style_values, str):  # an id, as in the architecture doc: ask M5 for the vector
             style_values = clients.style_vector_from_m5(inp.user_id, style_values)

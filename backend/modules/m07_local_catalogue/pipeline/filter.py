@@ -9,6 +9,7 @@ import numpy as np
 
 from ..contract import ParsedQuery
 from ..taxonomy import OPPOSITE_GENDER, canonical_city, governorate
+from .context import CASUAL_TYPES, DRESSY
 
 
 def city_mask(catalogue, city: str | None) -> np.ndarray:
@@ -56,4 +57,10 @@ def run(
         mask &= catalogue.gender != OPPOSITE_GENDER[parsed.gender]
     if use_city and parsed.city:
         mask &= city_mask(catalogue, parsed.city)
+    if parsed.occasion in DRESSY and parsed.subcategory not in CASUAL_TYPES:
+        # "veste pour un mariage": no sports jacket, no sneakers, unless nothing else is left (or the user
+        # asked for a casual type: "baskets pour un mariage")
+        dressy = mask & ~catalogue.casual
+        if dressy.any():
+            mask = dressy
     return mask

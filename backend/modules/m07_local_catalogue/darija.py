@@ -16,16 +16,18 @@ from .scraper.normalize import fold
 # French word -> darija spellings (Latin letters and Arabic script).
 DARIJA: dict[str, list[str]] = {
     # pieces
-    "chaussures": ["sabbat", "sebbat", "sabbet", "sbabet", "sbabat", "صباط", "صبابط"],
+    "chaussures": ["sabbat", "sebbat", "sabbet", "sbabet", "sbabat", "صباط", "صبابط", "حذاء", "أحذية"],
     "baskets": ["sbadri", "sbedri", "sbadria", "sbadriyat", "سبادري", "سبدري"],
     "claquettes": ["chlaka", "chleka", "chlakat", "chlek", "شلاكة", "شلاكات", "شلاك"],
-    "chemise": ["sorya", "souriya", "sourya", "souria", "sorria", "سورية"],
+    "chemise": ["sorya", "souriya", "sourya", "souria", "sorria", "سورية", "قميص", "قمصان"],
     "t-shirt": ["maryoul", "mariyoul", "maryoula", "mrayel", "مريول", "مرايل"],
     "pantalon": ["sarwel", "serwel", "sirwel", "sarwal", "srawel", "سروال", "سراول"],
-    "manteau": ["kabbout", "kabout", "kabbot", "كبوط"],
-    "veste": ["jakita", "jaketa", "jakta", "جاكيتة", "جاكيت"],
-    "robe": ["robba", "rouba", "fostan", "fustan", "روبة"],
-    "sac": ["chkara", "shkara", "شكارة"],
+    "manteau": ["kabbout", "kabout", "kabbot", "كبوط", "معطف", "معاطف"],
+    "veste": ["jakita", "jaketa", "jakta", "جاكيتة", "جاكيت", "سترة"],
+    "robe": ["robba", "rouba", "fostan", "fustan", "روبة", "فستان", "فساتين"],
+    "sac": ["chkara", "shkara", "شكارة", "حقيبة", "حقائب"],
+    # Arabic script only: the Latin darija spellings of "jupe" are too close to "jebba" (see above)
+    "jupe": ["تنورة", "تنانير"],
     "casquette": ["kaskita", "kasketa", "كاسكيطة", "كاسكات"],
     "bonnet": ["ta9ia", "tagia", "takia", "طاقية"],
     "chaussettes": ["t9achir", "tqachir", "tkachir", "تقاشر", "تقاشير"],

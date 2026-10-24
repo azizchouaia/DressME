@@ -72,6 +72,10 @@ _WARDROBE = [
     ("itm_vest01", "outerwear", "jacket", "navy"),
     ("itm_sac01", "accessory", "bag", "black"),
     ("itm_tsh01", "top", "tshirt", "black"),
+    ("itm_pant01", "bottom", "trousers", "black"),
+    ("itm_jupe01", "bottom", "skirt", "beige"),
+    ("itm_escar01", "shoes", "heels", "black"),
+    ("itm_mant01", "outerwear", "coat", "camel"),
 ]
 
 

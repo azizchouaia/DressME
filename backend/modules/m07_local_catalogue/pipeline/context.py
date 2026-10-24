@@ -20,6 +20,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "elegant wedding guest",
         "en": "wedding",
         "fr": "un mariage",
+        "ar": "عرس",
         "for_en": "a wedding",
     },
     "fiançailles": {
@@ -28,6 +29,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "elegant engagement party",
         "en": "engagement",
         "fr": "des fiançailles",
+        "ar": "خطوبة",
         "for_en": "an engagement",
     },
     "henna": {
@@ -36,6 +38,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "traditional tunisian henna night",
         "en": "henna",
         "fr": "un henné",
+        "ar": "حنة",
         "for_en": "a henna night",
     },
     "aïd": {
@@ -44,6 +47,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "festive eid",
         "en": "Eid",
         "fr": "l'Aïd",
+        "ar": "العيد",
         "for_en": "Eid",
     },
     "ramadan": {
@@ -52,6 +56,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "modest elegant ramadan evening",
         "en": "Ramadan evening",
         "fr": "les soirées de Ramadan",
+        "ar": "سهرات رمضان",
         "for_en": "Ramadan evenings",
     },
     "entretien": {
@@ -60,6 +65,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "formal job interview",
         "en": "job interview",
         "fr": "un entretien",
+        "ar": "مقابلة عمل",
         "for_en": "a job interview",
     },
     "soutenance": {
@@ -68,6 +74,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "formal graduation",
         "en": "graduation",
         "fr": "une soutenance",
+        "ar": "مناقشة",
         "for_en": "a graduation",
     },
     "travail": {
@@ -76,6 +83,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "office workwear",
         "en": "work",
         "fr": "le travail",
+        "ar": "العمل",
         "for_en": "work",
     },
     "soirée": {
@@ -84,6 +92,7 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "evening party",
         "en": "evening party",
         "fr": "une soirée",
+        "ar": "سهرة",
         "for_en": "an evening party",
     },
     "plage": {
@@ -92,11 +101,27 @@ OCCASIONS: dict[str, dict] = {
         "prompt": "beach",
         "en": "beach",
         "fr": "la plage",
+        "ar": "البحر",
         "for_en": "the beach",
         "season": "summer",
     },
 }
 _OCCASION_RES = [(code, re.compile(o["pattern"])) for code, o in OCCASIONS.items()]
+# Occasions where a casual piece is out of place (a sports jacket at a wedding): every one but the beach.
+DRESSY = {code for code in OCCASIONS if code != "plage"}
+# A casual piece: its type, or a word of its name (fold()ed).
+CASUAL_TYPES = {"sneakers", "swimwear", "shorts", "socks"}
+_CASUAL_WORDS = re.compile(
+    r"\b(?:sport|sportswear|jogging|joggers?|survetements?|survet|training|running|fitness|gym|hoodies?"
+    r"|capuche|pyjamas?|claquettes?|tongs?|plage|beach|cargo)\b"
+)
+
+
+def is_casual(folded_name: str, subcategory: str) -> bool:
+    """A sports / beach / home piece, left out of a dressy occasion unless that type is asked for."""
+    return subcategory in CASUAL_TYPES or bool(_CASUAL_WORDS.search(folded_name))
+
+
 # M2 (outfits) knows three contexts: work / casual / event.
 M2_OCCASION = {
     "mariage": "event",
@@ -122,6 +147,7 @@ SEASONS: dict[str, dict] = {
         "prompt": "light summer",
         "en": "summer",
         "fr": "l'été",
+        "ar": "الصيف",
     },
     "winter": {
         "pattern": r"\bhiver\b|\bhivernale?s?\b|\bwinter\b|\bchta\b|\bfroid\b|\bcold\b|شتاء|شتا\b|برد",
@@ -132,6 +158,7 @@ SEASONS: dict[str, dict] = {
         "prompt": "warm winter",
         "en": "winter",
         "fr": "l'hiver",
+        "ar": "الشتاء",
     },
 }
 _SEASON_RES = {code: re.compile(s["pattern"]) for code, s in SEASONS.items()}
@@ -160,6 +187,13 @@ def season_of(folded: str, occasion: str | None = None) -> str | None:
     return OCCASIONS.get(occasion or "", {}).get("season") if not found else None
 
 
+def season_of_name(folded_name: str) -> str | None:
+    """'summer' / 'winter' when the product name alone says it (lin / velours...), else None."""
+    summer = bool(_SEASON_WORDS["summer"].search(folded_name))
+    winter = bool(_SEASON_WORDS["winter"].search(folded_name))
+    return "summer" if summer and not winter else "winter" if winter and not summer else None
+
+
 def season_hint(folded_name: str, subcategory: str) -> int:
     """+1 a summer piece, -1 a winter piece, 0 neither or both (from its name and its type)."""
     summer = bool(_SEASON_WORDS["summer"].search(folded_name)) or subcategory in SEASONS["summer"]["types"]
@@ -182,3 +216,10 @@ def prompt_words(occasion: str | None, season: str | None) -> list[str]:
     if occasion:
         words.append(OCCASIONS[occasion]["prompt"])
     return words
+
+
+def phrase(code: str, language: str) -> str:
+    """How an occasion or a season reads after "pour" / "for" / "لـ": "un mariage", "a wedding", "عرس"."""
+    entry = OCCASIONS.get(code) or SEASONS[code]
+    key = {"en": "for_en" if code in OCCASIONS else "en", "ar": "ar"}.get(language, "fr")
+    return entry[key]

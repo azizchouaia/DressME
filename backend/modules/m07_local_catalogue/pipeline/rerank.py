@@ -13,8 +13,8 @@ Weights come from config.yaml and are renormalised over the parts available for 
 import numpy as np
 
 from ..contract import ParsedQuery
-from ..taxonomy import GENDERS, GENDERS_EN, colour_name, governorate, label
-from .context import OCCASIONS, SEASONS
+from ..taxonomy import COLOR_CODES, GENDERS, GENDERS_AR, GENDERS_EN, colour_name, governorate, label
+from .context import phrase
 
 
 def _scale(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
@@ -138,6 +138,25 @@ REASONS = {
         "season": "A piece for {s}",
         "usual_budget": "Within your usual budget (≤ {max:g} TND)",
     },
+    "ar": {
+        "colour": "اللون: {c}",
+        "colour_unknown": "اللون غير محدد من المتجر: تحقق من الصورة",
+        "other_colour": "لون آخر: {c}",
+        "model": "موديل {g}",
+        "from_photo": "{label} (مقدّر من الصورة)",
+        "gender_unknown": "الجنس غير محدد من المتجر",
+        "budget": "{price} (الميزانية {max:g} دينار)",
+        "shop_in": "متجر في {city}",
+        "shop_near": "متجر في {city} (قرب {asked})",
+        "chain": "سلسلة موجودة في {n} مدن ({cities}…)",
+        "like_photo": "قريبة جدًا من الصورة",
+        "looks_like": "تشبه الطلب بصريًا",
+        "style": "قريبة من أسلوبك",
+        "local_brand": "علامة تونسية",
+        "occasion": "لـ{o}",
+        "season": "قطعة لـ{s}",
+        "usual_budget": "ضمن ميزانيتك المعتادة (≤ {max:g} دينار)",
+    },
 }
 
 
@@ -154,12 +173,11 @@ def reasons(
     out = []
     if parsed.subcategory:
         out.append(label(parsed.subcategory, language))
-    lang = "en" if language == "en" else "fr"
     if parsed.occasion:
-        out.append(t["occasion"].format(o=OCCASIONS[parsed.occasion]["fr" if lang == "fr" else "for_en"]))
+        out.append(t["occasion"].format(o=phrase(parsed.occasion, language)))
     season = parts.get("season")
     if season is not None and season[j] == 1:
-        out.append(t["season"].format(s=SEASONS[parsed.season][lang]))
+        out.append(t["season"].format(s=phrase(parsed.season, language)))
     if parsed.color:
         if product.get("color") == parsed.color:
             out.append(t["colour"].format(c=colour_name(parsed.color, language)))
@@ -167,15 +185,17 @@ def reasons(
             out.append(t["colour_unknown"])
         else:
             other = (
-                product["color"].replace("_", " ")
-                if language == "en"
+                colour_name(product["color"], language)
+                if language != "fr" and product["color"] in COLOR_CODES
                 else product.get("color_fr", "").lower()
             )
             out.append(t["other_colour"].format(c=other))
     if parsed.gender in ("women", "men"):
         gender = product.get("gender") or ""
         if gender in GENDERS:
-            name = GENDERS_EN[gender] if language == "en" else GENDERS[gender].lower()
+            name = {"en": GENDERS_EN, "ar": GENDERS_AR}.get(language, {}).get(gender) or GENDERS[
+                gender
+            ].lower()
             model = t["model"].format(g=name)
             out.append(
                 t["from_photo"].format(label=model) if product.get("gender_source") == "photo" else model

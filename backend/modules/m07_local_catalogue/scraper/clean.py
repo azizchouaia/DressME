@@ -52,6 +52,8 @@ COLUMNS = [
     "color_hex",
     "gender",
     "gender_source",
+    "season",
+    "season_source",
     "size",
     "size_type",
     "price_tnd",

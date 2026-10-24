@@ -5,7 +5,7 @@ The orchestrator (BO8) reads the card to know WHEN to call it and WHAT to do wit
 Served at GET /m07/card. The tool description is built from it, so they never drift apart.
 """
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 
 CARD = {
     "id": "dressme.bo6.localshop",
@@ -75,7 +75,10 @@ CARD = {
         ],
     },
     "outputs": ["results", "parsed", "total_matches", "note", "question", "next_actions", "decision_id"],
-    "handoff": [{"action": "judge", "label": "Should I buy one of these?", "tool": "smartbuy", "args": {}}],
+    "handoff": [
+        {"action": "judge", "label": "Should I buy one of these?", "tool": "smartbuy", "args": {}},
+        {"action": "try_on", "label": "Try it on my avatar", "tool": "tryon", "args": {}},
+    ],
     "depends_on": {
         "M1": "the user's wardrobe (BO3), simulated until merged",
         "M2": "compatibility and outfits (BO1), simulated until merged",

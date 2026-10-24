@@ -169,72 +169,150 @@ SUBCATEGORY_EN = {
     "hair": "Hair accessories",
 }
 GENDERS_EN = {"women": "Women's", "men": "Men's", "unisex": "Unisex"}
-
-
-# Display labels of the contract categories (a usual budget can be learned for a whole category).
-CATEGORY_LABELS = {
-    "top": ("Hauts", "Tops"),
-    "bottom": ("Bas", "Bottoms"),
-    "dress": ("Robes & ensembles", "Dresses & sets"),
-    "outerwear": ("Vestes & manteaux", "Jackets & coats"),
-    "shoes": ("Chaussures", "Shoes"),
-    "accessory": ("Accessoires", "Accessories"),
-    "traditional": ("Tenues traditionnelles", "Traditional outfits"),
+GENDERS_AR = {"women": "نسائي", "men": "رجالي", "unisex": "للجنسين"}
+SUBCATEGORY_AR = {
+    "sneakers": "أحذية رياضية",
+    "shoes": "أحذية",
+    "sandals": "صنادل",
+    "boots": "جزمات",
+    "heels": "أحذية بكعب",
+    "bag": "حقائب",
+    "accessory": "إكسسوارات",
+    "hijab": "حجابات",
+    "dress": "فساتين",
+    "jumpsuit": "جمبسوت",
+    "set": "أطقم",
+    "suit": "بدلات",
+    "swimwear": "ملابس سباحة",
+    "skirt": "تنانير",
+    "shorts": "شورتات",
+    "jeans": "جينز",
+    "trousers": "سراويل",
+    "coat": "معاطف",
+    "jacket": "سترات",
+    "sweater": "كنزات",
+    "tshirt": "تيشيرتات",
+    "shirt": "قمصان",
+    "lingerie": "ملابس داخلية",
+    "traditional": "ملابس تقليدية",
+    "belt": "أحزمة",
+    "bracelet": "أساور",
+    "ring": "خواتم",
+    "jewelry": "مجوهرات",
+    "hat": "قبعات",
+    "socks": "جوارب",
+    "scarf": "أوشحة",
+    "sunglasses": "نظارات شمسية",
+    "wallet": "محافظ",
+    "watch": "ساعات",
+    "hair": "إكسسوارات شعر",
+    "necklace": "قلادات",
+    "earrings": "أقراط",
+}
+COLOR_AR = {
+    "black": "أسود",
+    "white": "أبيض",
+    "grey": "رمادي",
+    "beige": "بيج",
+    "camel": "جملي",
+    "brown": "بني",
+    "blue": "أزرق",
+    "navy": "كحلي",
+    "light_blue": "أزرق فاتح",
+    "red": "أحمر",
+    "burgundy": "عنابي",
+    "pink": "وردي",
+    "purple": "بنفسجي",
+    "green": "أخضر",
+    "khaki": "كاكي",
+    "yellow": "أصفر",
+    "orange": "برتقالي",
+    "gold": "ذهبي",
+    "multicolor": "متعدد الألوان",
 }
 
 
+# Display labels of the contract categories (a usual budget can be learned for a whole category).
+CATEGORY_LABELS = {  # (fr, en, ar)
+    "top": ("Hauts", "Tops", "قطع علوية"),
+    "bottom": ("Bas", "Bottoms", "قطع سفلية"),
+    "dress": ("Robes & ensembles", "Dresses & sets", "فساتين وأطقم"),
+    "outerwear": ("Vestes & manteaux", "Jackets & coats", "سترات ومعاطف"),
+    "shoes": ("Chaussures", "Shoes", "أحذية"),
+    "accessory": ("Accessoires", "Accessories", "إكسسوارات"),
+    "traditional": ("Tenues traditionnelles", "Traditional outfits", "ملابس تقليدية"),
+}
+_LANG = {"fr": 0, "en": 1, "ar": 2}
+
+
 def label(subcategory: str, language: str = "fr") -> str:
-    """Display label of a subcategory: "Baskets" (fr, ar) or "Sneakers" (en); a category works too."""
+    """Display label of a subcategory (or a category): "Baskets" (fr), "Sneakers" (en), Arabic (ar)."""
     if subcategory not in SUBCATEGORIES and subcategory in CATEGORY_LABELS:
-        return CATEGORY_LABELS[subcategory][language == "en"]
-    return SUBCATEGORY_EN.get(subcategory, subcategory) if language == "en" else SUBCATEGORIES[subcategory][1]
+        return CATEGORY_LABELS[subcategory][_LANG.get(language, 0)]
+    if language == "en":
+        return SUBCATEGORY_EN.get(subcategory, subcategory)
+    if language == "ar":
+        return SUBCATEGORY_AR.get(subcategory, SUBCATEGORIES[subcategory][1])
+    return SUBCATEGORIES[subcategory][1]
 
 
-# One piece of a wardrobe, singular (FR, EN): "chemise (blanc)" / "white shirt".
+# One piece of a wardrobe, singular (FR, EN, AR): "chemise (blanc)" / "white shirt" / "قميص أبيض".
 _PIECE = {
-    "jeans": ("jean", "jeans"),
-    "shirt": ("chemise", "shirt"),
-    "sweater": ("pull", "sweater"),
-    "sneakers": ("baskets", "sneakers"),
-    "dress": ("robe", "dress"),
-    "jacket": ("veste", "jacket"),
-    "coat": ("manteau", "coat"),
-    "bag": ("sac", "bag"),
-    "tshirt": ("t-shirt", "t-shirt"),
-    "trousers": ("pantalon", "trousers"),
-    "skirt": ("jupe", "skirt"),
-    "shorts": ("short", "shorts"),
-    "sandals": ("sandales", "sandals"),
-    "heels": ("escarpins", "heels"),
-    "shoes": ("chaussures", "shoes"),
-    "boots": ("bottes", "boots"),
-    "suit": ("costume", "suit"),
-    "set": ("ensemble", "set"),
-    "traditional": ("tenue traditionnelle", "traditional outfit"),
-    "belt": ("ceinture", "belt"),
-    "scarf": ("foulard", "scarf"),
-    "hijab": ("hijab", "hijab"),
+    "jeans": ("jean", "jeans", "جينز"),
+    "shirt": ("chemise", "shirt", "قميص"),
+    "sweater": ("pull", "sweater", "كنزة"),
+    "sneakers": ("baskets", "sneakers", "حذاء رياضي"),
+    "dress": ("robe", "dress", "فستان"),
+    "jacket": ("veste", "jacket", "سترة"),
+    "coat": ("manteau", "coat", "معطف"),
+    "bag": ("sac", "bag", "حقيبة"),
+    "tshirt": ("t-shirt", "t-shirt", "تيشيرت"),
+    "trousers": ("pantalon", "trousers", "سروال"),
+    "skirt": ("jupe", "skirt", "تنورة"),
+    "shorts": ("short", "shorts", "شورت"),
+    "sandals": ("sandales", "sandals", "صندل"),
+    "heels": ("escarpins", "heels", "حذاء بكعب"),
+    "shoes": ("chaussures", "shoes", "حذاء"),
+    "boots": ("bottes", "boots", "جزمة"),
+    "suit": ("costume", "suit", "بدلة"),
+    "set": ("ensemble", "set", "طقم"),
+    "traditional": ("tenue traditionnelle", "traditional outfit", "لباس تقليدي"),
+    "belt": ("ceinture", "belt", "حزام"),
+    "scarf": ("foulard", "scarf", "وشاح"),
+    "hijab": ("hijab", "hijab", "حجاب"),
 }
 
 
 def piece_name(subcategory: str | None, colour: str | None, language: str = "fr") -> str:
-    """'chemise (blanc)' (fr, ar) or 'white shirt' (en): a wardrobe piece in a reason or an outfit."""
-    en = language == "en"
+    """A wardrobe piece in a reason or an outfit: 'chemise (blanc)' (fr), 'white shirt' (en), Arabic."""
+    lang = _LANG.get(language, 0)
     names = _PIECE.get(subcategory or "")
-    name = names[en] if names else (label(subcategory, language).lower() if subcategory else "pièce")
+    name = names[lang] if names else (label(subcategory, language).lower() if subcategory else "pièce")
     if not colour or colour not in COLOR_CODES:
         return name
-    return f"{colour_name(colour, 'en')} {name}" if en else f"{name} ({colour_name(colour, 'fr')})"
+    if language == "en":
+        return f"{colour_name(colour, 'en')} {name}"
+    if language == "ar":
+        return f"{name} {colour_name(colour, 'ar')}"
+    return f"{name} ({colour_name(colour, 'fr')})"
 
 
 def colour_name(code: str, language: str = "fr") -> str:
-    """ "bleu marine" (fr, ar) or "navy blue" (en), lower case."""
-    return code.replace("_", " ") if language == "en" else COLOR_CODES[code][0].lower()
+    """ "bleu marine" (fr), "navy blue" (en), "كحلي" (ar), lower case."""
+    if language == "en":
+        return code.replace("_", " ")
+    if language == "ar":
+        return COLOR_AR.get(code, code)
+    return COLOR_CODES[code][0].lower()
 
 
 _UNISEX_RE = re.compile(r"\b(?:unisexe?|mixte)\b")
-_WOMEN_RE = re.compile(r"\b(?:femmes?|woman|women|womens|dames?|filles?|feminine?s?|ladies|lady)\b")
-_MEN_RE = re.compile(r"\b(?:hommes?|man|men|mens|masculine?s?|monsieur)\b")
+# Garments that are always for one gender here count like the word itself (an abaya, a qamis).
+_WOMEN_RE = re.compile(
+    r"\b(?:femmes?|woman|women|womens|dames?|filles?|feminine?s?|ladies|lady|abayas?|caftans?|kaftans?"
+    r"|takchitas?|burkinis?|nuisettes?|soutien[- ]gorges?)\b"
+)
+_MEN_RE = re.compile(r"\b(?:hommes?|man|men|mens|masculine?s?|monsieur|qamis+|kamis+)\b")
 
 
 def gender_from_text(*texts: str) -> str:

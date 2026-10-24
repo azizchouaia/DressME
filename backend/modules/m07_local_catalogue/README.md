@@ -30,7 +30,7 @@ request ──► parse ──► retrieve ────────────�
   only from the data (no LLM, nothing invented: an unknown colour is said to be unknown).
 - `pipeline/encoder.py` — FashionCLIP (`patrickjohncyh/fashion-clip`) run locally on CPU or GPU.
 - `pipeline/ingest.py` — offline: one embedding per product photo → `ml/data/shops/index/`.
-- `pipeline/attributes.py` — offline: gender of the pieces whose name does not say it, from the photo
+- `pipeline/attributes.py` — offline: gender and season of the pieces whose name does not say them, from the photo
   (FashionCLIP zero-shot), kept only above a confidence margin. Evaluated on the products whose name says it:
   96.7 % right on 88.5 % of them at the margin used (`ml/data/shops/attributes_report.md`).
 
@@ -203,7 +203,7 @@ cd backend
 python -m modules.m07_local_catalogue.scraper.run      # 1. scrape shops       -> local_catalogue.csv + images/
 python -m modules.m07_local_catalogue.scraper.clean    # 2. clean + check URLs -> local_catalogue_clean.csv
 python -m modules.m07_local_catalogue.pipeline.ingest  # 3. FashionCLIP index  -> index/ (incremental)
-python -m modules.m07_local_catalogue.pipeline.attributes  # 4. gender from photo -> clean CSV + attributes_report.md
+python -m modules.m07_local_catalogue.pipeline.attributes  # 4. gender + season from photo -> clean CSV + report
 python -m modules.m07_local_catalogue.scraper.run --shops strass joliesse --merge   # add/refresh some shops only
 cd .. && dvc add ml/data/shops && git add ml/data/shops.dvc   # share it with the team
 ```

@@ -938,6 +938,23 @@ Tests : `tests/test_context_budget.py` (15 tests).
 
 Tests : `tests/test_wardrobe.py` (10 tests).
 
+### 5.16 Améliorations de qualité (24/10)
+
+- **Genre estimé sur la photo : 96,7 % → 98,2 % juste.** Trois changements, mesurés sur les 1 955 produits dont
+  la boutique écrit le genre : des vêtements qui disent le genre (abaya, caftan, burkini → femme ; qamis → homme),
+  un seuil plus strict (2,0) parce qu'un genre faux cache une pièce, et une règle tirée des données : quand les
+  boutiques écrivent un genre pour au moins 95 % d'un type (robes, jupes, escarpins, lingerie → femme), une
+  estimation contraire est écartée (52 cas).
+- **Saison lue sur la photo** quand le nom ne dit rien (« summer … » / « winter … », même méthode) : 86 % juste
+  sur 577 produits dont le nom dit la saison ; 3 480 produits sur 6 375 ont maintenant une saison, contre 1 620.
+- **Occasions habillées** : pour un mariage, l'Aïd ou un entretien, les pièces de sport, de plage ou d'intérieur
+  sont écartées, sauf si on les demande (« baskets pour un mariage »).
+- **Fraîcheur** : si le catalogue a plus de 30 jours, chaque réponse dit que les prix et le stock sont à
+  vérifier ; **arabe** : notes, raisons, pièces et couleurs en arabe ; **essai 3D** : action `try_on` vers
+  l'agent du BO9 (idée 6, côté BO6).
+
+Tests : `tests/test_improvements.py` (11 tests).
+
 ---
 
 ## 6. Évaluation

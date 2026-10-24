@@ -25,9 +25,17 @@ style_range: [0.20, 0.80]
 mmr_lambda: 0.75    # diversity of the final list (1 = pure relevance)
 
 # Gender estimated from the photo (pipeline/attributes.py) only when FashionCLIP is this sure
-# (100 x cosine gap between "women's" and "men's" prompts). Measured on the 1,828 products whose
-# name says it (43 shops): margin 0 -> 93.3 % right on all; 1.5 -> 96.7 % right on 88.5 % of them.
-gender_photo_margin: 1.5
+# (100 x cosine gap between "women's" and "men's" prompts). Measured on the 1,955 products whose
+# name says it (43 shops): margin 0 -> 93.4 % right; 1.5 -> 96.8 % on 88.8 %; 2 -> 97.9 % on 84.5 %,
+# and 98.2 % with the type rule below. 2, because a wrong gender hides a piece from a search.
+gender_photo_margin: 2.0
+# A photo guess against its type is dropped: if the shops write one gender for at least this share of a
+# type's products (heels, hijabs...), a photo saying the other gender is a mistake (attributes_report.md).
+gender_type_prior: 0.95
+# Season from the photo ("summer <piece>" vs "winter <piece>"), used when the name says nothing.
+# Tested on the 577 products whose name says the season (lin, velours...): margin 1 -> 83 % right,
+# 2 -> 86 % on 71 %, 3 -> 90.5 % on 55 %. It only re-ranks, so 2 (attributes_report.md).
+season_photo_margin: 2.0
 
 # Search / click log (events.py), read by M14's boutique dashboard. Relative to the repo root, never git.
 log_events: true
@@ -47,6 +55,10 @@ wardrobe:
 local_pieces:
   pool: 12          # local candidates per slot, from the normal search
   min_score: 0.5    # M2 compatibility of the outfit with the piece
+
+# The shops' pages were last read on the newest `last_checked` of the catalogue; older than this, every
+# search says that prices and stock are to be checked on the shop's site (re-run the scraper, README).
+stale_after_days: 30
 
 # Load the catalogue and FashionCLIP when the API starts (~13 s on CPU), not on the first search.
 warm_up: true

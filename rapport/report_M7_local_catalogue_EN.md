@@ -912,6 +912,23 @@ Tests: `tests/test_context_budget.py` (15 tests).
 
 Tests: `tests/test_wardrobe.py` (10 tests).
 
+### 5.16 Quality improvements (24/10)
+
+- **Gender read on the photo: 96.7 % → 98.2 % right.** Three changes, measured on the 1,955 products whose shop
+  writes the gender: garments that say the gender (abaya, caftan, burkini → women; qamis → men), a stricter
+  threshold (2.0) because a wrong gender hides a piece, and a rule taken from the data: when the shops write one
+  gender for at least 95 % of a type (dresses, skirts, heels, lingerie → women), a contrary guess is dropped
+  (52 cases).
+- **Season read on the photo** when the name says nothing ("summer …" / "winter …", same method): 86 % right on
+  577 products whose name says the season; 3,480 of 6,375 products now have a season, against 1,620.
+- **Dressy occasions**: for a wedding, Eid or an interview, sports, beach or home pieces are left out, unless
+  asked for ("baskets pour un mariage").
+- **Freshness**: when the catalogue is older than 30 days every answer says prices and stock are to be checked;
+  **Arabic**: notes, reasons, pieces and colours in Arabic; **3D try-on**: a `try_on` next action to BO9's agent
+  (idea 6, BO6 side).
+
+Tests: `tests/test_improvements.py` (11 tests).
+
 ---
 
 ## 6. Evaluation
