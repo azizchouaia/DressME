@@ -52,3 +52,52 @@ def shops() -> list[dict]:
             "products": 1,
         }
     ]
+
+
+def outfits(req: dict) -> dict:
+    """Fixed OutfitsOutput, so the app and the other BOs can code against /m07/outfits offline."""
+    return {
+        "product_id": req.get("product_id", "prd_demo"),
+        "piece": "Chemise en lin blanche · Boutique démo · 79 TND",
+        "outfits": [
+            {
+                "pieces": [
+                    {
+                        "item_id": req.get("product_id", "prd_demo"),
+                        "label": "Chemise en lin blanche",
+                        "source": "shop",
+                    },
+                    {"item_id": "itm_jean01", "label": "jean (bleu)", "source": "wardrobe"},
+                    {"item_id": "itm_bask01", "label": "baskets (blanc)", "source": "wardrobe"},
+                ],
+                "score": 0.8,
+                "reasons": [],
+            }
+        ],
+        "goes_with": ["jean (bleu)", "baskets (blanc)"],
+        "why": [
+            "Marque tunisienne : Boutique démo",
+            "79 TND",
+            "Va avec ta garde-robe : jean (bleu), baskets (blanc)",
+        ],
+        "sources": {"m1": "mock", "m2": "mock"},
+    }
+
+
+def local_pieces(req: dict) -> dict:
+    """Fixed LocalPiecesOutput, so BO1 and the app can code against /m07/local-pieces offline."""
+    product = search({"query": "baskets"})["results"][0]
+    return {
+        "outfit": ["jean (bleu)", "chemise (blanc)"],
+        "suggestions": [
+            {
+                "action": "complete",
+                "slot": "shoes",
+                "replaces": None,
+                "product": product,
+                "score": 0.8,
+                "reasons": ["Complète ta tenue : chaussures", "Avec : jean (bleu), chemise (blanc)"],
+            }
+        ],
+        "sources": {"m1": "mock", "m2": "mock"},
+    }

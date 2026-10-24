@@ -9,6 +9,8 @@ const _wordsEn = {
   'travail': 'work',
   'soirée': 'evening',
   'aïd': 'Eid',
+  'ramadan': 'Ramadan',
+  'plage': 'beach',
   'traditionnel': 'traditional',
   'bureau': 'office',
   'minimaliste': 'minimalist',

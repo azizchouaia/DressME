@@ -159,3 +159,13 @@ def test_a_new_message_goes_into_the_open_request(api):
     assert [m["text"] for m in h2["messages"]] == ["robe rouge", "je veux jupe noire avec pull blanc"]
     assert "Last message: je veux jupe noire avec pull blanc" in h2["summary"]
     assert h2["history"][-1]["status"] == "new_message"
+
+
+def test_occasions_come_from_the_m7_lexicon():
+    from modules.m14_stylist_mode.handoff.summary import facts, lines
+
+    assert facts(user("une tenue pour la fête de l'aïd"))["occasion"] == "aïd"
+    said = facts(user("n7eb lebsa l sahria ramadan, budget 150 dt"))
+    assert said["occasion"] == "ramadan"
+    summary = lines(user("n7eb lebsa l sahria ramadan"), said["occasion"], said["budget_tnd"], None, None, [])
+    assert summary[1] == "Occasion: Ramadan evening · budget: 150 TND"

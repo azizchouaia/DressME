@@ -865,6 +865,53 @@ The tests use a fake LLM; they never call Ollama.
   use (beach → swimwear, winter → coat, interview → suit);
 - the model **invented a gender** ("women"): a gender is kept only when the request says it.
 
+### 5.14 Tunisian occasions, seasons and the usual budget (BO6 ideas 8 and 9)
+
+**Idea 8 · Outfits for Tunisian occasions and seasons** (`pipeline/context.py`). One lexicon in French,
+English, darija and Arabic reads the occasion (mariage / 3ers / عرس, henna, khotba, Aïd, Ramadan evenings /
+sahria / سهرية, interview, graduation, work, evening party, beach / b7ar) and the season (été / sif / صيف,
+hiver / chta / شتاء). M14's hand-off summary uses the same lexicon.
+
+| Request | What the agent does |
+|---|---|
+| "tenue pour un mariage", "n7eb lebsa l 3ers o5ti", "عندي عرس في سوسة" | No piece named: it searches the wedding pieces (dresses, sets, suits, jumpsuits, traditional outfits, heels) and says so in the note |
+| "robe pour un mariage" | The piece decides (dresses); the occasion adds "elegant wedding guest" to the FashionCLIP prompt |
+| "robe d'été" / "robe pour l'hiver" | The same 193 dresses, but those whose name and type say the season come first (straps, linen, crochet / wool, knit, velvet); none is hidden |
+
+On the real catalogue these requests are understood **by the rules, in under a second**, with no LLM call
+(before, "an outfit for a job interview" needed ~15 s of Qwen).
+
+**Idea 9 · Budget in dinars, learned** (`memory.budget_samples`, `agent._usual_budget`). The agent keeps the
+budgets the user gave and the price of what they bought (feedback), per type of piece. From 2 values, the
+median becomes their **usual budget** for that type. When a request has no budget, the pieces within it come
+first (`budget` part of the score), a memory note says so ("Your usual budget for sneakers: ~90 TND…") and
+each such piece gets the reason "Within your usual budget". A budget said in the request always wins, nothing
+is hidden, and `DELETE /m07/memory/{user}` forgets it. Real example: after "baskets moins de 80 dt" and
+"baskets blanches max 100 dt", "baskets" first shows pairs between 40 and 91 TND instead of 130 to 183 TND.
+
+Tests: `tests/test_context_budget.py` (15 tests).
+
+### 5.15 The local piece with the wardrobe: M1 + M2 (BO6 ideas 3, 4 and 10)
+
+- **Idea 10 · "Why this local piece"**: for a known user, the top 3 results also say which pieces of **their
+  wardrobe** they go with ("Va avec ta garde-robe : jean (bleu), baskets (blanc)…"). The wardrobe comes from
+  M1, the compatibility from M2 (OutfitTransformer).
+- **Idea 3 · Local piece → complete outfit**: `POST /m07/outfits` builds outfits from the wardrobe around a
+  shop piece (M2 `/complete`, the piece pinned and sent with its FashionCLIP vector), and says why this piece:
+  Tunisian brand, shop, city, price, wardrobe pieces it goes with.
+- **Idea 4 · Tunisian brands in the outfit of the day**: `POST /m07/local-pieces` takes an outfit of the
+  wardrobe (for example the one BO1 recommends) and proposes a Tunisian shop piece that completes it (shoes, a
+  bag, a jacket…) or replaces one of its pieces, scored by M2 with the whole outfit. Example: jeans + white
+  shirt → white leather shoes from AD Makeba, a khomsa jewellery set from Hraier, a VOG jacket.
+- **Simulated until the integration**: M1 and M2 are on other branches. Until they are merged a simulation
+  answers (a fixed wardrobe, a rule on types and colours) and the answer says so
+  (`sources: {"m1": "mock", "m2": "mock"}`). At the integration, `real: [m1, m2]` in `config.yaml` is enough;
+  the real path is already tested with a fake M1 / M2.
+- Smart Buy (BO5) is not called directly: it is an agent, chained by the orchestrator through the `judge`
+  next action (rule of the agent guide).
+
+Tests: `tests/test_wardrobe.py` (10 tests).
+
 ---
 
 ## 6. Evaluation

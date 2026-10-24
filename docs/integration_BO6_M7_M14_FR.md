@@ -13,7 +13,7 @@ Branche : `BO6/local_catalogue`.*
 | Agent | **`localshop`** = l'agent BO6 (un agent par BO). `tool.py` trouvé par `orchestrator/registry.py` | **Pas d'agent** : compétence `boutique` de `localshop`. Pas de `tool.py` |
 | État | Réel et complet (données, FashionCLIP, évaluation, mémoire, `next_actions`) | Réel pour M7 ; **M1, M2, M3, M5, M6, M10 sur mock** tant qu'ils ne sont pas fusionnés |
 | LLM | **Qwen 2.5 7B en local (Ollama)**, un seul pour M7 et M14 (`m07_local_catalogue/llm.py`) : comprend les requêtes difficiles | Le même LLM : résumé pour la styliste, escalade, conseils boutique |
-| Tests | `pytest modules/m07_local_catalogue` (156) | `pytest modules/m14_stylist_mode` (40) |
+| Tests | `pytest modules/m07_local_catalogue` (181) | `pytest modules/m14_stylist_mode` (41) |
 | App | `/#/bo6_local_market` | `/#/bo6_boutique` (Espace pro) et `/#/bo6_boutique/help/:pro/:client` |
 
 **Ce qu'il reste à faire pour M14, par priorité** (détails au §4) :
@@ -59,6 +59,8 @@ ajoutées) et `mobile/tool/serve_app.py`. Rien dans `backend/shared/` ni dans `b
 | Endpoint | Rôle |
 |---|---|
 | `POST /m07/search` | Corps `LocalShopInput`, réponse `LocalShopOutput` (+ `search_id`) |
+| `POST /m07/outfits` | Tenues avec la garde-robe autour d'une pièce locale (idée 3) : `{user_id, product_id, occasion?, n}` |
+| `POST /m07/local-pieces` | Pièces locales pour une tenue du jour (idée 4) : `{user_id, item_ids, occasion?, season?, city?, max_price_tnd?}` |
 | `GET /m07/card` · `GET /m07/identity` | Fiche de l'agent (lue par l'orchestrateur) |
 | `POST /m07/events` | Clics de l'app : `product_view`, `shop_click` (alimente le tableau de bord M14) |
 | `POST /m07/feedback` · `GET /m07/history/{user}` · `DELETE /m07/memory/{user}` | Mémoire long terme, droit à l'oubli |
@@ -69,6 +71,10 @@ ajoutées) et `mobile/tool/serve_app.py`. Rien dans `backend/shared/` ni dans `b
 - **Entrée** : `query` et/ou `gap` / `category` / `subcategory` / `image_embedding` (512, FashionCLIP) ;
   filtres `city`, `max_price_tnd`, `min_price_tnd`, `color`, `gender` ; `user_id`, `style_vector` (id M5
   ou 512 valeurs) ; `k`, `offset`.
+- **Occasion et saison (optionnels)** : `occasion` (mariage, fiançailles, henna, aïd, ramadan, entretien,
+  soutenance, travail, soirée, plage, ou un mot du lexique comme « wedding ») et `season`
+  (`summer` / `winter`) ; sinon lus dans le texte. Dans `parsed` : `occasion`, `season`,
+  `occasion_pieces` et `usual_budget_tnd` (budget habituel appris par la mémoire, il ne fait que reclasser).
 - **Champs agent (tous optionnels)** : `session_id`, `language` (`fr`/`en`/`ar`), `answer`
   (`{question_key, value}` = réponse à la question précédente), `next_page`.
 - **Sortie** : `results[]`, `parsed`, `total_matches`, `note`, `search_id`, et pour l'orchestrateur :
@@ -82,14 +88,70 @@ ajoutées) et `mobile/tool/serve_app.py`. Rien dans `backend/shared/` ni dans `b
   ce qui est passé à Smart Buy (`judge`), dont l'écran BO5 n'est pas encore fusionné. C'est ce que
   l'assistant BO8 doit faire avec `question` et `next_actions`.
 
-### 2.4 Qui appelle M7 aujourd'hui
+### 2.3 bis Idées en simulation qui deviennent réelles à l'intégration
+
+Ces idées du BO6 sont **codées et testées**, mais elles s'appuient sur des modules d'autres équipes. Tant que
+leurs branches ne sont pas fusionnées, une **simulation** répond à leur place (mêmes formats d'entrée et de
+sortie). Chaque réponse dit d'où viennent les données : `sources: {"m1": "mock", "m2": "mock"}`.
+**À l'intégration, la simulation devient réelle** sans toucher au code de M7 :
+
+| Idée BO6 | Ce que fait M7 | Module appelé | En simulation aujourd'hui | Pour passer au réel |
+|---|---|---|---|---|
+| **Selected 10 · « Why this local piece »** | Chaque résultat d'un utilisateur dit avec quelles pièces de **sa garde-robe** il va (`wardrobe_matches` + raison « Va avec ta garde-robe : … ») | M1 `POST /m01/items` + M2 `POST /m02/score` | Garde-robe fixe de 8 pièces, compatibilité par une règle (types complémentaires, couleurs neutres) | Fusionner `garde-robe` (M1) et `feat/m02-m03-m04-m17` (M2), puis `real: [m1, m2]` dans `m07_local_catalogue/config.yaml` |
+| **Selected 3 · Local piece → complete outfit** | `POST /m07/outfits` : des tenues complètes avec la garde-robe autour d'une pièce de boutique, avec « pourquoi cette pièce » | M1 + M2 `POST /m02/complete` (pièce épinglée) | Tenues assemblées par la même règle | Même chose : `real: [m1, m2]` |
+| **Selected 4 · Outfits featuring Tunisian brands** | `POST /m07/local-pieces` : pour une tenue du jour (`item_ids` de la garde-robe), une pièce locale qui la **complète** (chaussures, sac, veste…) ou **remplace** une pièce, notée par M2 avec toute la tenue | M1 + M2 `POST /m02/score` | Même règle de compatibilité | `real: [m1, m2]` **et** le BO1 appelle `/m07/local-pieces` depuis son écran « tenue du jour » |
+| **Backup 4 · Looks tagged with local brands** | M14 envoie chaque look à la carte de partage avec la boutique de chaque pièce (`brand`) | M10 `POST /m10/cards` (BO7) | Pas de vraie carte (`card_url` et `share_url` vides) | Fusionner `feat/bo7-m10-m15`, puis `real: [m7, m10]` dans `m14_stylist_mode/config.yaml` |
+
+À vérifier après la fusion :
+- `POST /m01/items {user_id}` renvoie `{"items": [Garment…]}` avec leur `embedding` (vecteur M2 de 1024 valeurs) ;
+- M2 accepte la pièce de boutique **en ligne** dans `payload.items` (elle n'est pas dans la garde-robe) :
+  M7 l'envoie au format `Garment` avec son vecteur [image FashionCLIP | texte FashionCLIP] ;
+- un identifiant utilisateur commun à M1 et M7 (voir §4.1) ;
+- `pytest modules/m07_local_catalogue/tests/test_wardrobe.py` : le chemin « réel » y est déjà testé avec un
+  faux M1 / M2, et une panne retombe sur la simulation.
+
+Smart Buy (BO5) n'est pas appelé directement par M7 : c'est un agent, et un agent n'en appelle pas un autre.
+L'action suivante `judge` laisse l'orchestrateur (BO8) le chaîner.
+
+### 2.4 Les 16 idées du BO6 : état, code et intégration
+
+Légende : ✅ fait et réel · 🟡 fait, **simulé** jusqu'à la fusion d'un autre BO (la simulation devient réelle à
+l'intégration) · ❌ pas fait (dépend entièrement d'un autre BO).
+
+**Selected (10)**
+
+| # | Idée | État | Où dans le code | Ce qu'il faut à l'intégration |
+|---|---|---|---|---|
+| 1 | Curated Tunisian boutiques and brands | ✅ | M7 : 43 boutiques, 6 375 pièces (`scraper/`, `ml/data/shops/`), `POST /m07/search`, `GET /m07/shops` | Rien. Relancer le scraper de temps en temps (les prix changent) |
+| 2 | Smart Buy suggesting local pieces | ✅ (côté BO6) | M7 accepte `gap` (« white shirt ») ; Smart Buy (BO5) appelle M7 pour ses `buy_links` | Fusionner `feat/bo5-smartbuy` ; vérifier que Smart Buy appelle bien `/m07/search` avec `gap` |
+| 3 | Local piece photo → complete outfit | 🟡 | `POST /m07/outfits` (M1 + M2 `/complete`) ; une photo → `image_embedding` dans `/m07/search` | `real: [m1, m2]` dans `m07_local_catalogue/config.yaml` (§2.3 bis) |
+| 4 | Outfits featuring Tunisian brands | 🟡 | `POST /m07/local-pieces` (tenue du jour → pièce locale qui complète ou remplace, M2 `/score`) ; looks M14 avec pièces locales | `real: [m1, m2]` **et** le BO1 affiche les suggestions dans son écran « tenue du jour » en appelant `/m07/local-pieces` avec les `item_ids` de la tenue |
+| 5 | Assistant: “where in Tunis can I find…?” | ✅ | Outil `localshop` (`tool.py`, carte `identity.py`), FR / EN / darija / arabe, question + mémoire + `next_actions` | Fusionner `feat/bo8-orchestrator` ; l'assistant doit poser `question` et suivre `next_actions` (§2.3) |
+| 6 | 3D try-on of local pieces | ❌ | M7 sert les photos (`image_path`, `/m07/images/…`) | BO9 : afficher une pièce M7 sur l'avatar. Côté BO6, une action `try_on` vers l'agent BO9 peut être ajoutée |
+| 7 | Tunisian-aware clothing categories | ✅ (catalogue) | `taxonomy.py` : jebba, kachabia, sefsari, hijab, tenues traditionnelles | M1 (garde-robe) doit utiliser les mêmes codes de catégories pour les pièces de l'utilisateur |
+| 8 | Outfits for Tunisian occasions and seasons | ✅ | `pipeline/context.py` : mariage, henné, Aïd, Ramadan, plage… ; été / hiver ; partagé avec M14 | Rien |
+| 9 | Budget-aware suggestions in dinars | ✅ | Budget en TND dans la requête ; budget habituel appris (`memory.budget_samples`, `agent._usual_budget`) | Rien. Plus tard : lire aussi les achats réels (feedback `bought_product_id`) |
+| 10 | “Why this local piece” explanation | 🟡 | `reasons` de chaque résultat (type, couleur, budget, ville, marque tunisienne, saison) + « Va avec ta garde-robe » (M1 + M2) | `real: [m1, m2]` (§2.3 bis) |
+
+**Backup (6)**
+
+| # | Idée | État | Où dans le code | Ce qu'il faut à l'intégration |
+|---|---|---|---|---|
+| 1 | Direct links to Tunisian online shops | ✅ | Chaque résultat a `product_url` ; action `open_shop` ; clics journalisés (`POST /m07/events`) | Rien (les partenariats et codes sont l'idée Backup 2) |
+| 2 | Local boutique loyalty codes | ❌ | — | Il faut M13 (codes partenaires, BO5) et de vrais accords avec les boutiques |
+| 3 | Boutique-owner dashboard of local demand | ✅ | M14 `GET /m14/dashboard` + conseils `GET /m14/dashboard/insights` | Comptes boutique réels ; données réelles au lieu du simulateur (§4) |
+| 4 | Looks tagged with local brands | 🟡 | Chaque look M14 garde la boutique de chaque pièce et l'envoie à M10 (`clients.share_card`, champ `brand`) | Fusionner `feat/bo7-m10-m15`, puis `real: [m7, m10]` dans `m14_stylist_mode/config.yaml` |
+| 5 | Local brand style challenges | ❌ | — | Challenges = M15 (BO7). M15 peut chercher des pièces locales avec `/m07/search` |
+| 6 | Aggregated local trend insights | ✅ | M14 tendances (z-score) et thèmes (FashionCLIP + k-means) à partir des recherches anonymes | Données réelles ; plus tard, les garde-robes agrégées (M1) comme le dit l'idée |
+
+### 2.5 Qui appelle M7 aujourd'hui
 
 - **Orchestrateur** : `tool.py` (nom `localshop`, description construite depuis `identity.py`).
 - **Smart Buy (BO5)** : en process `m7.service.search(body, channel="smartbuy")` ou en HTTP
   `POST /m07/search`. Les champs ajoutés sont optionnels, donc rien n'est cassé.
 - **BO7** (`feat/bo7-integration`) : pièces des boutiques locales pour les looks.
 
-### 2.5 À savoir pour faire tourner M7
+### 2.6 À savoir pour faire tourner M7
 
 - **Données** : `ml/data/shops/` est dans git (CSV nettoyé, index, photos). Rien à télécharger.
 - **Modèle** : FashionCLIP (`patrickjohncyh/fashion-clip`, environ 600 Mo) se télécharge depuis Hugging
@@ -345,7 +407,7 @@ la demande (bouton « Générer » dans l'app), pas à chaque ouverture du table
 
 ```bash
 cd backend
-pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 197 tests sur la branche BO6
+pytest modules/m07_local_catalogue modules/m14_stylist_mode orchestrator   # 223 tests sur la branche BO6
 python -m modules.m14_stylist_mode.simulate.pros --reset
 python -m modules.m14_stylist_mode.simulate.traffic
 uvicorn api.main:app --port 8000                                           # http://localhost:8000/docs

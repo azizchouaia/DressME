@@ -30,6 +30,14 @@ class LocalShopInput(BaseModel):
     gender: Literal["women", "men"] | None = Field(
         None, description="Pieces for women or men; unisex pieces and pieces of unknown gender stay in"
     )
+    occasion: str | None = Field(
+        None,
+        description="Tunisian occasion code (mariage, fiançailles, henna, aïd, ramadan, entretien, "
+        "soutenance, travail, soirée, plage); read from the text when not given",
+    )
+    season: Literal["summer", "winter"] | None = Field(
+        None, description="Season of the pieces (re-ranks, never hides); read from the text when not given"
+    )
     user_id: str | None = Field(None, description="Caller's user, used to fetch their style from M5")
     style_vector: list[float] | str | None = Field(
         None,
@@ -58,8 +66,18 @@ class LocalShopInput(BaseModel):
     def _something_to_search(self):
         if self.answer or self.next_page:
             return self  # the request comes from the session memory
-        if not (self.query.strip() or self.gap or self.image_embedding or self.category or self.subcategory):
-            raise ValueError("give a query, a gap, a category/subcategory or an image_embedding")
+        if not (
+            self.query.strip()
+            or self.gap
+            or self.image_embedding
+            or self.category
+            or self.subcategory
+            or self.occasion
+            or self.season
+        ):
+            raise ValueError(
+                "give a query, a gap, a category/subcategory, an occasion, a season or an image_embedding"
+            )
         return self
 
 
@@ -82,6 +100,7 @@ class ShopResult(BaseModel):
     origin_type: str
     available: bool
     reasons: list[str] = []
+    wardrobe_matches: list[str] = []  # pieces of the user's wardrobe it goes with (M1 + M2, or simulated)
 
 
 class ParsedQuery(BaseModel):
@@ -100,6 +119,10 @@ class ParsedQuery(BaseModel):
     translated: str | None = None  # request after darija -> French ("sabbat ahmar" -> "chaussures rouge")
     corrected: str | None = None  # request after typo correction ("colier" -> "collier"), None if unchanged
     understood_by: Literal["rules", "llm"] = "rules"  # llm: the rules understood nothing, Qwen read it
+    occasion: str | None = None  # Tunisian occasion read in the request (mariage, aïd, ramadan, plage...)
+    season: Literal["summer", "winter"] | None = None  # re-ranks the pieces; never hides one
+    occasion_pieces: list[str] = []  # types searched when the request names no piece ("tenue pour l'Aïd")
+    usual_budget_tnd: float | None = None  # learned from the user's budgets / purchases; re-ranks only
 
 
 class NextAction(BaseModel):
@@ -130,6 +153,7 @@ class LocalShopOutput(BaseModel):
     question_key: str | None = None  # gender / max_price_tnd / query: send it back in `answer`
     memory_notes: list[str] = []  # what the agent took from memory for this answer
     next_actions: list[NextAction] = []
+    sources: dict[str, str] = {}  # module -> "real" | "mock" for what came from other modules (M1, M2)
 
 
 class Feedback(BaseModel):
@@ -150,3 +174,64 @@ class ClickEvent(BaseModel):
     shop: str | None = None
     rank: int | None = Field(None, ge=1, description="position of the product in the results, from 1")
     user_id: str | None = None
+
+
+class OutfitsInput(BaseModel):
+    """Outfits from the user's wardrobe around one local piece (POST /m07/outfits)."""
+
+    user_id: str
+    product_id: str = Field(description="M7 product id (a search result)")
+    occasion: str | None = Field(None, description="Occasion code or word (mariage, wedding, travail...)")
+    n: int = Field(3, ge=1, le=5)
+    language: Literal["en", "fr", "ar"] = "fr"
+
+
+class OutfitPiece(BaseModel):
+    item_id: str
+    label: str
+    source: Literal["shop", "wardrobe"]
+    image_url: str | None = None
+
+
+class LocalOutfit(BaseModel):
+    pieces: list[OutfitPiece]
+    score: float = Field(ge=0, le=1)  # M2 compatibility of the outfit
+    reasons: list[str] = []
+
+
+class OutfitsOutput(BaseModel):
+    product_id: str
+    piece: str  # the local piece, e.g. "Robe longue en lin · Manuella · 120 TND"
+    outfits: list[LocalOutfit]
+    goes_with: list[str] = []  # wardrobe pieces it goes with
+    why: list[str] = []  # why this local piece: origin, shop, price, compatibility with the wardrobe
+    sources: dict[str, str] = {}  # m1 / m2 -> real | mock (simulation until their branch is merged)
+
+
+class LocalPiecesInput(BaseModel):
+    """Tunisian pieces for an outfit of the day (POST /m07/local-pieces), e.g. the one BO1 recommends."""
+
+    user_id: str
+    item_ids: list[str] = Field(min_length=1, description="The outfit: M1 item ids of the user's wardrobe")
+    occasion: str | None = Field(None, description="Occasion code or word (mariage, travail, plage...)")
+    season: Literal["summer", "winter"] | None = None
+    city: str | None = Field(None, description="Only shops in this city or its governorate")
+    max_price_tnd: float | None = Field(None, gt=0)
+    gender: Literal["women", "men"] | None = None
+    n: int = Field(3, ge=1, le=5)
+    language: Literal["en", "fr", "ar"] = "fr"
+
+
+class LocalSuggestion(BaseModel):
+    action: Literal["complete", "replace"]  # add a missing piece, or replace one of the outfit
+    slot: str  # category of the local piece: shoes, accessory, outerwear, top, bottom...
+    replaces: str | None = None  # the wardrobe piece it replaces
+    product: ShopResult
+    score: float = Field(ge=0, le=1)  # M2 compatibility of the outfit with this piece
+    reasons: list[str] = []
+
+
+class LocalPiecesOutput(BaseModel):
+    outfit: list[str]  # the outfit's pieces, e.g. ["jean (bleu)", "chemise (blanc)"]
+    suggestions: list[LocalSuggestion]
+    sources: dict[str, str] = {}  # m1 / m2 -> real | mock

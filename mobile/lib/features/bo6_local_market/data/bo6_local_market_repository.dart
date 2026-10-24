@@ -35,6 +35,7 @@ class LocalProduct {
     this.size,
     this.imagePath,
     this.reasons = const [],
+    this.wardrobeMatches = const [],
   });
 
   final String productId;
@@ -54,6 +55,9 @@ class LocalProduct {
   final String originType;
   final bool available;
   final List<String> reasons;
+
+  /// Pieces of the user's wardrobe it goes with (M1 + M2, simulated until they are merged).
+  final List<String> wardrobeMatches;
 
   bool get isLocalBrand => originType == 'local_brand';
 
@@ -75,6 +79,8 @@ class LocalProduct {
         originType: j['origin_type'] as String,
         available: j['available'] as bool? ?? true,
         reasons: (j['reasons'] as List? ?? const []).cast<String>(),
+        wardrobeMatches:
+            (j['wardrobe_matches'] as List? ?? const []).cast<String>(),
       );
 }
 
@@ -90,6 +96,9 @@ class ParsedQuery {
     this.gender,
     this.translated,
     this.corrected,
+    this.occasion,
+    this.season,
+    this.usualBudgetTnd,
   });
 
   final String? subcategory;
@@ -108,6 +117,13 @@ class ParsedQuery {
   /// Request after typo correction ("colier" -> "collier"), null when nothing was changed.
   final String? corrected;
 
+  /// Tunisian occasion read in the request (mariage, aïd, ramadan, plage…) and season (summer / winter).
+  final String? occasion;
+  final String? season;
+
+  /// No budget said: the user's usual budget for this type, learned by the agent's memory (re-ranks only).
+  final double? usualBudgetTnd;
+
   factory ParsedQuery.fromJson(Map<String, dynamic> j) => ParsedQuery(
         subcategory: j['subcategory'] as String?,
         category: j['category'] as String?,
@@ -118,6 +134,9 @@ class ParsedQuery {
         gender: j['gender'] as String?,
         translated: j['translated'] as String?,
         corrected: j['corrected'] as String?,
+        occasion: j['occasion'] as String?,
+        season: j['season'] as String?,
+        usualBudgetTnd: (j['usual_budget_tnd'] as num?)?.toDouble(),
       );
 }
 
@@ -297,6 +316,27 @@ class LocalMarketRepository {
   /// DELETE /m07/memory/{user} — the agent forgets the user's answers and searches.
   Future<void> forget() => _dio.delete<void>('/m07/memory/$demoUserId');
 
+  /// POST /m07/outfits — outfits from the user's wardrobe around one local piece (BO6 idea 3).
+  /// POST /m07/local-pieces — Tunisian pieces for an outfit of the day (BO6 Selected 4).
+  Future<LocalPieces> localPieces(List<String> itemIds) async {
+    final res =
+        await _dio.post<Map<String, dynamic>>('/m07/local-pieces', data: {
+      'user_id': demoUserId,
+      'item_ids': itemIds,
+      'language': 'en',
+    });
+    return LocalPieces.fromJson(res.data!);
+  }
+
+  Future<LocalOutfits> outfits(String productId) async {
+    final res = await _dio.post<Map<String, dynamic>>('/m07/outfits', data: {
+      'user_id': demoUserId,
+      'product_id': productId,
+      'language': 'en',
+    });
+    return LocalOutfits.fromJson(res.data!);
+  }
+
   /// POST /m07/events — "product_view" (a result was opened) or "shop_click" (the shop's link was taken).
   /// Fire and forget: a lost click must never bother the user.
   Future<void> logEvent(String type, LocalProduct p,
@@ -323,4 +363,89 @@ class LocalMarketRepository {
   /// Local copy served by M7 (/m07/images/...) when available, else the shop's own photo URL.
   String photoUrl(LocalProduct p) =>
       p.imagePath != null ? '$baseUrl/m07/${p.imagePath}' : p.imageUrl;
+}
+
+/// One outfit around a local piece: the shop piece + pieces of the user's wardrobe, scored by M2.
+class LocalOutfit {
+  const LocalOutfit({required this.pieces, required this.score});
+
+  /// (label, from the shop?) in outfit order.
+  final List<(String, bool)> pieces;
+  final double score;
+
+  factory LocalOutfit.fromJson(Map<String, dynamic> j) => LocalOutfit(
+        pieces: [
+          for (final p in (j['pieces'] as List).cast<Map<String, dynamic>>())
+            (p['label'] as String, p['source'] == 'shop')
+        ],
+        score: (j['score'] as num).toDouble(),
+      );
+}
+
+/// POST /m07/outfits answer: outfits, why this local piece, and whether M1 / M2 were real or simulated.
+class LocalOutfits {
+  const LocalOutfits(
+      {required this.piece,
+      required this.outfits,
+      required this.why,
+      required this.simulated});
+
+  final String piece;
+  final List<LocalOutfit> outfits;
+  final List<String> why;
+
+  /// True while M1 / M2 are not merged: the answer comes from M7's simulation.
+  final bool simulated;
+
+  factory LocalOutfits.fromJson(Map<String, dynamic> j) => LocalOutfits(
+        piece: j['piece'] as String,
+        outfits: (j['outfits'] as List)
+            .map((e) => LocalOutfit.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        why: (j['why'] as List? ?? const []).cast<String>(),
+        simulated:
+            ((j['sources'] as Map?) ?? const {}).values.any((v) => v == 'mock'),
+      );
+}
+
+/// One Tunisian piece for an outfit: it completes it (shoes, bag...) or replaces one of its pieces.
+class LocalSuggestion {
+  const LocalSuggestion(
+      {required this.replaces,
+      required this.product,
+      required this.score,
+      required this.reasons});
+
+  final String? replaces;
+  final LocalProduct product;
+  final double score;
+  final List<String> reasons;
+
+  factory LocalSuggestion.fromJson(Map<String, dynamic> j) => LocalSuggestion(
+        replaces: j['replaces'] as String?,
+        product: LocalProduct.fromJson(j['product'] as Map<String, dynamic>),
+        score: (j['score'] as num).toDouble(),
+        reasons: (j['reasons'] as List? ?? const []).cast<String>(),
+      );
+}
+
+/// POST /m07/local-pieces answer.
+class LocalPieces {
+  const LocalPieces(
+      {required this.outfit,
+      required this.suggestions,
+      required this.simulated});
+
+  final List<String> outfit;
+  final List<LocalSuggestion> suggestions;
+  final bool simulated;
+
+  factory LocalPieces.fromJson(Map<String, dynamic> j) => LocalPieces(
+        outfit: (j['outfit'] as List).cast<String>(),
+        suggestions: (j['suggestions'] as List)
+            .map((e) => LocalSuggestion.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        simulated:
+            ((j['sources'] as Map?) ?? const {}).values.any((v) => v == 'mock'),
+      );
 }

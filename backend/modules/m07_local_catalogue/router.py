@@ -13,7 +13,16 @@ from fastapi.responses import FileResponse
 from shared.base_agent import AgentError
 
 from . import events, service
-from .contract import ClickEvent, Feedback, LocalShopInput, LocalShopOutput
+from .contract import (
+    ClickEvent,
+    Feedback,
+    LocalPiecesInput,
+    LocalPiecesOutput,
+    LocalShopInput,
+    LocalShopOutput,
+    OutfitsInput,
+    OutfitsOutput,
+)
 from .identity import CARD
 from .paths import CONFIG, IMAGES_DIR
 
@@ -40,6 +49,26 @@ async def search(body: LocalShopInput):
     """'baskets blanches à Tunis max 80 TND', a gap from Smart Buy, a photo embedding or a style vector."""
     try:
         return await service.search(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/outfits", response_model=OutfitsOutput)
+async def outfits(body: OutfitsInput):
+    """Outfits from the user's wardrobe (M1) around one local piece, scored by M2, with why this piece.
+    M1 and M2 answer for real once they are listed in config.yaml `real`; until then a simulation does."""
+    try:
+        return await service.outfits(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/local-pieces", response_model=LocalPiecesOutput)
+async def local_pieces(body: LocalPiecesInput):
+    """Tunisian pieces for an outfit of the day (BO1): a missing piece (shoes, bag...) or one to replace,
+    each scored by M2 with the whole outfit. M1 / M2 are simulated until they are listed in `real`."""
+    try:
+        return await service.local_pieces(body.model_dump())
     except AgentError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

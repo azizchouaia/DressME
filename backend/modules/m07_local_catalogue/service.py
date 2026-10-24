@@ -10,6 +10,7 @@ from collections import Counter
 
 from . import events, mock
 from .agent import LocalShopAgent
+from .contract import LocalPiecesInput, OutfitsInput
 from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV
 
@@ -58,6 +59,22 @@ async def search(req: dict, channel: str = "api") -> dict:
         logged = session.get("request") or req
     out["search_id"] = events.log_search(logged, out, 1000 * (time.perf_counter() - started), channel)
     return out
+
+
+async def outfits(req: dict) -> dict:
+    """OutfitsInput (dict) -> OutfitsOutput (dict): outfits from the user's wardrobe around a local piece."""
+    if not knowledge_base_ready():
+        return mock.outfits(req)
+    agent = await get_agent()
+    return (await agent.outfits(OutfitsInput.model_validate(req))).model_dump(mode="json")
+
+
+async def local_pieces(req: dict) -> dict:
+    """LocalPiecesInput (dict) -> LocalPiecesOutput (dict): Tunisian pieces for an outfit of the day."""
+    if not knowledge_base_ready():
+        return mock.local_pieces(req)
+    agent = await get_agent()
+    return (await agent.local_pieces(LocalPiecesInput.model_validate(req))).model_dump(mode="json")
 
 
 def feedback(user_id: str, decision_id: str, useful: bool | None, bought_product_id: str | None) -> dict:

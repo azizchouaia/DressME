@@ -1,4 +1,5 @@
-"""Hard filters: price (TND), city, category / subcategory, colour, gender, stock.
+"""Hard filters: price (TND), city, category / subcategory (or the pieces of an occasion), colour, gender,
+stock.
 
 A colour asked for is strict: only pieces of that colour (pieces whose colour the shop does not give are
 left out). The agent relaxes it, with a note, only when no piece of that colour exists.
@@ -46,6 +47,8 @@ def run(
         mask &= catalogue.subcategory == parsed.subcategory
     elif parsed.category:
         mask &= catalogue.category == parsed.category
+    elif parsed.occasion_pieces:  # "tenue pour l'Aïd": the pieces worn for it (context.py)
+        mask &= np.isin(catalogue.subcategory, parsed.occasion_pieces)
     if use_color and parsed.color:
         mask &= catalogue.color == parsed.color
     if parsed.gender in OPPOSITE_GENDER:

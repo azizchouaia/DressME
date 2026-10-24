@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/design/dressme_design.dart';
+import '../../bo6_boutique/ui/bo6_words.dart' show wordEn;
 import '../../bo6_boutique/logic/bo6_boutique_provider.dart'
     show boutiqueRepositoryProvider, handoffQueueProvider;
 import '../data/bo6_local_market_repository.dart';
@@ -391,7 +392,116 @@ class _Examples extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 26),
+        const DmSectionHeader(
+            eyebrow: 'Outfit of the day', title: 'Add a Tunisian piece'),
+        const SizedBox(height: 6),
+        const Text(
+          'Demo outfit from your wardrobe: blue jeans + white shirt. DressMe looks for '
+          'a local piece that completes it or replaces one of its pieces.',
+          style: DmText.body,
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.storefront_outlined, size: 18),
+            label: const Text('Find Tunisian pieces for it'),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (_) => const _LocalPiecesSheet(
+                  itemIds: ['itm_jean01', 'itm_chem01']),
+            ),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// BO6 Selected 4: Tunisian pieces inside an outfit of the day (M7 -> M1 + M2, simulated until merged).
+class _LocalPiecesSheet extends ConsumerWidget {
+  const _LocalPiecesSheet({required this.itemIds});
+
+  final List<String> itemIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.read(localMarketRepositoryProvider);
+    return FutureBuilder<LocalPieces>(
+      future: repo.localPieces(itemIds),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(describeError(snap.error!), style: DmText.body));
+        }
+        final o = snap.data;
+        if (o == null) {
+          return const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()));
+        }
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          children: [
+            const Text('A TUNISIAN PIECE FOR YOUR OUTFIT',
+                style: DmText.eyebrow),
+            const SizedBox(height: 4),
+            Text(o.outfit.join(' + '),
+                style: DmText.title.copyWith(fontSize: 20)),
+            if (o.simulated) ...[
+              const SizedBox(height: 8),
+              const DmPill('Simulation: M1 wardrobe and M2 not connected yet'),
+            ],
+            const SizedBox(height: 12),
+            if (o.suggestions.isEmpty)
+              const Text('No local piece fits this outfit.',
+                  style: DmText.body),
+            for (final s in o.suggestions)
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      height: 120,
+                      child: _Photo(url: repo.photoUrl(s.product)),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.reasons.isEmpty ? '' : s.reasons.first,
+                                style: DmText.eyebrow),
+                            const SizedBox(height: 4),
+                            Text(s.product.item,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: DmText.itemName),
+                            Text(
+                                '${s.product.shop}${s.product.priceTnd == null ? '' : ' · ${formatTnd(s.product.priceTnd!)}'}'
+                                ' · compatibility ${(s.score * 100).round()} %',
+                                style: DmText.caption),
+                            const SizedBox(height: 4),
+                            for (final r in s.reasons.skip(1))
+                              Text(r, style: DmText.caption),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -462,6 +572,11 @@ class _Results extends ConsumerWidget {
       if (parsed?.minPriceTnd != null) '≥ ${formatTnd(parsed!.minPriceTnd!)}',
       if (parsed?.maxPriceTnd != null) '≤ ${formatTnd(parsed!.maxPriceTnd!)}',
       if (parsed?.city != null) parsed!.city!,
+      if (parsed?.occasion != null) 'Occasion: ${wordEn(parsed!.occasion!)}',
+      if (parsed?.season != null)
+        parsed!.season == 'summer' ? 'Summer' : 'Winter',
+      if (parsed?.usualBudgetTnd != null)
+        'Usual budget ~${formatTnd(parsed!.usualBudgetTnd!)}',
     ];
     return CustomScrollView(
       slivers: [
@@ -1070,6 +1185,25 @@ class _ProductSheet extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 20),
+          const Text('WITH YOUR WARDROBE', style: DmText.eyebrow),
+          const SizedBox(height: 8),
+          if (product.wardrobeMatches.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('Goes with: ${product.wardrobeMatches.join(', ')}',
+                  style: DmText.body),
+            ),
+          FilledButton.icon(
+            icon: const Icon(Icons.checkroom, size: 18),
+            label: const Text('Outfits with my wardrobe'),
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (_) => _OutfitsSheet(productId: product.productId),
+            ),
+          ),
+          const SizedBox(height: 20),
           const Text('ASK FOR ADVICE', style: DmText.eyebrow),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -1085,6 +1219,82 @@ class _ProductSheet extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// BO6 idea 3: outfits from the user's wardrobe around a local piece (M7 -> M1 + M2), and why this piece.
+class _OutfitsSheet extends ConsumerWidget {
+  const _OutfitsSheet({required this.productId});
+
+  final String productId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<LocalOutfits>(
+      future: ref.read(localMarketRepositoryProvider).outfits(productId),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(describeError(snap.error!), style: DmText.body));
+        }
+        final o = snap.data;
+        if (o == null) {
+          return const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()));
+        }
+        return ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          children: [
+            const Text('OUTFITS WITH MY WARDROBE', style: DmText.eyebrow),
+            const SizedBox(height: 4),
+            Text(o.piece, style: DmText.title.copyWith(fontSize: 20)),
+            if (o.simulated) ...[
+              const SizedBox(height: 8),
+              const DmPill('Simulation: M1 wardrobe and M2 not connected yet'),
+            ],
+            const SizedBox(height: 12),
+            for (final w in o.why)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('◆  $w', style: DmText.body),
+              ),
+            const SizedBox(height: 12),
+            if (o.outfits.isEmpty)
+              const Text('No outfit found with this wardrobe.',
+                  style: DmText.body),
+            for (final (i, outfit) in o.outfits.indexed)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          'Outfit ${i + 1} · compatibility ${(outfit.score * 100).round()} %',
+                          style: DmText.itemName),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 6, runSpacing: 6, children: [
+                        for (final (label, fromShop) in outfit.pieces)
+                          Chip(
+                            avatar: Icon(
+                                fromShop
+                                    ? Icons.storefront_outlined
+                                    : Icons.checkroom,
+                                size: 16),
+                            label: Text(label),
+                          ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

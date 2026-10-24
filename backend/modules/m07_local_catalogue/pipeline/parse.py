@@ -1,4 +1,5 @@
-"""Understand a shopping request (FR/EN/Tunisian): category, colour, gender, budget, city + an English prompt.
+"""Understand a shopping request (FR/EN/Tunisian): category, colour, gender, budget, city, Tunisian occasion
+and season (context.py) + an English prompt.
 
 Rule-based on purpose: same keyword lists as the catalogue cleaning, so "baskets" in a query and
 "Baskets" in a product name always land on the same subcategory. FashionCLIP only understands
@@ -24,6 +25,7 @@ from ..taxonomy import (
     subcategory_from_text,
 )
 from ..taxonomy import governorate as governorate_of
+from . import context
 from .retrieve import tokenize
 
 _NUM = r"(\d+(?:[.,]\d+)?)"
@@ -139,6 +141,7 @@ _REQUEST_WORDS = set(
     "nheb n7eb nhab nlawej nlawwej fama famma win chnowa chnoua brabi lel fi".split()
 )
 _REQUEST_TOKENS = _REQUEST_WORDS | {t for w in _REQUEST_WORDS for t in tokenize(w)}
+_CONTEXT_TOKENS = context.CONTEXT_TOKENS | {t for w in context.CONTEXT_TOKENS for t in tokenize(w)}
 
 
 def _number(text: str) -> float:
@@ -190,19 +193,29 @@ def gender_from_query(folded: str) -> str | None:
     return found or None
 
 
+def apply_context(parsed: ParsedQuery, occasion: str | None, season: str | None) -> None:
+    """Occasion and season of the request; with no piece named, the occasion's (or season's) pieces."""
+    parsed.occasion = occasion if occasion in context.OCCASIONS else None
+    parsed.season = season if season in context.SEASONS else None
+    named = parsed.subcategory or parsed.category
+    parsed.occasion_pieces = [] if named else context.pieces_for(parsed.occasion, parsed.season)
+
+
 def build_prompt(parsed: ParsedQuery, text: str = "") -> str | None:
-    """English FashionCLIP prompt from the parsed slots + attributes found in the text."""
+    """English FashionCLIP prompt from the parsed slots + attributes and occasion / season of the text."""
     attributes = [en for rx, en in _ATTRIBUTE_RES if rx.search(fold(text))]
+    occasion = context.prompt_words(parsed.occasion, parsed.season)
     noun = SUBCATEGORY_EN.get(parsed.subcategory or "") or CATEGORY_EN.get(parsed.category or "")
-    if not (noun or parsed.color or attributes):
+    if not (noun or parsed.color or attributes or occasion):
         return None
     words = [
         _GENDER_EN.get(parsed.gender or "", ""),
         COLOR_EN_PROMPT[parsed.color] if parsed.color else "",
         *attributes,
-        noun or "clothing item",
+        *occasion,
+        noun or ("outfit" if occasion else "clothing item"),
     ]
-    return "a photo of " + " ".join(w for w in words if w)
+    return "a photo of " + " ".join(dict.fromkeys(w for w in words if w))
 
 
 def _pattern_words(pattern: str) -> set[str]:
@@ -281,7 +294,9 @@ def parse(query: str, gap: str | None = None, vocabulary: set[str] | None = None
         color = None  # "jean" alone is a fabric here, not a colour request
 
     terms = [
-        t for t in tokenize(text) if t not in _REQUEST_TOKENS and t not in _GENDER_TOKENS and not t.isdigit()
+        t
+        for t in tokenize(text)
+        if not t.isdigit() and t not in _REQUEST_TOKENS | _GENDER_TOKENS | _CONTEXT_TOKENS
     ]
     if city:
         terms = [t for t in terms if t not in tokenize(city)]
@@ -298,5 +313,7 @@ def parse(query: str, gap: str | None = None, vocabulary: set[str] | None = None
         translated=translated,
         corrected=corrected,
     )
+    occasion = context.occasion_of(folded)
+    apply_context(parsed, occasion, context.season_of(folded, occasion))
     parsed.prompt_en = build_prompt(parsed, text)
     return parsed

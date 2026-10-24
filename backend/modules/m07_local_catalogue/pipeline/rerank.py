@@ -5,6 +5,8 @@ match = weighted mean of the parts that apply to the request, each in 0..1:
   text        BM25 relative to the best candidate
   attributes  requested subcategory / colour / gender present on the product (unknown = 0.5)
   style       user's style vector vs product photo
+  season      summer / winter asked: the piece's name and type say that season (1), the other one (0)
+  budget      no budget asked but a usual one learned from memory: price within it (1), far above (0)
 Weights come from config.yaml and are renormalised over the parts available for each product.
 """
 
@@ -12,6 +14,7 @@ import numpy as np
 
 from ..contract import ParsedQuery
 from ..taxonomy import GENDERS, GENDERS_EN, colour_name, governorate, label
+from .context import OCCASIONS, SEASONS
 
 
 def _scale(x: np.ndarray, lo: float, hi: float) -> np.ndarray:
@@ -55,6 +58,16 @@ def score(
     if style_vector is not None:
         style = catalogue.embeddings[candidates] @ style_vector
         parts["style"] = np.where(has_emb, _scale(style, *config["style_range"]), np.nan)
+
+    if parsed.season:
+        sign = 1 if parsed.season == "summer" else -1
+        parts["season"] = (catalogue.season[candidates] * sign + 1) / 2  # 1 its season, 0.5 neutral, 0 other
+
+    if parsed.usual_budget_tnd and parsed.max_price_tnd is None:
+        price = catalogue.price[candidates]
+        margin = parsed.usual_budget_tnd * config["budget_memory"]["tolerance"]
+        over = (price - parsed.usual_budget_tnd) / margin
+        parts["budget"] = np.where(np.isnan(price), 0.5, np.clip(1 - over, 0.0, 1.0))
 
     weights = config["weights"]
     total = np.zeros(n)
@@ -102,6 +115,9 @@ REASONS = {
         "looks_like": "Ressemble visuellement à la demande",
         "style": "Proche de ton style",
         "local_brand": "Marque tunisienne",
+        "occasion": "Pour {o}",
+        "season": "Pièce pour {s}",
+        "usual_budget": "Dans ton budget habituel (≤ {max:g} TND)",
     },
     "en": {
         "colour": "Colour: {c}",
@@ -118,6 +134,9 @@ REASONS = {
         "looks_like": "Looks like the request",
         "style": "Close to your style",
         "local_brand": "Tunisian brand",
+        "occasion": "For {o}",
+        "season": "A piece for {s}",
+        "usual_budget": "Within your usual budget (≤ {max:g} TND)",
     },
 }
 
@@ -135,6 +154,12 @@ def reasons(
     out = []
     if parsed.subcategory:
         out.append(label(parsed.subcategory, language))
+    lang = "en" if language == "en" else "fr"
+    if parsed.occasion:
+        out.append(t["occasion"].format(o=OCCASIONS[parsed.occasion]["fr" if lang == "fr" else "for_en"]))
+    season = parts.get("season")
+    if season is not None and season[j] == 1:
+        out.append(t["season"].format(s=SEASONS[parsed.season][lang]))
     if parsed.color:
         if product.get("color") == parsed.color:
             out.append(t["colour"].format(c=colour_name(parsed.color, language)))
@@ -162,6 +187,9 @@ def reasons(
         out.append(
             t["budget"].format(price=price, max=parsed.max_price_tnd) if parsed.max_price_tnd else price
         )
+        budget = parts.get("budget")
+        if budget is not None and budget[j] == 1:
+            out.append(t["usual_budget"].format(max=parsed.usual_budget_tnd))
     cities = [c for c in (product.get("city") or "").split("; ") if c]
     if parsed.city and parsed.city in cities:
         out.append(t["shop_in"].format(city=parsed.city))

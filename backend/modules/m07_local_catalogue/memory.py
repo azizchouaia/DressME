@@ -2,7 +2,8 @@
 
 - short term (session): the last search request + the question waiting for an answer, so the user can
   answer it ("femme") or ask for more results without repeating the request;
-- long term: past searches, feedback (useful / bought) and preferences learned from answers (gender).
+- long term: past searches, feedback (useful / bought) and preferences learned from answers (gender);
+  the budgets said and the pieces bought give the user's usual budget per type (budget_samples).
 
 A caller without user_id is "anonymous": kept in RAM for its sessions, never written to disk.
 """
@@ -98,6 +99,19 @@ class AgentMemory:
                 self._save(user_id)
                 return h
         return None
+
+    def budget_samples(self, user_id: str) -> list[dict]:
+        """Newest first: budgets the user gave ({subcategory, category, max_price_tnd}) and pieces they
+        bought ({bought_product_id}); the agent turns them into a usual budget per type."""
+        out = []
+        for h in self.load(user_id)["history"]:
+            bought = (h.get("feedback") or {}).get("bought_product_id")
+            if bought:
+                out.append({"bought_product_id": bought})
+            f = h.get("filters") or {}
+            if f.get("max_price_tnd"):
+                out.append({k: f.get(k) for k in ("subcategory", "category", "max_price_tnd")})
+        return out
 
     def history(self, user_id: str, n: int = 10) -> list[dict]:
         return self.load(user_id)["history"][:n]

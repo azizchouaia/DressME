@@ -171,9 +171,60 @@ SUBCATEGORY_EN = {
 GENDERS_EN = {"women": "Women's", "men": "Men's", "unisex": "Unisex"}
 
 
+# Display labels of the contract categories (a usual budget can be learned for a whole category).
+CATEGORY_LABELS = {
+    "top": ("Hauts", "Tops"),
+    "bottom": ("Bas", "Bottoms"),
+    "dress": ("Robes & ensembles", "Dresses & sets"),
+    "outerwear": ("Vestes & manteaux", "Jackets & coats"),
+    "shoes": ("Chaussures", "Shoes"),
+    "accessory": ("Accessoires", "Accessories"),
+    "traditional": ("Tenues traditionnelles", "Traditional outfits"),
+}
+
+
 def label(subcategory: str, language: str = "fr") -> str:
-    """Display label of a subcategory: "Baskets" (fr, ar) or "Sneakers" (en)."""
+    """Display label of a subcategory: "Baskets" (fr, ar) or "Sneakers" (en); a category works too."""
+    if subcategory not in SUBCATEGORIES and subcategory in CATEGORY_LABELS:
+        return CATEGORY_LABELS[subcategory][language == "en"]
     return SUBCATEGORY_EN.get(subcategory, subcategory) if language == "en" else SUBCATEGORIES[subcategory][1]
+
+
+# One piece of a wardrobe, singular (FR, EN): "chemise (blanc)" / "white shirt".
+_PIECE = {
+    "jeans": ("jean", "jeans"),
+    "shirt": ("chemise", "shirt"),
+    "sweater": ("pull", "sweater"),
+    "sneakers": ("baskets", "sneakers"),
+    "dress": ("robe", "dress"),
+    "jacket": ("veste", "jacket"),
+    "coat": ("manteau", "coat"),
+    "bag": ("sac", "bag"),
+    "tshirt": ("t-shirt", "t-shirt"),
+    "trousers": ("pantalon", "trousers"),
+    "skirt": ("jupe", "skirt"),
+    "shorts": ("short", "shorts"),
+    "sandals": ("sandales", "sandals"),
+    "heels": ("escarpins", "heels"),
+    "shoes": ("chaussures", "shoes"),
+    "boots": ("bottes", "boots"),
+    "suit": ("costume", "suit"),
+    "set": ("ensemble", "set"),
+    "traditional": ("tenue traditionnelle", "traditional outfit"),
+    "belt": ("ceinture", "belt"),
+    "scarf": ("foulard", "scarf"),
+    "hijab": ("hijab", "hijab"),
+}
+
+
+def piece_name(subcategory: str | None, colour: str | None, language: str = "fr") -> str:
+    """'chemise (blanc)' (fr, ar) or 'white shirt' (en): a wardrobe piece in a reason or an outfit."""
+    en = language == "en"
+    names = _PIECE.get(subcategory or "")
+    name = names[en] if names else (label(subcategory, language).lower() if subcategory else "pièce")
+    if not colour or colour not in COLOR_CODES:
+        return name
+    return f"{colour_name(colour, 'en')} {name}" if en else f"{name} ({colour_name(colour, 'fr')})"
 
 
 def colour_name(code: str, language: str = "fr") -> str:

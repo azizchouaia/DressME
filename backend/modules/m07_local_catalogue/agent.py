@@ -7,15 +7,29 @@ import numpy as np
 from shared.base_agent import AgentError, BaseAgent
 
 from . import clients
-from .contract import AgentInfo, LocalShopInput, LocalShopOutput, NextAction, ParsedQuery, ShopResult
+from .contract import (
+    AgentInfo,
+    LocalOutfit,
+    LocalPiecesInput,
+    LocalPiecesOutput,
+    LocalShopInput,
+    LocalShopOutput,
+    LocalSuggestion,
+    NextAction,
+    OutfitPiece,
+    OutfitsInput,
+    OutfitsOutput,
+    ParsedQuery,
+    ShopResult,
+)
 from .identity import CARD, VERSION, tool_description
 from .llm import get_llm
 from .memory import ANONYMOUS, AgentMemory
 from .paths import CATALOGUE_CSV, CONFIG, INDEX_DIR, model_source
-from .pipeline import filter, parse, rerank, retrieve, understand
+from .pipeline import context, filter, parse, rerank, retrieve, understand
 from .pipeline.catalogue import Catalogue
 from .scraper.normalize import fold
-from .taxonomy import SUBCATEGORIES, canonical_city, colour_name, governorate, label
+from .taxonomy import SUBCATEGORIES, canonical_city, colour_name, governorate, label, piece_name
 
 # Questions, labels and memory notes in the request's language. Facts (shops, prices, notes) stay as found.
 TEXTS = {
@@ -32,6 +46,16 @@ TEXTS = {
         "gender_memory": "Pièces pour {gender} : ta réponse précédente est gardée en mémoire.",
         "answer": "Ta réponse « {answer} » est appliquée à ta recherche précédente.",
         "more_memory": "Suite de ta recherche précédente.",
+        "usual_budget": "Ton budget habituel pour les {what} : ~{max:g} TND (appris de {n} de tes recherches "
+        "ou achats) ; les pièces dans ce budget passent en premier.",
+        "goes_with": "Va avec ta garde-robe : {pieces}",
+        "completes": "Complète ta tenue : {slot}",
+        "replaces": "Remplace : {piece}",
+        "with_outfit": "Avec : {pieces}",
+        "goes_with_none": "Ne va avec aucune pièce de ta garde-robe pour l'instant",
+        "local_brand": "Marque tunisienne : {shop}",
+        "local_shop": "Boutique tunisienne : {shop}",
+        "in_city": " à {city}",
         "women": "femme",
         "men": "homme",
     },
@@ -48,6 +72,16 @@ TEXTS = {
         "gender_memory": "Pieces for {gender}: your previous answer is remembered.",
         "answer": "Your answer “{answer}” is applied to your previous search.",
         "more_memory": "More results of your previous search.",
+        "usual_budget": "Your usual budget for {what}: ~{max:g} TND (learned from {n} of your searches or "
+        "purchases); pieces within it come first.",
+        "goes_with": "Goes with your wardrobe: {pieces}",
+        "completes": "Completes your outfit: {slot}",
+        "replaces": "Replaces: {piece}",
+        "with_outfit": "With: {pieces}",
+        "goes_with_none": "Goes with none of your wardrobe pieces yet",
+        "local_brand": "Tunisian brand: {shop}",
+        "local_shop": "Tunisian shop: {shop}",
+        "in_city": " in {city}",
         "women": "women",
         "men": "men",
     },
@@ -64,6 +98,16 @@ TEXTS = {
         "gender_memory": "قطع {gender}: تم تذكر إجابتك السابقة.",
         "answer": "تم تطبيق إجابتك «{answer}» على بحثك السابق.",
         "more_memory": "تتمة بحثك السابق.",
+        "usual_budget": "ميزانيتك المعتادة لـ{what}: حوالي {max:g} دينار (من {n} عمليات بحث أو شراء)؛ "
+        "القطع ضمن هذه الميزانية تظهر أولاً.",
+        "goes_with": "يتناسب مع خزانتك: {pieces}",
+        "completes": "يكمّل إطلالتك: {slot}",
+        "replaces": "بدلاً من: {piece}",
+        "with_outfit": "مع: {pieces}",
+        "goes_with_none": "لا يتناسب بعد مع أي قطعة من خزانتك",
+        "local_brand": "علامة تونسية: {shop}",
+        "local_shop": "متجر تونسي: {shop}",
+        "in_city": " في {city}",
         "women": "للنساء",
         "men": "للرجال",
     },
@@ -141,6 +185,8 @@ NOTES = {
         "no_match": "Aucun article ne correspond à ces critères.",
         "llm_note": "Demande comprise avec l'IA ({model}) : {what}.",
         "rewritten": "requête reformulée",
+        "context": "Pour {o} : {pieces}.",
+        "and": "et",
     },
     "en": {
         "no_style": "Style vector “{style}” not available yet (M5): ranked without the style.",
@@ -153,12 +199,21 @@ NOTES = {
         "no_match": "No piece matches these criteria.",
         "llm_note": "Request understood with AI ({model}): {what}.",
         "rewritten": "request rewritten",
+        "context": "For {o}: {pieces}.",
+        "and": "and",
     },
 }
 
 
 def notes_for(language: str) -> dict:
     return NOTES.get(language, NOTES["fr"])
+
+
+def understood(parsed: ParsedQuery, image) -> bool:
+    """The rules read something to search on: a type, a colour, the pieces of an occasion, or a photo."""
+    return bool(parsed.subcategory or parsed.category or parsed.color or parsed.occasion_pieces) or (
+        image is not None
+    )
 
 
 class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
@@ -222,6 +277,10 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         if inp.city:
             parsed.city = canonical_city(inp.city) or inp.city.strip()
             parsed.governorate = governorate(parsed.city)
+        # Occasion / season: the caller's fields win over the text (plage -> summer when none is said).
+        occasion = self._occasion_field(inp.occasion) or parsed.occasion
+        season = inp.season or parsed.season or context.OCCASIONS.get(occasion or "", {}).get("season")
+        parse.apply_context(parsed, occasion, season)
         # Nothing said about gender (text or field): the user's earlier answer, kept in memory.
         from_memory = parsed.gender is None and remembered_gender is not None
         if from_memory:
@@ -237,6 +296,54 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         # The prompt follows the final slots, so calls with explicit fields only also use FashionCLIP.
         parsed.prompt_en = parse.build_prompt(parsed, " ".join(t for t in (inp.query, inp.gap) if t))
         return parsed, from_memory
+
+    @staticmethod
+    def _occasion_field(value: str | None) -> str | None:
+        """'mariage' or any word of the lexicon ('wedding', 'عرس') -> occasion code; unknown -> error."""
+        if not value:
+            return None
+        if value in context.OCCASIONS:
+            return value
+        code = context.occasion_of(fold(value))
+        if code is None:
+            raise AgentError(f"unknown occasion {value!r}: one of {', '.join(context.OCCASIONS)}")
+        return code
+
+    def _usual_budget(self, uid: str, parsed: ParsedQuery) -> tuple[float, int, str] | None:
+        """Median of the latest budgets given (and prices paid) for this type of piece: (TND, how many, type).
+
+        The subcategory first ("baskets"), then its category ("chaussures"); None below min_samples."""
+        cfg, cat = self.config["budget_memory"], self.catalogue
+        samples = []
+        for s in self.memory.budget_samples(uid):
+            if s.get("bought_product_id"):
+                row = cat.row_of.get(s["bought_product_id"])
+                if row is None or np.isnan(cat.price[row]):
+                    continue
+                samples.append((cat.subcategory[row], cat.category[row], float(cat.price[row])))
+            else:
+                samples.append((s.get("subcategory"), s.get("category"), float(s["max_price_tnd"])))
+        for level, kind in ((0, parsed.subcategory), (1, parsed.category)):
+            if not kind:
+                continue
+            values = [s[2] for s in samples if s[level] == kind][: cfg["window"]]
+            if len(values) >= cfg["min_samples"]:
+                return round(float(np.median(values)), 1), len(values), kind
+        return None
+
+    @staticmethod
+    def _context_note(parsed: ParsedQuery, language: str) -> str | None:
+        """'Pour un mariage : robes, ensembles, costumes… et talons.' when the occasion chose the pieces."""
+        if not parsed.occasion_pieces:
+            return None
+        t, lang = notes_for(language), "en" if language == "en" else "fr"
+        if parsed.occasion:
+            what = context.OCCASIONS[parsed.occasion]["fr" if lang == "fr" else "for_en"]
+        else:
+            what = context.SEASONS[parsed.season][lang]
+        names = [label(p, language).lower() for p in parsed.occasion_pieces]
+        pieces = f"{', '.join(names[:-1])} {t['and']} {names[-1]}" if len(names) > 1 else names[0]
+        return t["context"].format(o=what, pieces=pieces)
 
     @staticmethod
     def _area(product: dict, parsed: ParsedQuery, city_applied: bool) -> str | None:
@@ -289,6 +396,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         if search.offset == 0:
             out.question, out.question_key = self._question(search, out, ask_gender=remembered is None)
 
+        self._wardrobe_fit(out, uid, inp.language)
         out.agent = AgentInfo(name=self.name, version=VERSION)
         out.session_id = inp.session_id
         out.decision_id = self.memory.remember(uid, inp.session_id, request, out.model_dump(mode="json"))
@@ -296,12 +404,204 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         out.next_actions = self._next_actions(out, search, texts)
         return out
 
+    # ------------------------------------------------------------------ with the user's wardrobe (M1 + M2)
+    def _garment(self, product_id: str, user_id: str) -> dict:
+        """A catalogue product in the shared Garment shape, with its M2 item vector when it has a photo:
+        [FashionCLIP image embedding (512) | FashionCLIP text embedding of its name (512)]."""
+        row = self.catalogue.row_of[product_id]
+        p = self.catalogue.products[row]
+        season = {1: ["summer"], -1: ["winter"]}.get(int(self.catalogue.season[row]), [])
+        garment = {
+            "item_id": p["product_id"],
+            "user_id": user_id,
+            "image_raw": p.get("image_url") or "",
+            "category": p["category"],
+            "subcategory": p.get("subcategory"),
+            "colors": [{"name": p["color"], "hex": p.get("color_hex") or "#999999", "share": 1.0}]
+            if p.get("color")
+            else [],
+            "season": season,
+            "local_tag": p.get("shop_name"),
+        }
+        if clients.is_real("m2") and self.encoder is not None and self.catalogue.has_embedding[row]:
+            text = self.encoder.encode_texts([p.get("product_name") or p.get("label_fr") or ""])[0]
+            garment["embedding"] = [*map(float, self.catalogue.embeddings[row]), *map(float, text)]
+        return garment
+
+    @staticmethod
+    def _wardrobe_label(item: dict, language: str) -> str:
+        colour = ((item.get("colors") or [{}])[0].get("name") or "").lower()
+        return piece_name(item.get("subcategory") or item.get("category"), colour, language)
+
+    def _goes_with(self, uid: str, garment: dict, pieces: list[dict], language: str) -> tuple[list[str], str]:
+        """Wardrobe pieces the shop piece goes with (M2 compatibility >= min_score), best first."""
+        scores, source = clients.pair_scores(uid, garment, pieces)
+        keep = [p for p in pieces if scores.get(p["item_id"], 0.0) >= self.config["wardrobe"]["min_score"]]
+        keep.sort(key=lambda p: -scores[p["item_id"]])  # stable: equal scores keep the wardrobe's order
+        return [self._wardrobe_label(p, language) for p in keep], source
+
+    def _wardrobe_fit(self, out: LocalShopOutput, uid: str, language: str) -> None:
+        """Idea 10: 'why this local piece' also says which pieces of the user's wardrobe it goes with."""
+        cfg = self.config["wardrobe"]
+        if not (cfg["match"] and out.results and uid != ANONYMOUS):
+            return
+        pieces, src_m1 = clients.wardrobe(uid)
+        if not pieces:
+            return
+        texts, src_m2 = TEXTS[language], "mock"
+        for r in out.results[: cfg["match_top"]]:
+            if r.product_id not in self.catalogue.row_of:
+                continue
+            r.wardrobe_matches, src_m2 = self._goes_with(
+                uid, self._garment(r.product_id, uid), pieces, language
+            )
+            if r.wardrobe_matches:
+                named = ", ".join(r.wardrobe_matches[: cfg["max_named"]])
+                r.reasons.append(texts["goes_with"].format(pieces=named))
+        out.sources = {"m1": src_m1, "m2": src_m2}
+
+    async def outfits(self, inp: OutfitsInput) -> OutfitsOutput:
+        """Idea 3: outfits from the user's wardrobe around one local piece (M2 /complete, piece pinned)."""
+        if self.catalogue is None:
+            await self.setup()
+        if inp.product_id not in self.catalogue.row_of:
+            raise AgentError(f"unknown product_id {inp.product_id!r}")
+        texts = TEXTS[inp.language]
+        p = self.catalogue.products[self.catalogue.row_of[inp.product_id]]
+        garment = self._garment(inp.product_id, inp.user_id)
+        pieces, src_m1 = clients.wardrobe(inp.user_id)
+        by_id = {g["item_id"]: g for g in pieces}
+        goes_with, _ = self._goes_with(inp.user_id, garment, pieces, inp.language) if pieces else ([], "mock")
+        occasion = self._occasion_field(inp.occasion)
+        found, src_m2 = clients.complete(
+            inp.user_id, garment, pieces, context.M2_OCCASION.get(occasion or "", "casual"), inp.n
+        )
+        outfits = []
+        for o in found:
+            parts = [
+                OutfitPiece(
+                    item_id=p["product_id"],
+                    label=p["product_name"],
+                    source="shop",
+                    image_url=p.get("image_url"),
+                )
+            ]
+            for item_id in o["item_ids"]:
+                if item_id in by_id:
+                    item = by_id[item_id]
+                    parts.append(
+                        OutfitPiece(
+                            item_id=item_id,
+                            label=self._wardrobe_label(item, inp.language),
+                            source="wardrobe",
+                            image_url=item.get("image_cutout") or item.get("image_raw") or None,
+                        )
+                    )
+            if len(parts) > 1:
+                outfits.append(
+                    LocalOutfit(pieces=parts, score=min(max(o["score"], 0.0), 1.0), reasons=o["reasons"])
+                )
+        city = (p.get("city") or "").split("; ")[0]
+        origin = texts["local_brand" if p.get("origin_type") == "local_brand" else "local_shop"]
+        why = [origin.format(shop=p["shop_name"]) + (texts["in_city"].format(city=city) if city else "")]
+        if p.get("price_tnd") is not None:
+            why.append(f"{p['price_tnd']:g} TND")
+        why.append(
+            texts["goes_with"].format(pieces=", ".join(goes_with[: self.config["wardrobe"]["max_named"]]))
+            if goes_with
+            else texts["goes_with_none"]
+        )
+        price = f" · {p['price_tnd']:g} TND" if p.get("price_tnd") is not None else ""
+        return OutfitsOutput(
+            product_id=inp.product_id,
+            piece=f"{p['product_name']} · {p['shop_name']}{price}",
+            outfits=outfits,
+            goes_with=goes_with,
+            why=why,
+            sources={"m1": src_m1, "m2": src_m2},
+        )
+
+    @staticmethod
+    def _slots_to_try(outfit: list[dict]) -> list[tuple[str, dict | None]]:
+        """(slot, replaced piece): the missing slots first (a bottom for a top, shoes, a bag, a jacket),
+        then replacing each piece of the outfit by a local one."""
+        present = {g["category"] for g in outfit}
+        missing = []
+        if not present & {"dress", "traditional"}:
+            missing += [
+                b for a, b in (("top", "bottom"), ("bottom", "top")) if a in present and b not in present
+            ]
+        missing += [s for s in ("shoes", "accessory", "outerwear") if s not in present]
+        return [(s, None) for s in missing] + [(g["category"], g) for g in outfit]
+
+    async def local_pieces(self, inp: LocalPiecesInput) -> LocalPiecesOutput:
+        """Selected 4: Tunisian pieces inside an outfit of the day. Each slot gets its best local piece from
+        the normal search (budget, city, gender, occasion, season), scored by M2 with the whole outfit."""
+        if self.catalogue is None:
+            await self.setup()
+        cfg, texts = self.config["local_pieces"], TEXTS[inp.language]
+        pieces, src_m1 = clients.wardrobe(inp.user_id)
+        by_id = {g["item_id"]: g for g in pieces}
+        outfit = [by_id[i] for i in inp.item_ids if i in by_id]
+        if not outfit:
+            raise AgentError("none of item_ids is in the user's wardrobe (M1)")
+        lang = "fr" if inp.language == "ar" else inp.language
+        suggestions, src_m2 = [], "mock"
+        for slot, replaced in self._slots_to_try(outfit):
+            search = LocalShopInput(
+                category=slot,
+                gender=inp.gender,
+                city=inp.city,
+                max_price_tnd=inp.max_price_tnd,
+                occasion=inp.occasion,
+                season=inp.season,
+                user_id=inp.user_id,
+                language=inp.language,
+                k=cfg["pool"],
+            )
+            found = (await self._search(search)).results
+            found = [r for r in found if r.product_id in self.catalogue.row_of]
+            if not found:
+                continue
+            base = [g for g in outfit if g is not replaced]
+            if not base:  # replacing the only piece of the outfit is a new outfit, not a local touch
+                continue
+            garments = [self._garment(r.product_id, inp.user_id) for r in found]
+            scores, src_m2 = clients.outfit_scores(inp.user_id, base, garments)
+            best = max(found, key=lambda r: scores.get(r.product_id, 0.0))  # ties: the search's order
+            score = min(max(scores.get(best.product_id, 0.0), 0.0), 1.0)
+            if score < cfg["min_score"]:
+                continue
+            first = (
+                texts["replaces"].format(piece=self._wardrobe_label(replaced, inp.language))
+                if replaced
+                else texts["completes"].format(slot=label(slot, lang).lower())
+            )
+            names = ", ".join(self._wardrobe_label(g, inp.language) for g in base)
+            suggestions.append(
+                LocalSuggestion(
+                    action="replace" if replaced else "complete",
+                    slot=slot,
+                    replaces=self._wardrobe_label(replaced, inp.language) if replaced else None,
+                    product=best,
+                    score=score,
+                    reasons=[first, texts["with_outfit"].format(pieces=names), *best.reasons[-2:]],
+                )
+            )
+        return LocalPiecesOutput(
+            outfit=[self._wardrobe_label(g, inp.language) for g in outfit],
+            suggestions=suggestions[: inp.n],
+            sources={"m1": src_m1, "m2": src_m2},
+        )
+
     @staticmethod
     def _llm_can_help(inp: LocalShopInput, out: LocalShopOutput) -> bool:
         """Only for a written request where the rules understood no piece, colour or photo."""
-        parsed = out.parsed
-        understood = parsed.subcategory or parsed.category or parsed.color or inp.image_embedding
-        return bool(inp.query.strip()) and not understood and get_llm().on("understand")
+        return (
+            bool(inp.query.strip())
+            and not understood(out.parsed, inp.image_embedding)
+            and get_llm().on("understand")
+        )
 
     @staticmethod
     def _describe(parsed: ParsedQuery, language: str) -> str:
@@ -358,8 +658,7 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
         """ONE question the user can answer, only when the answer changes the results."""
         texts, parsed = TEXTS[inp.language], out.parsed
         if not out.results:
-            understood = parsed.subcategory or parsed.category or parsed.color or inp.image_embedding
-            if not understood:
+            if not understood(parsed, inp.image_embedding):
                 return texts["query"], "query"
             if parsed.max_price_tnd is not None:
                 cheapest = self._cheapest_without_budget(parsed)
@@ -457,10 +756,17 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
     ) -> LocalShopOutput:
         cat = self.catalogue
         parsed, from_memory = self._parsed(inp, remembered_gender)
+        texts = TEXTS[inp.language]
         if from_memory and memory_notes is not None:
-            texts = TEXTS[inp.language]
             memory_notes.append(texts["gender_memory"].format(gender=texts[parsed.gender]))
+        if parsed.max_price_tnd is None and (usual := self._usual_budget(inp.user_id or ANONYMOUS, parsed)):
+            parsed.usual_budget_tnd, n, kind = usual  # re-ranks only (rerank.py); a budget said always wins
+            if memory_notes is not None:
+                what = label(kind, "fr" if inp.language == "ar" else inp.language).lower()
+                memory_notes.append(texts["usual_budget"].format(what=what, max=parsed.usual_budget_tnd, n=n))
         notes, t = [], notes_for(inp.language)
+        if context_note := self._context_note(parsed, inp.language):
+            notes.append(context_note)
         style_values = inp.style_vector
         if isinstance(style_values, str):  # an id, as in the architecture doc: ask M5 for the vector
             style_values = clients.style_vector_from_m5(inp.user_id, style_values)
@@ -479,8 +785,9 @@ class LocalShopAgent(BaseAgent[LocalShopInput, LocalShopOutput]):
 
         # Nothing understood (no type, colour or photo): keep only products that contain the words,
         # instead of filling the list with unrelated pieces.
-        understood = parsed.subcategory or parsed.category or parsed.color or image is not None
-        evidence = bm25 > 0 if (not understood and parsed.terms) else np.ones(len(cat), dtype=bool)
+        evidence = (
+            bm25 > 0 if (not understood(parsed, image) and parsed.terms) else np.ones(len(cat), dtype=bool)
+        )
         # Strictest filters first, then relaxed one at a time when nothing matches: the city before the
         # colour (a colour asked for means only that colour), sold-out pieces before other colours.
         stock = inp.include_unavailable

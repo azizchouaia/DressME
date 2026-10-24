@@ -890,6 +890,54 @@ règles, comme avant. Les tests utilisent un faux LLM ; ils n'appellent jamais O
   la plus probable » selon l'usage (plage → maillot, hiver → manteau, entretien → costume) ;
 - le modèle **inventait un genre** (« women ») : un genre n'est gardé que si la requête le dit.
 
+### 5.14 Occasions tunisiennes, saisons et budget habituel (idées 8 et 9 du BO6)
+
+**Idée 8 · Tenues pour les occasions et saisons tunisiennes** (`pipeline/context.py`). Un lexique en
+français, anglais, darija et arabe reconnaît l'occasion (mariage / 3ers / عرس, henné, khotba, Aïd, soirées de
+Ramadan / sahria / سهرية, entretien, soutenance, travail, soirée, plage / b7ar) et la saison (été / sif / صيف,
+hiver / chta / شتاء). Le même lexique sert au résumé du hand-off dans M14.
+
+| Requête | Ce que fait l'agent |
+|---|---|
+| « tenue pour un mariage », « n7eb lebsa l 3ers o5ti », « عندي عرس في سوسة » | Aucune pièce nommée : il cherche les pièces d'un mariage (robes, ensembles, costumes, combinaisons, tenues traditionnelles, escarpins) et le dit dans la note |
+| « robe pour un mariage » | La pièce décide (robes) ; l'occasion ajoute « elegant wedding guest » à la requête FashionCLIP |
+| « robe d'été » / « robe pour l'hiver » | Les mêmes 193 robes, mais celles dont le nom et le type disent la saison passent en premier (bretelles, lin, crochet / laine, maille, velours) ; aucune n'est cachée |
+
+Sur le vrai catalogue, ces requêtes sont comprises **par les règles, en moins d'une seconde**, sans appeler le
+LLM (avant, « an outfit for a job interview » demandait ~15 s à Qwen).
+
+**Idée 9 · Budget en dinars appris** (`memory.budget_samples`, `agent._usual_budget`). L'agent retient les
+budgets que l'utilisateur a donnés et le prix de ce qu'il a acheté (feedback), par type de pièce. À partir de
+2 valeurs, la médiane devient son **budget habituel** pour ce type. Quand une requête n'a pas de budget, les
+pièces dans ce budget passent en premier (part `budget` du score), une note de mémoire le dit (« Ton budget
+habituel pour les baskets : ~90 TND… ») et chaque pièce concernée a la raison « Dans ton budget habituel ».
+Un budget dit dans la requête gagne toujours, rien n'est caché, et `DELETE /m07/memory/{user}` l'oublie.
+Exemple réel : après « baskets moins de 80 dt » et « baskets blanches max 100 dt », « baskets » montre d'abord
+des paires entre 40 et 91 TND au lieu de 130 à 183 TND.
+
+Tests : `tests/test_context_budget.py` (15 tests).
+
+### 5.15 La pièce locale avec la garde-robe : M1 + M2 (idées 3, 4 et 10 du BO6)
+
+- **Idée 10 · « Pourquoi cette pièce locale »** : pour un utilisateur connu, les 3 premiers résultats disent
+  aussi avec quelles pièces de **sa garde-robe** ils vont (« Va avec ta garde-robe : jean (bleu), baskets
+  (blanc)… »). La garde-robe vient de M1, la compatibilité de M2 (OutfitTransformer).
+- **Idée 3 · Pièce locale → tenue complète** : `POST /m07/outfits` compose des tenues avec la garde-robe autour
+  d'une pièce de boutique (M2 `/complete`, la pièce épinglée et envoyée avec son vecteur FashionCLIP), et dit
+  pourquoi cette pièce : marque tunisienne, boutique, ville, prix, pièces avec lesquelles elle va.
+- **Idée 4 · Marques tunisiennes dans la tenue du jour** : `POST /m07/local-pieces` reçoit une tenue de la
+  garde-robe (par exemple celle que propose le BO1) et propose une pièce de boutique tunisienne qui la complète
+  (chaussures, sac, veste…) ou qui remplace l'une de ses pièces, notée par M2 avec toute la tenue. Exemple :
+  jean + chemise blanche → des chaussures en cuir blanc d'AD Makeba, une parure khomsa de Hraier, une veste de VOG.
+- **Simulation jusqu'à l'intégration** : M1 et M2 sont sur d'autres branches. Tant qu'ils ne sont pas fusionnés,
+  une simulation répond (garde-robe fixe, règle de types et de couleurs) et la réponse le dit
+  (`sources: {"m1": "mock", "m2": "mock"}`). À l'intégration, il suffit de mettre `real: [m1, m2]` dans
+  `config.yaml` ; le chemin réel est déjà testé avec un faux M1 / M2.
+- Smart Buy (BO5) n'est pas appelé directement : c'est un agent, et l'orchestrateur le chaîne avec l'action
+  `judge` (règle du guide des agents).
+
+Tests : `tests/test_wardrobe.py` (10 tests).
+
 ---
 
 ## 6. Évaluation

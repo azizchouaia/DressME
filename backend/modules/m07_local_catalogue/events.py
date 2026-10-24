@@ -110,6 +110,8 @@ def log_search(
                 "translated",
                 "corrected",
                 "understood_by",
+                "occasion",
+                "season",
             )
         },
         "total_matches": out.get("total_matches", 0),

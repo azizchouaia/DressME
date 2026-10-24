@@ -6,21 +6,9 @@ LLM (Qwen, llm.py) only adds one plain-English sentence of what the client wants
 import re
 
 from modules.m07_local_catalogue.llm import numbers_ok
-from modules.m07_local_catalogue.pipeline import parse
+from modules.m07_local_catalogue.pipeline import context, parse
 from modules.m07_local_catalogue.scraper.normalize import fold
 from modules.m07_local_catalogue.taxonomy import city_from_text
-
-OCCASIONS = {
-    "mariage": r"\bmariage\b|\bwedding\b|\b3[eo]rs\b|عرس",
-    "fiançailles": r"\bfiancailles\b|\bengagement\b|\bkhotba\b|\b5otba\b|خطوبة",
-    "henna": r"\bhenn?a\b|\boutia\b|حنة",
-    "entretien": r"\bentretien\b|\binterview\b",
-    "soutenance": r"\bsoutenance\b|\bgraduation\b",
-    "travail": r"\bbureau\b|\btravail\b|\boffice\b|\bwork\b",
-    "soirée": r"\bsoiree\b|\bgala\b|\bparty\b|\bfete\b",
-    "aïd": r"\baid\b|\beid\b|عيد",
-}
-_OCCASION_RES = {k: re.compile(v) for k, v in OCCASIONS.items()}
 
 REASONS = {
     "asks_human": "asked to talk to a stylist",
@@ -31,17 +19,9 @@ REASONS = {
     "repeated_request": "repeats the same request",
     "user_choice": "chose to talk to a stylist",
 }
-# Occasion codes stay French (they match the stylists' specialities); the summary shows them in English.
-OCCASIONS_EN = {
-    "mariage": "wedding",
-    "fiançailles": "engagement",
-    "henna": "henna",
-    "entretien": "job interview",
-    "soutenance": "graduation",
-    "travail": "work",
-    "soirée": "evening party",
-    "aïd": "Eid",
-}
+# Occasions: the same lexicon as M7's search (pipeline/context.py: mariage, aïd, ramadan, plage...).
+# The codes stay French (they match the stylists' specialities); the summary shows them in English.
+OCCASIONS_EN = {code: o["en"] for code, o in context.OCCASIONS.items()}
 
 
 def facts(messages: list[dict]) -> dict:
@@ -51,9 +31,9 @@ def facts(messages: list[dict]) -> dict:
         if m["role"] != "user":
             continue
         text = fold(m["text"])
-        # in one message the first occasion of OCCASIONS wins ("robe de soirée pour un mariage" -> mariage);
+        # in one message the first occasion of the lexicon wins ("robe de soirée pour un mariage" -> mariage);
         # across messages the last one said wins
-        occasion = next((name for name, rx in _OCCASION_RES.items() if rx.search(text)), occasion)
+        occasion = context.occasion_of(text) or occasion
         _, high = parse.parse_price(text)
         budget = high or budget
         city = city_from_text(m["text"]) or city

@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from ..scraper.normalize import fold
+from .context import season_hint
 from .retrieve import BM25, tokenize
 
 
@@ -39,6 +40,11 @@ class Catalogue:
         self.gender = np.array([p.get("gender") or "" for p in self.products], dtype=object)
         self.governorates = [set(filter(None, p.get("governorate", "").split("; "))) for p in self.products]
         self.cities = [set(filter(None, p.get("city", "").split("; "))) for p in self.products]
+        # +1 summer piece, -1 winter piece, 0 neither (name words + type): re-ranks a seasonal request
+        self.season = np.array(
+            [season_hint(fold(p.get("product_name", "")), p.get("subcategory", "")) for p in self.products]
+        )
+        self.row_of = {p["product_id"]: i for i, p in enumerate(self.products)}
         # Words actually used by the shops (names, labels, colours, shop names): targets for typo correction.
         self.vocabulary = {
             w for p in self.products for w in re.findall(r"\w+", fold(self.document(p))) if len(w) >= 3

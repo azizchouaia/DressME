@@ -5,7 +5,7 @@ The orchestrator (BO8) reads the card to know WHEN to call it and WHAT to do wit
 Served at GET /m07/card. The tool description is built from it, so they never drift apart.
 """
 
-VERSION = "1.2.0"
+VERSION = "1.5.0"
 
 CARD = {
     "id": "dressme.bo6.localshop",
@@ -25,11 +25,17 @@ CARD = {
         "A colour asked for is strict; a relaxed filter (city, stock, colour) is always said in `note`.",
         "When the request is unclear, ask ONE question the user can answer instead of guessing.",
         "The LLM only reads and writes; products, prices and scores come from the catalogue and the code.",
+        "An occasion with no piece named searches the pieces worn for it, and says which in `note`.",
+        "A season and a usual budget learned from memory only re-rank; a budget the user says always wins.",
+        "Compatibility with the wardrobe comes from M2, never the LLM; `sources` says real or simulation.",
     ],
     "when_to_use": [
         "Where can I buy this in Tunis? A linen shirt under 80 dinars. Shops near me.",
         "Requests in French, English or Tunisian darija ('sabbat ahmar', 'sbadri kahla a9al men 150 alf').",
+        "An outfit for a Tunisian occasion or season: wedding (3ers), henna, Aïd, Ramadan evenings, "
+        "the beach, an interview; summer or winter pieces.",
         "A missing piece from Smart Buy or the Profile (`gap`), or a photo embedding: local alternatives.",
+        "The outfit of the day (BO1) with a Tunisian piece in it: call local-pieces with its item_ids.",
         "The user answers localshop's question (send `answer` + the same session_id, not the request).",
         "'Show me more' after a localshop search (send next_page=true + the same session_id).",
     ],
@@ -40,6 +46,11 @@ CARD = {
     ],
     "skills": {
         "search": "M7 catalogue search: text (FR/EN/darija), gap, photo or style -> Tunisian pieces in TND",
+        "occasion": "Tunisian occasions and seasons -> the pieces worn for them, seasonal pieces first",
+        "usual_budget": "no budget said -> the user's usual budget per type, learned from memory, re-ranks",
+        "wardrobe_fit": "results of a user: which pieces of their wardrobe (M1) each one goes with (M2)",
+        "outfits": "POST /m07/outfits: outfits from the wardrobe around one local piece (M2 /complete)",
+        "local_pieces": "POST /m07/local-pieces: Tunisian pieces to complete or change an outfit of the day",
         "answer": "answer to the last question (gender, budget, piece) -> refined results",
         "more": "next page of the last search of the session",
         "feedback": "useful / bought -> the user's memory",
@@ -54,6 +65,8 @@ CARD = {
             "min_price_tnd",
             "color",
             "gender",
+            "occasion",
+            "season",
             "user_id",
             "style_vector",
             "k",
@@ -63,7 +76,12 @@ CARD = {
     },
     "outputs": ["results", "parsed", "total_matches", "note", "question", "next_actions", "decision_id"],
     "handoff": [{"action": "judge", "label": "Should I buy one of these?", "tool": "smartbuy", "args": {}}],
-    "depends_on": {"M5": "style vector (BO4)", "M14": "boutique mode (BO6)"},
+    "depends_on": {
+        "M1": "the user's wardrobe (BO3), simulated until merged",
+        "M2": "compatibility and outfits (BO1), simulated until merged",
+        "M5": "style vector (BO4)",
+        "M14": "boutique mode (BO6)",
+    },
     "languages": ["en", "fr", "ar"],
 }
 

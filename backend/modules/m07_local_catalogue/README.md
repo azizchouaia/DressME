@@ -82,6 +82,63 @@ here (`memory_gender_min_share`: no men's filter on dresses). `DELETE /m07/memor
 `smartbuy` (photo + price + shop of the top result) · `show_outfits` → `stylist` · `more_results` →
 `localshop` with `next_page` · `feedback` → `POST /m07/feedback`. Labels follow `language`.
 
+## Occasions, seasons and the usual budget (BO6 ideas 8 and 9)
+
+**Occasions and seasons** (`pipeline/context.py`, read by `parse.py`). One lexicon in FR / EN / darija /
+Arabic, shared with M14's hand-off summary:
+
+| Occasion code | Said as (examples) | Pieces searched when no piece is named |
+|---|---|---|
+| `mariage` | mariage, wedding, 3ers, عرس | dresses, sets, suits, jumpsuits, traditional outfits, heels |
+| `fiançailles` | fiançailles, engagement, khotba, خطوبة | same as a wedding |
+| `henna` | henna, henné, outia, حنة | traditional outfits, dresses, sets |
+| `aïd` | aïd, eid, 3id, عيد | traditional outfits, dresses, sets, suits, shirts |
+| `ramadan` | ramadan, sahria, رمضان, سهرية | traditional outfits, dresses, sets, jumpsuits, hijabs |
+| `entretien` / `soutenance` / `travail` | interview, graduation, bureau, work | suits, shirts, trousers, jackets, shoes… |
+| `soirée` | soirée, gala, party, fête | dresses, jumpsuits, sets, suits, heels |
+| `plage` | plage, beach, b7ar, البحر (= summer) | swimwear, shorts, sandals, t-shirts, sunglasses, hats |
+
+- *"tenue pour un mariage"*: no piece named, so the search keeps the wedding pieces, and `note` says it
+  ("Pour un mariage : robes, ensembles, costumes…"). *"robe pour un mariage"*: the piece decides; the
+  occasion only adds words to the FashionCLIP prompt ("elegant wedding guest").
+- **Season** (été / summer / sif / صيف, hiver / winter / chta / شتاء, or the beach): the `season` part of
+  the score (config `weights.season`) puts first the pieces whose name and type say that season (lin,
+  bretelles, crochet, sandals… / velours, laine, polaire, boots, coats…). It never hides a piece.
+- Callers can pass `occasion` (any word of the lexicon) and `season` (`summer` / `winter`) as fields.
+
+**Usual budget** (`memory.budget_samples` + `agent._usual_budget`). From the budgets the user gave (and the
+prices of what they bought, through `/m07/feedback`), the agent keeps the median of the latest ones per type
+(subcategory, else category), from `budget_memory.min_samples` of them. When a request has no budget:
+`parsed.usual_budget_tnd`, the `budget` part of the score puts the pieces within it first, a memory note
+says it, and the reason "Dans ton budget habituel (≤ 90 TND)" is added. A budget said always wins; nothing
+is hidden; `DELETE /m07/memory/{user}` forgets it.
+
+Tests: `tests/test_context_budget.py` (15).
+
+## With the user's wardrobe: M1 + M2 (BO6 ideas 3 and 10)
+
+`clients.py` calls M1 (`POST /m01/items`, the user's wardrobe) and M2 (`POST /m02/score`, `POST /m02/complete`,
+OutfitTransformer). Until their branches are merged, `config.yaml -> real: []` and a **simulation** answers
+(a fixed 8-piece wardrobe, complementary slots and a colour rule); every answer says which one in `sources`
+(`{"m1": "mock", "m2": "mock"}`). A real call that fails also falls back to the simulation.
+
+- **Idea 10 · why this local piece**: in a search with a `user_id`, the top `wardrobe.match_top` results get
+  `wardrobe_matches` (pieces of the wardrobe with M2 compatibility >= `wardrobe.min_score`) and the reason
+  "Va avec ta garde-robe : jean (bleu), baskets (blanc)…".
+- **Idea 3 · local piece -> complete outfit**: `POST /m07/outfits {user_id, product_id, occasion?, n, language}`
+  -> `outfits` (the shop piece + wardrobe pieces, M2 score), `goes_with`, `why` (local origin, shop, city,
+  price, compatibility), `sources`. The piece is sent to M2 pinned and inline, with its item vector
+  [FashionCLIP image | text], since it is not in the wardrobe. Occasions map to M2's work / casual / event.
+- **Selected 4 · Tunisian brands in the outfit of the day**: `POST /m07/local-pieces {user_id, item_ids, occasion?,
+  season?, city?, max_price_tnd?, gender?, n}`. For the outfit (wardrobe ids, e.g. BO1's outfit of the day),
+  each missing slot (a bottom for a top, shoes, a bag, a jacket), then each piece to replace, gets the best
+  local piece of the normal search, scored by M2 with the whole outfit (`/m02/score`). BO1 shows them.
+- Smart Buy (BO5) is an agent: localshop does not call it; the `judge` next action lets the orchestrator
+  chain it (one agent never calls another directly).
+
+**Integration**: put `real: [m1, m2]` in `config.yaml` once `garde-robe` and `feat/m02-m03-m04-m17` are merged;
+nothing else changes. Tests: `tests/test_wardrobe.py` (6, the real path is faked).
+
 ## LLM of the BO6 agent (`llm.py`) — Qwen 2.5 7B, local with Ollama
 One LLM for the whole BO6 agent (M7 and its M14 skill), run locally by Ollama (free, no API key,
 French + Arabic). **It reads and writes; it never chooses a product, a price, a score or a stylist.**
