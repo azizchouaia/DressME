@@ -4,6 +4,7 @@ import os
 # tests keep the agents' memory in RAM (same SQLite code, nothing written to disk)
 os.environ.setdefault("BO7_MEMORY_PATH", ":memory:")
 os.environ.setdefault("BO7_SHARE_MEMORY_PATH", ":memory:")
+os.environ.setdefault("BO7_SOCIAL_PATH", ":memory:")
 
 
 import pytest

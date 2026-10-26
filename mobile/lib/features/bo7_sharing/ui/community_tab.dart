@@ -1,37 +1,65 @@
-// Owner: BO7 · M15 — "Communauté": every counted challenge day of everyone, with likes and comments.
+// Owner: BO7 — "Communauté": the feed of shared looks (M10 cards, polls, give-aways, challenge days of M15),
+// similar profiles to follow (M5). PostCard / CommentsSheet below are the challenge posts of M15.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/dressme_design.dart';
 import '../data/bo7_models.dart';
 import '../data/bo7_repository.dart';
+import '../data/bo7_social_models.dart';
 import '../logic/bo7_providers.dart';
+import 'feed_widgets.dart';
 import 'widgets.dart';
 
-class CommunityTab extends ConsumerWidget {
+class CommunityTab extends ConsumerStatefulWidget {
   const CommunityTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CommunityTab> createState() => _CommunityTabState();
+}
+
+class _CommunityTabState extends ConsumerState<CommunityTab> {
+  bool _following = false;
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(postsProvider(null)),
+      onRefresh: () async {
+        refreshFeed(ref);
+        ref.invalidate(similarProfilesProvider);
+      },
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           Bo7Hero(
-            eyebrow: 'Communauté · Looks proches du tien',
+            eyebrow: 'Communauté · fil des looks',
             title: 'Le fil',
-            subtitle: 'Chaque jour de défi validé, de tout le monde. Tu aimes en tant que $user.',
+            subtitle: 'Les looks partagés, les sondages, les dons et les jours de défi. Tague, recrée, vote et '
+                'commente en tant que $user.',
           ),
           const SizedBox(height: 16),
-          AsyncBody<List<Post>>(
-            value: ref.watch(postsProvider(null)),
-            onRetry: () => ref.invalidate(postsProvider(null)),
+          const Text('PROFILS QUI TE RESSEMBLENT · M5', style: DmText.eyebrow),
+          const SizedBox(height: 8),
+          const SimilarProfilesStrip(),
+          const SizedBox(height: 16),
+          PillChoice<bool>(
+            options: const [false, true],
+            selected: _following,
+            label: (f) => f ? 'Abonnements' : 'Tout le monde',
+            onSelected: (f) => setState(() => _following = f),
+          ),
+          const SizedBox(height: 12),
+          AsyncBody<List<FeedPost>>(
+            value: ref.watch(feedProvider(_following)),
+            onRetry: () => refreshFeed(ref),
             builder: (posts) => posts.isEmpty
-                ? const Bo7Panel(
+                ? Bo7Panel(
                     title: 'Pas encore de publication',
-                    child: Text('Ouvre un défi, rejoins-le et valide un jour : il apparaît ici avec sa carte.',
+                    child: Text(
+                        _following
+                            ? 'Suis des profils qui te ressemblent pour voir leurs looks ici.'
+                            : 'Crée une carte dans le Studio et publie-la, ou valide un jour de défi.',
                         style: DmText.body),
                   )
                 : LayoutBuilder(
@@ -41,7 +69,7 @@ class CommunityTab extends ConsumerWidget {
                       return Wrap(
                         spacing: 14,
                         runSpacing: 14,
-                        children: [for (final p in posts) SizedBox(width: w, child: PostCard(post: p))],
+                        children: [for (final p in posts) SizedBox(width: w, child: FeedPostCard(post: p))],
                       );
                     },
                   ),

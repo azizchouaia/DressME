@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/bo7_api.dart';
 import '../data/bo7_models.dart';
 import '../data/bo7_repository.dart';
+import '../data/bo7_social_models.dart';
 
 final bo7RepositoryProvider = Provider<Bo7Repository>((ref) => Bo7Repository(ref.watch(bo7ApiProvider)));
 
@@ -67,6 +68,47 @@ final ambassadorsProvider = FutureProvider.autoDispose<List<Ambassador>>((ref) {
 final avatarStatusProvider = FutureProvider.autoDispose<AvatarStatus>((ref) {
   return ref.watch(bo7RepositoryProvider).avatarStatus(ref.watch(currentUserProvider));
 });
+
+// ------------------------------------------------------------ BO7 social (/bo7/social)
+
+/// The feed: everyone (false) or only the people I follow (true).
+final feedProvider = FutureProvider.autoDispose.family<List<FeedPost>, bool>((ref, following) {
+  return ref.watch(bo7RepositoryProvider).feed(ref.watch(currentUserProvider), following: following);
+});
+
+final feedCommentsProvider = FutureProvider.autoDispose.family<List<FeedComment>, String>((ref, postId) {
+  return ref.watch(bo7RepositoryProvider).postComments(postId);
+});
+
+final similarProfilesProvider = FutureProvider.autoDispose<List<SimilarProfile>>((ref) {
+  return ref.watch(bo7RepositoryProvider).similarProfiles(ref.watch(currentUserProvider));
+});
+
+final giveawaySuggestionsProvider = FutureProvider.autoDispose<List<TaggedPiece>>((ref) {
+  return ref.watch(bo7RepositoryProvider).giveawaySuggestions(ref.watch(currentUserProvider));
+});
+
+final stylistsProvider = FutureProvider.autoDispose<List<Stylist>>((ref) {
+  return ref.watch(bo7RepositoryProvider).stylists();
+});
+
+final stylistClientsProvider = FutureProvider.autoDispose.family<List<StylistClient>, String>((ref, id) {
+  return ref.watch(bo7RepositoryProvider).stylistClients(id);
+});
+
+final inboxProvider = FutureProvider.autoDispose<List<InboxLook>>((ref) {
+  return ref.watch(bo7RepositoryProvider).inbox(ref.watch(currentUserProvider));
+});
+
+/// A client's wardrobe (for the stylist building a look).
+final userWardrobeProvider = FutureProvider.autoDispose.family<List<Garment>, String>((ref, userId) {
+  return ref.watch(bo7RepositoryProvider).wardrobe(userId);
+});
+
+void refreshFeed(WidgetRef ref) {
+  ref.invalidate(feedProvider(false));
+  ref.invalidate(feedProvider(true));
+}
 
 /// Refreshes everything that depends on a challenge after join / a new day / a like.
 void refreshChallenge(WidgetRef ref, String id) {

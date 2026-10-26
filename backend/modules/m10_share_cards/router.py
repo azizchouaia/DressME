@@ -185,10 +185,12 @@ router.include_router(api)
 try:
     from bo.bo7_sharing import app as _bo7_app
     from bo.bo7_sharing import avatar as _bo7_avatar
+    from bo.bo7_sharing import social as _bo7_social
     from bo.bo7_sharing.demo.router import router as _bo7_demo
 
     router.include_router(_bo7_demo)
     router.include_router(_bo7_avatar.router)  # BO9 avatar viewer + M9, for "share a 3D avatar look"
     router.include_router(_bo7_app.router)  # Flutter web build of the app (/bo7/app/)
+    router.include_router(_bo7_social.router)  # feed, polls, give-aways, recap, trip, recreate, follow…
 except ImportError:  # pragma: no cover
     pass

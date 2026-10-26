@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import 'bo7_api.dart';
 import 'bo7_models.dart';
+import 'bo7_social_models.dart';
 
 /// Error with the server's message (e.g. "Day 3 is already logged."), shown as it is in the app.
 class Bo7Exception implements Exception {
@@ -35,6 +36,8 @@ class Bo7Repository {
   }
 
   Map<String, dynamic> _map(Object? data) => Map<String, dynamic>.from(data as Map);
+  List<Map<String, dynamic>> _maps(Object? data) =>
+      data is List ? data.map((e) => Map<String, dynamic>.from(e as Map)).toList() : const [];
   List<Map<String, dynamic>> _list(Object? data) =>
       (data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
@@ -211,5 +214,154 @@ class Bo7Repository {
   Future<AvatarStatus> avatarStatus(String userId) => _call(() async {
         final r = await _dio.get('/bo7/avatar/status', queryParameters: {'user_id': userId});
         return AvatarStatus.fromJson(_map(r.data));
+      });
+
+  // ------------------------------------------------------------ BO7 social (/bo7/social)
+  // The other teams' modules (M2, M3, M5, M6, M11, M12, M14) are mocked server-side until they are built.
+
+  Future<List<FeedPost>> feed(String userId, {bool following = false}) => _call(() async {
+        final r = await _dio
+            .get('/bo7/social/feed', queryParameters: {'user_id': userId, 'scope': following ? 'following' : 'all'});
+        return _list(r.data).map(FeedPost.fromJson).toList();
+      });
+
+  Future<FeedPost> publish(String userId, String cardId, {String? title}) => _call(() async {
+        final r = await _dio
+            .post('/bo7/social/posts', data: {'user_id': userId, 'card_id': cardId, if (title != null) 'title': title});
+        return FeedPost.fromJson(_map(r.data));
+      });
+
+  Future<int> likePost(String postId, String userId) => _call(() async {
+        final r = await _dio.post('/bo7/social/posts/$postId/like', data: {'user_id': userId});
+        return (_map(r.data)['likes'] as num).toInt();
+      });
+
+  Future<List<FeedComment>> postComments(String postId) => _call(() async {
+        final r = await _dio.get('/bo7/social/posts/$postId/comments');
+        return _list(r.data).map(FeedComment.fromJson).toList();
+      });
+
+  Future<void> commentPost(String postId, String userId, String text) => _call(() async {
+        await _dio.post('/bo7/social/posts/$postId/comments', data: {'user_id': userId, 'text': text});
+      });
+
+  /// Pieces of a look (tags), with the Tunisian shops selling something close (M7).
+  Future<List<TaggedPiece>> taggedPieces(String ownerId, List<String> itemIds) => _call(() async {
+        final r =
+            await _dio.get('/bo7/social/pieces', queryParameters: {'user_id': ownerId, 'item_ids': itemIds.join(',')});
+        return _maps(_map(r.data)['pieces']).map(TaggedPiece.fromJson).toList();
+      });
+
+  Future<SocialCard> createPoll(String userId, Map<String, dynamic> candidate, {String? question}) => _call(() async {
+        final r = await _dio.post('/bo7/social/polls', data: {
+          'user_id': userId,
+          'candidate': candidate,
+          if (question != null && question.isNotEmpty) 'question': question
+        });
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  Future<Poll> vote(String pollId, String voterId, String choice) => _call(() async {
+        final r = await _dio.post('/bo7/social/polls/$pollId/vote', data: {'voter_id': voterId, 'choice': choice});
+        return Poll.fromJson(_map(r.data));
+      });
+
+  Future<List<TaggedPiece>> giveawaySuggestions(String userId) => _call(() async {
+        final r = await _dio.get('/bo7/social/giveaway/suggestions', queryParameters: {'user_id': userId});
+        return _maps(_map(r.data)['items']).map(TaggedPiece.fromJson).toList();
+      });
+
+  Future<SocialCard> createGiveaway(String userId, String itemId,
+          {String? size, String condition = 'good', String? city, String? note}) =>
+      _call(() async {
+        final r = await _dio.post('/bo7/social/giveaways', data: {
+          'user_id': userId,
+          'item_id': itemId,
+          if (size != null && size.isNotEmpty) 'size': size,
+          'condition': condition,
+          if (city != null && city.isNotEmpty) 'city': city,
+          if (note != null && note.isNotEmpty) 'note': note,
+        });
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  Future<Giveaway> requestGiveaway(String giveawayId, String userId, {String? message}) => _call(() async {
+        final r = await _dio.post('/bo7/social/giveaways/$giveawayId/request',
+            data: {'user_id': userId, if (message != null) 'message': message});
+        return Giveaway.fromJson(_map(r.data));
+      });
+
+  Future<Giveaway> give(String giveawayId, String ownerId, String toUser) => _call(() async {
+        final r =
+            await _dio.post('/bo7/social/giveaways/$giveawayId/give', data: {'user_id': ownerId, 'to_user': toUser});
+        return Giveaway.fromJson(_map(r.data));
+      });
+
+  Future<SocialCard> board(String userId, List<String> itemIds, {String title = 'My look', bool publish = false}) =>
+      _call(() async {
+        final r = await _dio.post('/bo7/social/board',
+            data: {'user_id': userId, 'item_ids': itemIds, 'title': title, 'publish': publish});
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  Future<SocialCard> recap(String userId, {String? month, bool publish = false}) => _call(() async {
+        final r = await _dio.post('/bo7/social/recap',
+            data: {'user_id': userId, if (month != null) 'month': month, 'publish': publish});
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  Future<SocialCard> trip(String userId, String destination, int days, {bool publish = false}) => _call(() async {
+        final r = await _dio.post('/bo7/social/trip',
+            data: {'user_id': userId, 'destination': destination, 'days': days, 'publish': publish});
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  Future<SocialCard> timeline(String userId, {int months = 4, bool publish = false}) => _call(() async {
+        final r =
+            await _dio.post('/bo7/social/timeline', data: {'user_id': userId, 'months': months, 'publish': publish});
+        return SocialCard.fromJson(_map(r.data));
+      });
+
+  /// Recreate a look with my own pieces: from a feed post, or from a photo (data URI).
+  Future<RecreateResult> recreate(String userId, {String? postId, String? photo}) => _call(() async {
+        final r = await _dio.post('/bo7/social/recreate', data: {
+          'user_id': userId,
+          if (postId != null) 'post_id': postId,
+          if (photo != null) 'photo': photo,
+        });
+        return RecreateResult.fromJson(_map(r.data));
+      });
+
+  Future<List<Stylist>> stylists() => _call(() async {
+        final r = await _dio.get('/bo7/social/stylists');
+        return _maps(_map(r.data)['stylists']).map(Stylist.fromJson).toList();
+      });
+
+  Future<List<StylistClient>> stylistClients(String stylistId) => _call(() async {
+        final r = await _dio.get('/bo7/social/stylists/$stylistId/clients');
+        return _maps(_map(r.data)['clients']).map(StylistClient.fromJson).toList();
+      });
+
+  Future<void> stylistShare(String stylistId, String clientId, List<String> itemIds, {String? note}) => _call(() async {
+        await _dio.post('/bo7/social/stylist/share', data: {
+          'stylist_id': stylistId,
+          'client_id': clientId,
+          'item_ids': itemIds,
+          if (note != null && note.isNotEmpty) 'note': note,
+        });
+      });
+
+  Future<List<InboxLook>> inbox(String clientId) => _call(() async {
+        final r = await _dio.get('/bo7/social/inbox/$clientId');
+        return _list(r.data).map(InboxLook.fromJson).toList();
+      });
+
+  Future<List<SimilarProfile>> similarProfiles(String userId) => _call(() async {
+        final r = await _dio.get('/bo7/social/profiles/similar', queryParameters: {'user_id': userId});
+        return _maps(_map(r.data)['profiles']).map(SimilarProfile.fromJson).toList();
+      });
+
+  Future<void> follow(String userId, String target, bool on) => _call(() async {
+        await _dio.post('/bo7/social/follow', data: {'user_id': userId, 'target': target, 'follow': on});
       });
 }

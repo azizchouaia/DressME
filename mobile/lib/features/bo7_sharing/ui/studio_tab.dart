@@ -1,5 +1,6 @@
 // Owner: BO7 · M10 — "Studio": share my own outfits as a card, see which channel brings new users.
-// Card types: outfit of the day, my look (board), give-away, and "on my avatar" (BO9 avatar, M9).
+// Card types: outfit of the day, my look (board, completed by M2), give-away (real flow), "on my avatar" (BO9),
+// and the other BO7 ideas (poll, recap, trip, timeline, recreate, stylist) in social_screens.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,7 @@ import '../data/bo7_repository.dart';
 import '../logic/bo7_providers.dart';
 import 'avatar_share_screen.dart';
 import 'share_result.dart';
+import 'social_screens.dart';
 import 'widgets.dart';
 
 class CardKind {
@@ -91,7 +93,33 @@ class _StudioTabState extends ConsumerState<StudioTab> {
       }
       return;
     }
+    if (_kind.kind == 'giveaway') {
+      // the real give-away flow: friends ask for it in the feed
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => Theme(data: dressMeTheme(), child: GiveawayScreen(itemId: pieces.first.id))));
+      return;
+    }
     setState(() => _busy = true);
+    if (_kind.kind == 'board') {
+      // M2 completes the missing slots ("complete with AI"), M10 draws the board
+      try {
+        final r = await ref
+            .read(bo7RepositoryProvider)
+            .board(ref.read(currentUserProvider), [for (final g in pieces) g.id], title: _kind.title);
+        final added = (r.extra['added'] as List?)?.length ?? 0;
+        setState(() {
+          _card = r.card;
+          _cardPieces = pieces;
+        });
+        if (mounted && added > 0) showSnack(context, 'M2 a complété ton look avec $added pièce(s).');
+        ref.invalidate(metricsProvider);
+      } on Bo7Exception catch (e) {
+        if (mounted) showSnack(context, e.message);
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
     try {
       final card = await ref.read(bo7RepositoryProvider).createCard(
             userId: ref.read(currentUserProvider),
@@ -227,7 +255,59 @@ class _StudioTabState extends ConsumerState<StudioTab> {
         if (_card != null) ...[
           const SizedBox(height: 14),
           ShareResult(key: ValueKey(_card!.cardId), card: _card!, pieces: _cardPieces),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () async {
+              try {
+                await ref.read(bo7RepositoryProvider).publish(user, _card!.cardId);
+                refreshFeed(ref);
+                if (context.mounted) showSnack(context, 'Publié dans le fil de la communauté');
+              } on Bo7Exception catch (e) {
+                if (context.mounted) showSnack(context, e.message);
+              }
+            },
+            icon: const Icon(Icons.dynamic_feed_outlined, size: 18),
+            label: const Text('Publier dans le fil'),
+          ),
         ],
+        const SizedBox(height: 14),
+        Bo7Panel(
+          title: 'Plus d\'idées à partager',
+          subtitle:
+              'Les autres idées du BO7. Les modules des autres équipes sont simulés tant qu\'ils ne sont pas prêts.',
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final idea in socialIdeas)
+                SizedBox(
+                  width: 165,
+                  child: InkWell(
+                    onTap: () => openIdea(context, idea),
+                    borderRadius: BorderRadius.circular(DmRadius.card),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: DmColors.surface,
+                        borderRadius: BorderRadius.circular(DmRadius.card),
+                        border: Border.all(color: DmColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(idea.icon, size: 18, color: DmColors.bronze),
+                          const SizedBox(height: 4),
+                          Text(idea.label, style: DmText.itemName.copyWith(fontSize: 13)),
+                          Text(idea.hint, style: DmText.caption),
+                          Text(idea.modules, style: DmText.caption.copyWith(color: DmColors.bronze)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
         const SizedBox(height: 14),
         Bo7Panel(
           title: 'Nouveaux utilisateurs via le partage',
