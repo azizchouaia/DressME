@@ -191,3 +191,18 @@ def test_similar_profiles_and_following_feed():
     mine = client.get(f"/bo7/social/feed?user_id={U}&scope=following").json()
     assert {p["user_id"] for p in mine} == {FRIEND}
     assert client.post("/bo7/social/follow", json={"user_id": U, "target": U}).status_code == 422
+
+
+def test_integration_status_lists_every_module():
+    s = client.get("/bo7/social/integrations").json()
+    assert s["total"] == 8 and {r["source"] for r in s["modules"]} <= {
+        "mock",
+        "M1",
+        "M02",
+        "M03",
+        "M05",
+        "M06",
+        "M11",
+        "M12",
+        "M14",
+    }

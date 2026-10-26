@@ -806,3 +806,29 @@ async def follow(body: FollowBody):
 @router.get("/following")
 async def following(user_id: str):
     return {"following": store().following(user_id)}
+
+
+# =========================================================================== integration status
+@router.get("/integrations")
+async def integrations_status(user_id: str = "usr_042"):
+    """Which module answers BO7 today: the owner's real module, or the BO7 mock (see INTEGRATION.md)."""
+    checks = {
+        "M1 wardrobe (BO3) · duplicates": lambda: None,
+        "M2 recommendation (BO1/BO2) · match": lambda: ext.match_pieces(user_id, [{"category": "top"}]),
+        "M3 wear log (BO1/BO2) · stats": lambda: ext.wear_stats(user_id),
+        "M5 style profile (BO4) · profile": lambda: ext.style_profile(user_id),
+        "M6 smart buy (BO5) · verdict": lambda: ext.smartbuy_verdict(
+            user_id, {"label": "shirt", "category": "top"}
+        ),
+        "M11 trip planner (BO3) · plan": lambda: ext.trip_plan(user_id, "Tunis", 2),
+        "M12 style evolution (BO4) · timeline": lambda: ext.style_timeline(user_id, 2),
+        "M14 stylist mode (BO6) · stylists": lambda: ext.stylists(),
+    }
+    rows = []
+    for name, call in checks.items():
+        try:
+            src = (await ext.duplicates(user_id))["source"] if name.startswith("M1 ") else call()["source"]
+            rows.append({"module": name, "source": src, "real": src != "mock"})
+        except Exception as e:  # noqa: BLE001
+            rows.append({"module": name, "source": f"error: {e}", "real": False})
+    return {"modules": rows, "real": sum(r["real"] for r in rows), "total": len(rows)}

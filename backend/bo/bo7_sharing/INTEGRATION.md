@@ -24,3 +24,5 @@ and reads `result`. While `result` contains `"todo"` (week-1 placeholder) or you
 
 The BO7 routes that use them are under `/bo7/social` (see `social.py`), and the Flutter screens are in
 `mobile/lib/features/bo7_sharing/ui/feed_widgets.dart` and `social_screens.dart`.
+
+Status of each module (real or mock): `GET /bo7/social/integrations`. Step-by-step guide in French for BO7: [GUIDE_MOCKS.md](GUIDE_MOCKS.md).
