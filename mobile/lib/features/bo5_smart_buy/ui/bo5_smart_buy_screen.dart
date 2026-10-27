@@ -404,7 +404,7 @@ class _ResultView extends ConsumerWidget {
           const SizedBox(height: 12),
           for (final e in r.contributions.entries.take(6)) _ContributionBar(label: e.key, value: e.value),
           const SizedBox(height: 4),
-          Text('green = toward BUY · red = toward SKIP', style: DmText.caption),
+          const Text('green = toward BUY · red = toward SKIP', style: DmText.caption),
           const SizedBox(height: 14),
           DmReasons(r.reasons.take(5).toList()),
           if (r.whatIf.isNotEmpty) ...[
@@ -748,7 +748,7 @@ class _WishlistSheetState extends ConsumerState<_WishlistSheet> {
               onPressed: _checking ? null : _check),
           if (_alerts != null) ...[
             const SizedBox(height: 12),
-            if (_alerts!.isEmpty) Text('No price drop yet. I keep watching.', style: DmText.body),
+            if (_alerts!.isEmpty) const Text('No price drop yet. I keep watching.', style: DmText.body),
             for (final a in _alerts!)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -828,7 +828,7 @@ class _CheckinSheet extends ConsumerWidget {
         children: [
           const DmSectionHeader(eyebrow: 'Wear check-in', title: 'Did you wear it?'),
           const SizedBox(height: 6),
-          Text('Your answers teach Smart Buy what you really wear.', style: DmText.body),
+          const Text('Your answers teach Smart Buy what you really wear.', style: DmText.body),
           const SizedBox(height: 14),
           ...due.when(
             loading: () => [const Center(child: CircularProgressIndicator())],
