@@ -1,4 +1,5 @@
 // Owner: BO5 (@azizchouaia) — Riverpod state of the Smart Buy screen
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/bo5_smart_buy_repository.dart';
@@ -53,3 +54,12 @@ final smartBuyProvider = AsyncNotifierProvider<SmartBuyNotifier, SmartBuyResult?
 
 final shoppingListProvider = FutureProvider.family<List<ShoppingItem>, String>(
     (ref, userId) => ref.read(smartBuyRepositoryProvider).shoppingList(userId));
+
+/// Wishlist of a user (refresh with ref.invalidate after add / remove).
+final wishlistProvider = FutureProvider.family<List<WishItem>, String>(
+    (ref, userId) => ref.read(smartBuyRepositoryProvider).wishlist(userId));
+
+/// Check-ins waiting for an answer. In debug builds we ask right away (0 days) so the demo works.
+const checkinAfterDays = kDebugMode ? 0 : 30;
+final checkinsProvider = FutureProvider.family<List<CheckinDue>, String>(
+    (ref, userId) => ref.read(smartBuyRepositoryProvider).checkinsDue(userId, days: checkinAfterDays));

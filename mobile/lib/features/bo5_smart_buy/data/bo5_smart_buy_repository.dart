@@ -53,7 +53,7 @@ class PhotoGuess {
 }
 
 class BuyLink {
-  const BuyLink({required this.shop, required this.item, required this.priceTnd, required this.url, this.city, this.imageUrl, this.productId, this.searchId, this.rank, this.isReal = false});
+  const BuyLink({required this.shop, required this.item, required this.priceTnd, required this.url, this.city, this.imageUrl, this.productId, this.searchId, this.rank, this.isReal = false, this.savedPct});
 
   final String shop;
   final String item;
@@ -65,6 +65,7 @@ class BuyLink {
   final String? searchId;
   final int? rank;
   final bool isReal;
+  final int? savedPct; // cheaper look-alikes: % under the price the user saw
 
   factory BuyLink.fromJson(Map<String, dynamic> j) => BuyLink(
         shop: j['shop'] as String,
@@ -77,6 +78,7 @@ class BuyLink {
         searchId: j['search_id'] as String?,
         rank: j['rank'] as int?,
         isReal: j['source'] == 'm7',
+        savedPct: j['saved_pct'] as int?,
       );
 }
 
@@ -121,6 +123,9 @@ class SmartBuyResult {
     this.predictedWears,
     this.decisionId,
     this.fillsGoal,
+    this.subcategory,
+    this.colour,
+    this.alternatives = const [],
   });
 
   final String verdict; // buy | think | skip
@@ -145,6 +150,9 @@ class SmartBuyResult {
   final int? predictedWears;
   final String? decisionId;
   final String? fillsGoal;
+  final String? subcategory;
+  final String? colour;
+  final List<BuyLink> alternatives; // same type, >= 15 % cheaper, local shops
 
   factory SmartBuyResult.fromJson(Map<String, dynamic> j) {
     final size = j['size_advice'] as Map<String, dynamic>?;
@@ -174,6 +182,9 @@ class SmartBuyResult {
       predictedWears: j['predicted_wears'] as int?,
       decisionId: j['decision_id'] as String?,
       fillsGoal: j['fills_goal'] as String?,
+      subcategory: j['subcategory'] as String?,
+      colour: j['colour'] as String?,
+      alternatives: [for (final l in (j['alternatives'] as List? ?? const [])) BuyLink.fromJson(l as Map<String, dynamic>)],
     );
   }
 }
@@ -195,6 +206,78 @@ class ShoppingItem {
         typicalPrice: _d(j['typical_price_tnd']),
         withinBudget: j['within_budget'] as bool?,
         links: [for (final l in (j['links'] as List? ?? const [])) BuyLink.fromJson(l as Map<String, dynamic>)],
+      );
+}
+
+/// A piece the user is waiting on (wishlist price watch).
+class WishItem {
+  const WishItem({required this.id, required this.subcategory, required this.colour, required this.priceTnd, required this.targetTnd, this.added});
+
+  final String id;
+  final String subcategory;
+  final String colour;
+  final double priceTnd;
+  final double targetTnd;
+  final String? added;
+
+  String get label => '${colour[0].toUpperCase()}${colour.substring(1)} $subcategory';
+
+  factory WishItem.fromJson(Map<String, dynamic> j) => WishItem(
+        id: j['id'] as String,
+        subcategory: j['subcategory'] as String,
+        colour: j['colour'] as String,
+        priceTnd: _d(j['price_tnd']) ?? 0,
+        targetTnd: _d(j['target_tnd']) ?? 0,
+        added: j['added'] as String?,
+      );
+}
+
+/// A wished piece is now at or under its target price somewhere.
+class PriceAlert {
+  const PriceAlert({required this.wishId, required this.message, required this.wasTnd, required this.nowTnd, required this.offer});
+
+  final String wishId;
+  final String message;
+  final double wasTnd;
+  final double nowTnd;
+  final BuyLink offer;
+
+  factory PriceAlert.fromJson(Map<String, dynamic> j) => PriceAlert(
+        wishId: j['wish_id'] as String,
+        message: j['message'] as String,
+        wasTnd: _d(j['was_tnd']) ?? 0,
+        nowTnd: _d(j['now_tnd']) ?? 0,
+        offer: BuyLink.fromJson(j['offer'] as Map<String, dynamic>),
+      );
+}
+
+/// "Did you wear it?" — asked some days after a purchase.
+class CheckinDue {
+  const CheckinDue({required this.decisionId, required this.question, this.piece});
+
+  final String decisionId;
+  final String question;
+  final String? piece;
+
+  factory CheckinDue.fromJson(Map<String, dynamic> j) =>
+      CheckinDue(decisionId: j['decision_id'] as String, question: j['question'] as String, piece: j['piece'] as String?);
+}
+
+class CheckinResult {
+  const CheckinResult({required this.saved, this.timesWorn, this.label, this.adviceWasRight, this.question});
+
+  final bool saved;
+  final int? timesWorn;
+  final String? label;
+  final bool? adviceWasRight;
+  final String? question; // asked again when the answer was not clear
+
+  factory CheckinResult.fromJson(Map<String, dynamic> j) => CheckinResult(
+        saved: j['saved'] as bool,
+        timesWorn: j['times_worn'] as int?,
+        label: j['label'] as String?,
+        adviceWasRight: j['advice_was_right'] as bool?,
+        question: j['question'] as String?,
       );
 }
 
@@ -262,5 +345,37 @@ class SmartBuyRepository {
   Future<List<ShoppingItem>> shoppingList(String userId) async {
     final r = await _dio.post<Map<String, dynamic>>('/m06/shopping-list', queryParameters: {'user_id': userId});
     return [for (final i in (r.data!['items'] as List)) ShoppingItem.fromJson(i as Map<String, dynamic>)];
+  }
+
+  // ---- wishlist price watch
+  Future<WishItem> addToWishlist({required String userId, required String subcategory, required String colour, required double priceTnd, String? decisionId}) async {
+    final r = await _dio.post<Map<String, dynamic>>('/m06/wishlist', data: {
+      'user_id': userId, 'subcategory': subcategory, 'colour': colour, 'price_tnd': priceTnd,
+      if (decisionId != null) 'decision_id': decisionId,
+    });
+    return WishItem.fromJson(r.data!);
+  }
+
+  Future<List<WishItem>> wishlist(String userId) async {
+    final r = await _dio.get<Map<String, dynamic>>('/m06/wishlist/$userId');
+    return [for (final w in (r.data!['wishlist'] as List)) WishItem.fromJson(w as Map<String, dynamic>)];
+  }
+
+  Future<void> removeWish(String userId, String wishId) => _dio.delete<void>('/m06/wishlist/$userId/$wishId');
+
+  Future<List<PriceAlert>> checkPrices(String userId) async {
+    final r = await _dio.post<Map<String, dynamic>>('/m06/wishlist/$userId/check');
+    return [for (final a in (r.data!['alerts'] as List)) PriceAlert.fromJson(a as Map<String, dynamic>)];
+  }
+
+  // ---- wear check-in (real labels)
+  Future<List<CheckinDue>> checkinsDue(String userId, {int days = 30}) async {
+    final r = await _dio.get<Map<String, dynamic>>('/m06/checkin/$userId', queryParameters: {'days': days});
+    return [for (final d in (r.data!['due'] as List)) CheckinDue.fromJson(d as Map<String, dynamic>)];
+  }
+
+  Future<CheckinResult> answerCheckin({required String userId, required String decisionId, required String answer}) async {
+    final r = await _dio.post<Map<String, dynamic>>('/m06/checkin', data: {'user_id': userId, 'decision_id': decisionId, 'answer': answer});
+    return CheckinResult.fromJson(r.data!);
   }
 }

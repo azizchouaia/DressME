@@ -108,11 +108,23 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
             DmHero(
               eyebrow: 'Smart Buy · before you pay',
               title: 'Should I buy it?',
-              trailing: IconButton(
-                tooltip: 'My shopping list',
-                onPressed: () => _showShoppingList(context),
-                icon: const Icon(Icons.checklist_rounded, color: Colors.white),
-              ),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                IconButton(
+                  tooltip: 'Did you wear it?',
+                  onPressed: () => _sheet(context, _CheckinSheet(userId: _user)),
+                  icon: _CheckinBadge(userId: _user),
+                ),
+                IconButton(
+                  tooltip: 'My wishlist (price watch)',
+                  onPressed: () => _sheet(context, _WishlistSheet(userId: _user)),
+                  icon: const Icon(Icons.favorite_border_rounded, color: Colors.white),
+                ),
+                IconButton(
+                  tooltip: 'My shopping list',
+                  onPressed: () => _sheet(context, _ShoppingListSheet(userId: _user)),
+                  icon: const Icon(Icons.checklist_rounded, color: Colors.white),
+                ),
+              ]),
               child: Row(children: [
                 Text('Wardrobe'.toUpperCase(), style: DmText.eyebrow.copyWith(color: const Color(0xFFCDB18D))),
                 const SizedBox(width: 10),
@@ -153,7 +165,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
                                 message: 'Take a photo or pick a piece, add its price, and I tell you if it is worth it with what you already own.',
                               ),
                             )
-                          : _ResultView(result: r, userId: _user),
+                          : _ResultView(result: r, userId: _user, lastPrice: double.tryParse(_price.text.replaceAll(',', '.'))),
                     ),
                   ]),
                 ),
@@ -281,26 +293,48 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
     );
   }
 
-  void _showShoppingList(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _ShoppingListSheet(userId: _user),
-    );
+  void _sheet(BuildContext context, Widget sheet) {
+    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => sheet);
   }
 }
 
 class _ResultView extends ConsumerWidget {
-  const _ResultView({required this.result, required this.userId});
+  const _ResultView({required this.result, required this.userId, this.lastPrice});
 
   final SmartBuyResult result;
   final String userId;
+  final double? lastPrice; // the price the user typed (watched by the wishlist)
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final r = result;
     final v = _verdictStyle(r.verdict);
     final notifier = ref.read(smartBuyProvider.notifier);
+    final repo = ref.read(smartBuyRepositoryProvider);
+
+    Future<void> watchPrice() async {
+      final typed = lastPrice; // the price the user typed is what we watch
+      if (r.subcategory == null || r.colour == null || typed == null) return;
+      try {
+        final w = await repo.addToWishlist(userId: userId, subcategory: r.subcategory!, colour: r.colour!, priceTnd: typed, decisionId: r.decisionId);
+        ref.invalidate(wishlistProvider(userId));
+        if (context.mounted) dmToast(context, 'On your wishlist. I tell you when it is ${w.targetTnd.round()} TND or less');
+      } catch (_) {
+        if (context.mounted) dmToast(context, 'Could not save it, try again');
+      }
+    }
+
+    Future<void> runAction(NextAction a) async {
+      switch (a.action) {
+        case 'watch_price':
+          await watchPrice();
+        case 'open_shop' when a.args['url'] != null:
+          await launchUrl(Uri.parse('${a.args['url']}'), mode: LaunchMode.externalApplication);
+        default:
+          dmToast(context, 'Coming soon: ${a.tool ?? ''} through the assistant');
+      }
+    }
+
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       // 1. Verdict
       DmCard(
@@ -322,6 +356,10 @@ class _ResultView extends ConsumerWidget {
           Text(r.explanation, style: DmText.body.copyWith(fontSize: 14, color: DmColors.text)),
           const SizedBox(height: 4),
           Text(r.explanationByAi ? 'Written by the local AI from the facts below' : 'Template text (local AI off)', style: DmText.caption),
+          if (r.verdict == 'think' && r.subcategory != null && lastPrice != null) ...[
+            const SizedBox(height: 12),
+            DmButton('Watch the price for me', kind: DmButtonKind.outline, icon: Icons.notifications_active_outlined, onPressed: watchPrice),
+          ],
           if (r.fillsGoal != null || r.newOutfits > 0) ...[
             const SizedBox(height: 12),
             Wrap(spacing: 6, runSpacing: 6, children: [
@@ -430,6 +468,21 @@ class _ResultView extends ConsumerWidget {
           ),
         ),
       ],
+      // 6b. Same look, cheaper
+      if (r.alternatives.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        const DmSectionHeader(eyebrow: 'Same look, less money', title: 'Cheaper look-alikes'),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 222,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: r.alternatives.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => _ShopTile(link: r.alternatives[i], userId: userId),
+          ),
+        ),
+      ],
       // 7. Memory + next steps + feedback
       if (r.memoryNotes.isNotEmpty) ...[
         const SizedBox(height: 14),
@@ -445,7 +498,7 @@ class _ResultView extends ConsumerWidget {
       const SizedBox(height: 14),
       Wrap(spacing: 6, runSpacing: 6, children: [
         for (final a in r.nextActions.where((a) => a.action != 'feedback' && a.action != 'ask_user'))
-          ActionChip(label: Text(a.label), onPressed: () => dmToast(context, 'Coming soon: ${a.tool ?? ''} through the assistant')),
+          ActionChip(label: Text(a.label), onPressed: () => runAction(a)),
       ]),
       const SizedBox(height: 18),
       Text('Was this good advice?'.toUpperCase(), style: DmText.eyebrow),
@@ -465,6 +518,12 @@ class _ResultView extends ConsumerWidget {
           }),
         ),
       ]),
+      const SizedBox(height: 8),
+      DmButton('I bought it', kind: DmButtonKind.gold, icon: Icons.shopping_bag_outlined, onPressed: () async {
+        await notifier.feedback(bought: true);
+        ref.invalidate(checkinsProvider(userId));
+        if (context.mounted) dmToast(context, 'Enjoy it! Later I will ask how often you wore it');
+      }),
     ]);
   }
 }
@@ -563,7 +622,13 @@ class _ShopTile extends ConsumerWidget {
               const SizedBox(height: 2),
               Text([link.shop, if (link.city != null) link.city!.split(';').first].join(' · '), style: DmText.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
-              Text('${link.priceTnd.toStringAsFixed(link.priceTnd % 1 == 0 ? 0 : 2)} TND', style: DmText.price),
+              Row(children: [
+                Text('${link.priceTnd.toStringAsFixed(link.priceTnd % 1 == 0 ? 0 : 2)} TND', style: DmText.price),
+                if (link.savedPct != null) ...[
+                  const SizedBox(width: 6),
+                  Text('−${link.savedPct} %', style: DmText.caption.copyWith(color: DmColors.success, fontWeight: FontWeight.w700)),
+                ],
+              ]),
             ]),
           ),
         ]),
@@ -617,6 +682,236 @@ class _ShoppingListSheet extends ConsumerWidget {
                   ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Check-in icon with a dot when a "did you wear it?" question is waiting.
+class _CheckinBadge extends ConsumerWidget {
+  const _CheckinBadge({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = ref.watch(checkinsProvider(userId)).valueOrNull?.length ?? 0;
+    return Badge(
+      isLabelVisible: n > 0,
+      label: Text('$n'),
+      backgroundColor: DmColors.gold,
+      child: const Icon(Icons.event_available_outlined, color: Colors.white),
+    );
+  }
+}
+
+/// Wishlist: pieces Smart Buy watches + price alerts from local shops.
+class _WishlistSheet extends ConsumerStatefulWidget {
+  const _WishlistSheet({required this.userId});
+
+  final String userId;
+
+  @override
+  ConsumerState<_WishlistSheet> createState() => _WishlistSheetState();
+}
+
+class _WishlistSheetState extends ConsumerState<_WishlistSheet> {
+  List<PriceAlert>? _alerts;
+  bool _checking = false;
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    try {
+      final a = await ref.read(smartBuyRepositoryProvider).checkPrices(widget.userId);
+      setState(() => _alerts = a);
+    } catch (_) {
+      if (mounted) dmToast(context, 'Could not check the prices');
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final list = ref.watch(wishlistProvider(widget.userId));
+    final repo = ref.read(smartBuyRepositoryProvider);
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      builder: (_, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.all(20),
+        children: [
+          const DmSectionHeader(eyebrow: 'Price watch', title: 'My wishlist'),
+          const SizedBox(height: 12),
+          DmButton(_checking ? 'Checking local shops…' : 'Check prices now', kind: DmButtonKind.gold, icon: Icons.search_rounded,
+              onPressed: _checking ? null : _check),
+          if (_alerts != null) ...[
+            const SizedBox(height: 12),
+            if (_alerts!.isEmpty) Text('No price drop yet. I keep watching.', style: DmText.body),
+            for (final a in _alerts!)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: DmColors.warningBg,
+                    borderRadius: BorderRadius.circular(DmRadius.card),
+                    border: Border.all(color: DmColors.gold),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Price drop'.toUpperCase(), style: DmText.eyebrow),
+                    const SizedBox(height: 4),
+                    Text(a.message, style: DmText.body.copyWith(color: DmColors.text)),
+                    const SizedBox(height: 8),
+                    DmButton('Open ${a.offer.shop}', kind: DmButtonKind.dark, onPressed: () {
+                      repo.click(a.offer, widget.userId);
+                      launchUrl(Uri.parse(a.offer.url), mode: LaunchMode.externalApplication);
+                    }),
+                  ]),
+                ),
+              ),
+          ],
+          const SizedBox(height: 16),
+          ...list.when(
+            loading: () => [const Center(child: CircularProgressIndicator())],
+            error: (e, _) => [Text('$e', style: DmText.body)],
+            data: (items) => items.isEmpty
+                ? [const DmEmptyState(icon: Icons.favorite_border_rounded, title: 'Nothing watched yet', message: 'When I say THINK, tap "Watch the price" and I tell you when it drops.')]
+                : [
+                    for (final w in items)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: DmCard(
+                          child: Row(children: [
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(w.label, style: DmText.cardTitle),
+                                const SizedBox(height: 2),
+                                Text('Seen at ${w.priceTnd.round()} TND · alert at ${w.targetTnd.round()} TND or less', style: DmText.body),
+                              ]),
+                            ),
+                            IconButton(
+                              tooltip: 'Remove',
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () async {
+                                await repo.removeWish(widget.userId, w.id);
+                                ref.invalidate(wishlistProvider(widget.userId));
+                              },
+                            ),
+                          ]),
+                        ),
+                      ),
+                  ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Did you wear it?" — the answers become real labels to retrain Smart Buy.
+class _CheckinSheet extends ConsumerWidget {
+  const _CheckinSheet({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final due = ref.watch(checkinsProvider(userId));
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      builder: (_, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.all(20),
+        children: [
+          const DmSectionHeader(eyebrow: 'Wear check-in', title: 'Did you wear it?'),
+          const SizedBox(height: 6),
+          Text('Your answers teach Smart Buy what you really wear.', style: DmText.body),
+          const SizedBox(height: 14),
+          ...due.when(
+            loading: () => [const Center(child: CircularProgressIndicator())],
+            error: (e, _) => [Text('$e', style: DmText.body)],
+            data: (items) => items.isEmpty
+                ? [const DmEmptyState(icon: Icons.event_available_outlined, title: 'Nothing to ask', message: 'Tap "I bought it" after a verdict; I ask you later how often you wore it.')]
+                : [for (final d in items) _CheckinCard(userId: userId, due: d)],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckinCard extends ConsumerStatefulWidget {
+  const _CheckinCard({required this.userId, required this.due});
+
+  final String userId;
+  final CheckinDue due;
+
+  @override
+  ConsumerState<_CheckinCard> createState() => _CheckinCardState();
+}
+
+class _CheckinCardState extends ConsumerState<_CheckinCard> {
+  final _answer = TextEditingController();
+  String? _retry;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _answer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send(String text) async {
+    if (text.trim().isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      final r = await ref.read(smartBuyRepositoryProvider).answerCheckin(userId: widget.userId, decisionId: widget.due.decisionId, answer: text);
+      if (!r.saved) {
+        setState(() => _retry = r.question);
+        return;
+      }
+      ref.invalidate(checkinsProvider(widget.userId));
+      if (mounted) {
+        dmToast(context, r.adviceWasRight == true
+            ? 'Thanks! Worn ${r.timesWorn}×: my advice was right'
+            : 'Thanks! Worn ${r.timesWorn}×: I learn from this');
+      }
+    } catch (_) {
+      if (mounted) dmToast(context, 'Could not save, try again');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DmCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(widget.due.question, style: DmText.cardTitle),
+          if (_retry != null) ...[
+            const SizedBox(height: 4),
+            Text(_retry!, style: DmText.body.copyWith(color: DmColors.warning)),
+          ],
+          const SizedBox(height: 10),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final q in const ['Never', 'Once', 'A few times', 'Every week'])
+              DmChoiceChip(label: q, selected: false, onTap: _sending ? () {} : () => _send(q)),
+          ]),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _answer,
+            decoration: InputDecoration(
+              hintText: 'Or say it your way: "twice", "jamais", "barcha"…',
+              suffixIcon: IconButton(icon: const Icon(Icons.send_rounded), onPressed: _sending ? null : () => _send(_answer.text)),
+            ),
+            onSubmitted: _send,
+          ),
+        ]),
       ),
     );
   }
