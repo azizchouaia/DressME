@@ -1,0 +1,85 @@
+# M7 test set: shopping requests as users write them, with what they mean (written by hand).
+#
+# lang: fr | en | darija (Latin letters, digits for Arabic sounds) | arabic (Arabic script)
+# expect: the intent of the request. Used twice by run.py:
+#   - parse accuracy: type (subcategory, or category for a generic word), color, gender, max_price,
+#     min_price, city are compared with what parse.py understood (absent field = nothing asked);
+#   - relevance of each product (0 / 1 / 2), from the catalogue attributes; name_any (optional) = words
+#     of which one must be in the product name for a perfect match (material, occasion).
+# Colour codes and types: taxonomy.py. Do not tune the expectations to the parser's answers.
+
+- {id: fr01, lang: fr, query: "baskets blanches à Tunis max 80 TND", expect: {type: sneakers, color: white, max_price: 80, city: Tunis}}
+- {id: fr02, lang: fr, query: "robe noire moins de 100 dinars", expect: {type: dress, color: black, max_price: 100}}
+- {id: fr03, lang: fr, query: "chemise homme blanche", expect: {type: shirt, color: white, gender: men}}
+- {id: fr04, lang: fr, query: "sac à main beige", expect: {type: bag, color: beige}}
+- {id: fr05, lang: fr, query: "sandales femme dorées", expect: {type: sandals, color: gold, gender: women}}
+- {id: fr06, lang: fr, query: "jean homme", expect: {type: jeans, gender: men}}
+- {id: fr07, lang: fr, query: "veste en cuir noir", expect: {type: jacket, color: black, name_any: [cuir, simili, leather]}}
+- {id: fr08, lang: fr, query: "pull gris pour femme", expect: {type: sweater, color: grey, gender: women}}
+- {id: fr09, lang: fr, query: "escarpins rouges", expect: {type: heels, color: red}}
+- {id: fr10, lang: fr, query: "collier doré pas cher", expect: {type: necklace, color: gold}}
+- {id: fr11, lang: fr, query: "jebba pour l'aïd", expect: {type: traditional}}
+- {id: fr12, lang: fr, query: "hijab beige", expect: {type: hijab, color: beige}}
+- {id: fr13, lang: fr, query: "pantalon beige homme moins de 70 dt", expect: {type: trousers, color: beige, gender: men, max_price: 70}}
+- {id: fr14, lang: fr, query: "t-shirt blanc homme à Sfax", expect: {type: tshirt, color: white, gender: men, city: Sfax}}
+- {id: fr15, lang: fr, query: "jupe longue noire", expect: {type: skirt, color: black, name_any: [longue, long, maxi]}}
+- {id: fr16, lang: fr, query: "manteau camel femme", expect: {type: coat, color: camel, gender: women}}
+- {id: fr17, lang: fr, query: "bottes noires femme", expect: {type: boots, color: black, gender: women}}
+- {id: fr18, lang: fr, query: "boucles d'oreilles dorées", expect: {type: earrings, color: gold}}
+- {id: fr19, lang: fr, query: "ceinture en cuir marron", expect: {type: belt, color: brown, name_any: [cuir, leather]}}
+- {id: fr20, lang: fr, query: "lunettes de soleil", expect: {type: sunglasses}}
+- {id: fr21, lang: fr, query: "short en jean", expect: {type: shorts, name_any: [jean, denim]}}
+- {id: fr22, lang: fr, query: "ensemble femme entre 50 et 120 dt", expect: {type: set, gender: women, min_price: 50, max_price: 120}}
+- {id: fr23, lang: fr, query: "chaussures homme marron", expect: {type: shoes, color: brown, gender: men}}
+- {id: fr24, lang: fr, query: "robe de soirée pour un mariage", expect: {type: dress, name_any: [soiree, ceremonie, satin, paillette, dentelle, longue]}}
+- {id: fr25, lang: fr, query: "colier dorée", expect: {type: necklace, color: gold}}
+- {id: fr26, lang: fr, query: "basket blache", expect: {type: sneakers, color: white}}
+- {id: fr27, lang: fr, query: "bague argentée", expect: {type: ring, color: grey}}
+- {id: fr28, lang: fr, query: "portefeuille homme noir", expect: {type: wallet, color: black, gender: men}}
+
+- {id: en01, lang: en, query: "white sneakers under 100 TND", expect: {type: sneakers, color: white, max_price: 100}}
+- {id: en02, lang: en, query: "black dress for women", expect: {type: dress, color: black, gender: women}}
+- {id: en03, lang: en, query: "men's blue shirt", expect: {type: shirt, color: blue, gender: men}}
+- {id: en04, lang: en, query: "leather handbag", expect: {type: bag, name_any: [cuir, leather, simili]}}
+- {id: en05, lang: en, query: "gold necklace", expect: {type: necklace, color: gold}}
+- {id: en06, lang: en, query: "women's sandals in Sousse", expect: {type: sandals, gender: women, city: Sousse}}
+- {id: en07, lang: en, query: "grey hoodie", expect: {type: sweater, color: grey, name_any: [hoodie, sweat, capuche]}}
+- {id: en08, lang: en, query: "beige trousers for men under 80 TND", expect: {type: trousers, color: beige, gender: men, max_price: 80}}
+- {id: en09, lang: en, query: "red heels", expect: {type: heels, color: red}}
+- {id: en10, lang: en, query: "navy jacket", expect: {type: jacket, color: navy}}
+- {id: en11, lang: en, query: "black boots", expect: {type: boots, color: black}}
+- {id: en12, lang: en, query: "silver earrings", expect: {type: earrings, color: grey}}
+
+- {id: dj01, lang: darija, query: "sbadri kahla a9al men 150 alf", expect: {type: sneakers, color: black, max_price: 150}}
+- {id: dj02, lang: darija, query: "sabbat ahmar", expect: {type: shoes, color: red}}
+- {id: dj03, lang: darija, query: "sorya bidha lel rjel", expect: {type: shirt, color: white, gender: men}}
+- {id: dj04, lang: darija, query: "robba lel nsa", expect: {type: dress, gender: women}}
+- {id: dj05, lang: darija, query: "sarwel azra9", expect: {type: trousers, color: blue}}
+- {id: dj06, lang: darija, query: "chkara kahla", expect: {type: bag, color: black}}
+- {id: dj07, lang: darija, query: "kabbout lel mra", expect: {type: coat, gender: women}}
+- {id: dj08, lang: darija, query: "jakita kahla rjel", expect: {type: jacket, color: black, gender: men}}
+- {id: dj09, lang: darija, query: "maryoul abyadh", expect: {type: tshirt, color: white}}
+- {id: dj10, lang: darija, query: "chlaka lel nsa", expect: {type: sandals, gender: women}}
+- {id: dj11, lang: darija, query: "sensla dhahbi", expect: {type: necklace, color: gold}}
+- {id: dj12, lang: darija, query: "mangouch dhahbi", expect: {type: earrings, color: gold}}
+- {id: dj13, lang: darija, query: "7zem kahel", expect: {type: belt, color: black}}
+- {id: dj14, lang: darija, query: "sa3a rjeli", expect: {type: watch, gender: men}}
+- {id: dj15, lang: darija, query: "khatem", expect: {type: ring}}
+- {id: dj16, lang: darija, query: "sbadri bidha fi Tunis", expect: {type: sneakers, color: white, city: Tunis}}
+- {id: dj17, lang: darija, query: "robba kahla a9al men 100", expect: {type: dress, color: black, max_price: 100}}
+- {id: dj18, lang: darija, query: "nadhara", expect: {type: sunglasses}}
+
+- {id: ar01, lang: arabic, query: "صباط أحمر", expect: {type: shoes, color: red}}
+- {id: ar02, lang: arabic, query: "سروال رجالي", expect: {type: trousers, gender: men}}
+- {id: ar03, lang: arabic, query: "روبة سوداء", expect: {type: dress, color: black}}
+- {id: ar04, lang: arabic, query: "سبادري بيضاء", expect: {type: sneakers, color: white}}
+- {id: ar05, lang: arabic, query: "شكارة نسائية", expect: {type: bag, gender: women}}
+- {id: ar06, lang: arabic, query: "سورية بيضاء للرجال", expect: {type: shirt, color: white, gender: men}}
+- {id: ar07, lang: arabic, query: "كبوط أسود", expect: {type: coat, color: black}}
+- {id: ar08, lang: arabic, query: "حزام", expect: {type: belt}}
+- {id: ar09, lang: arabic, query: "خاتم ذهبي", expect: {type: ring, color: gold}}
+- {id: ar10, lang: arabic, query: "مريول أزرق", expect: {type: tshirt, color: blue}}
+- {id: ar11, lang: arabic, query: "جبة", expect: {type: traditional}}
+- {id: ar12, lang: arabic, query: "نظارات", expect: {type: sunglasses}}
+- {id: ar13, lang: arabic, query: "سنسلة ذهبية", expect: {type: necklace, color: gold}}
+- {id: ar14, lang: arabic, query: "عباية سوداء", expect: {type: traditional, color: black}}
