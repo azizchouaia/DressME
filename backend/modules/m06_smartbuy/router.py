@@ -105,3 +105,76 @@ def analyze(p: PhotoIn):
 def identity_card():
     from .identity import CARD
     return CARD
+
+
+# ---------------------------------------------------------------- extras: wishlist, alternatives, wear check-in
+from . import extras  # noqa: E402
+
+
+class WishIn(BaseModel):
+    user_id: str
+    subcategory: str
+    colour: str
+    price_tnd: float
+    target_tnd: float | None = None      # default: 15% under the price
+    product_id: str | None = None
+    decision_id: str | None = None
+
+
+@router.post("/wishlist")
+def wishlist_add(w: WishIn):
+    """Save a THINK piece: Smart Buy watches local prices for it."""
+    return extras.wishlist_add(agent().memory, w.user_id, w.subcategory, w.colour, w.price_tnd,
+                               w.target_tnd, w.product_id, w.decision_id)
+
+
+@router.get("/wishlist/{user_id}")
+def wishlist_get(user_id: str):
+    return {"wishlist": extras.wishlist(agent().memory, user_id)}
+
+
+@router.delete("/wishlist/{user_id}/{wish_id}", status_code=204)
+def wishlist_remove(user_id: str, wish_id: str):
+    if not extras.wishlist_remove(agent().memory, user_id, wish_id):
+        raise HTTPException(404, "not in the wishlist")
+
+
+@router.post("/wishlist/{user_id}/check")
+def wishlist_check(user_id: str):
+    """Price alerts: wished pieces now at or under their target price in a local shop."""
+    a = agent()
+    return {"alerts": extras.wishlist_check(a.memory, user_id, a.shops)}
+
+
+@router.get("/alternatives")
+def alternatives(subcategory: str, colour: str, price_tnd: float, k: int = 3):
+    """Same type, at least 15% cheaper, same or close colour, one per local shop."""
+    return {"alternatives": extras.alternatives(agent().shops, subcategory, colour, price_tnd, k)}
+
+
+@router.get("/checkin/{user_id}")
+def checkins(user_id: str, days: int = 30):
+    """Bought pieces old enough to ask: 'did you wear it?'"""
+    return {"due": extras.checkins_due(agent().memory, user_id, days)}
+
+
+class CheckinIn(BaseModel):
+    user_id: str
+    decision_id: str
+    answer: str            # free text: "twice", "jamais", "barcha", "3 times but too tight"
+
+
+@router.post("/checkin")
+def checkin(c: CheckinIn):
+    """Free answer -> times worn -> real label (buy/think/skip) for retraining."""
+    try:
+        return extras.checkin_answer(agent().memory, c.user_id, c.decision_id, c.answer)
+    except ValueError as e:
+        raise HTTPException(404, str(e)) from e
+
+
+@router.get("/labels")
+def labels():
+    """Real labels from wear check-ins + how often Smart Buy was right (honest KPI)."""
+    rows = extras.real_labels(agent().memory.folder)
+    return {**extras.accuracy(rows), "rows": rows}

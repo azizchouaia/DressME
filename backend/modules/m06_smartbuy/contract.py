@@ -121,3 +121,7 @@ class SmartBuyOutput(BaseModel):
     goals: list[str] = []
     goal_fit: float | None = None                      # -1 breaks the goals .. +1 helps them
     fills_goal: str | None = None
+    # --- extras: wishlist + cheaper look-alikes
+    subcategory: str | None = None
+    colour: str | None = None
+    alternatives: list[dict] = []                      # same type, >=15% cheaper, same / close colour, local shops

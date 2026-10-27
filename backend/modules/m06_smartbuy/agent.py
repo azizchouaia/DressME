@@ -13,6 +13,7 @@ import yaml
 from shared.base_agent import BaseAgent
 
 from modules.m13_partner_links import service as partners
+from . import extras
 from modules.m18_size_fit import service as sizefit
 from .bandit import PersonalThresholds
 from .clients import get_clients
@@ -162,6 +163,11 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             acts.append(NextAction(action="show_outfits", label="See outfits with this piece", tool="stylist",
                                    args={"endpoint": "/m02/complete", "pinned": out.piece}))
         elif out.verdict == "think":
+            if out.subcategory and inp.price_tnd:
+                acts.append(NextAction(action="watch_price", label="Add to wishlist: tell me when the price drops",
+                                       tool="smartbuy", args={"endpoint": "/m06/wishlist", "user_id": inp.user_id,
+                                                              "subcategory": out.subcategory, "colour": out.colour,
+                                                              "price_tnd": inp.price_tnd, "decision_id": out.decision_id}))
             acts.append(NextAction(action="find_cheaper", label="Find it cheaper in local shops", tool="localshop",
                                    args={"subcategory": None, "max_price_tnd": round((inp.price_tnd or 0) * 0.8) or None,
                                          "query": out.piece}))
@@ -173,6 +179,10 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             if out.fills_gap is None:
                 acts.append(NextAction(action="find_alternative", label="Find a piece that fills a real gap",
                                        tool="smartbuy", args={"endpoint": "/m06/shopping-list", "user_id": inp.user_id}))
+        if out.alternatives:
+            alt = out.alternatives[0]
+            acts.append(NextAction(action="open_shop", label=f"Cheaper look-alike: {alt['price_tnd']:g} TND at {alt['shop']}",
+                                   tool=None, args={"url": alt["url"], "shop": alt["shop"]}))
         acts.append(NextAction(action="feedback", label="Did you buy it? Was the advice good?", tool="smartbuy",
                                args={"endpoint": "/m06/feedback", "decision_id": out.decision_id}))
         return acts
@@ -240,4 +250,7 @@ class SmartBuyAgent(BaseAgent[SmartBuyInput, SmartBuyOutput]):
             cost_per_wear_tnd=wp["cost_per_wear"], threshold_offset=offset,
             goal_fit=round(f["goal"]["score"], 2) if f["goals"].get("templates") else None,
             fills_goal=f["goal"]["fills"], goals=f["goals"].get("templates", []),
+            subcategory=cand["subcategory"], colour=cand["colour"],
+            alternatives=extras.alternatives(self.shops, cand["subcategory"], cand["colour"], inp.price_tnd)
+            if inp.price_tnd and v != "skip" else [],
         )
