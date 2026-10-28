@@ -19,7 +19,7 @@ const _tabs = [
   _Tab('Outfits', Icons.auto_awesome, '/bo1_recommendations', ['/bo2_time', '/bo9_try_on']),
   _Tab('Shop', Icons.shopping_bag_outlined, '/bo5_smart_buy', ['/bo6_local_market', '/bo6_boutique']),
   _Tab('Assistant', Icons.chat_bubble_outline_rounded, '/bo8_assistant'),
-  _Tab('More', Icons.grid_view_rounded, '/bo7_sharing', ['/design']),
+  _Tab('More', Icons.grid_view_rounded, '/bo7_sharing', ['/design', '/profile']),
 ];
 
 const _more = [
@@ -30,6 +30,7 @@ const _more = [
   ('BO7 · Share & challenges', '/bo7_sharing', Icons.groups_2_outlined),
   ('BO9 · Try it on', '/bo9_try_on', Icons.accessibility_new_rounded),
   ('Design kit', '/design', Icons.palette_outlined),
+  ('My account', '/profile', Icons.person_outline_rounded),
 ];
 
 class AppShell extends StatelessWidget {

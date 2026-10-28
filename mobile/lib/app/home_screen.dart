@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/api/dm_api.dart';
+import '../core/auth/auth.dart';
 import '../core/design/dressme_design.dart';
 import '../core/widgets/dm_widgets.dart';
 
@@ -80,7 +81,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: ListView(padding: EdgeInsets.zero, children: [
         DmHero(
           eyebrow: 'DressMe · your digital wardrobe',
-          title: 'Hello 👋',
+          title: 'Hello ${ref.watch(authProvider).user?.name.split(' ').first ?? ''} 👋',
+          trailing: IconButton(
+            tooltip: 'My account',
+            onPressed: () => context.go('/profile'),
+            icon: const Icon(Icons.person_outline_rounded, color: Colors.white),
+          ),
           child: Row(children: [
             Expanded(
               child: Text(ran == 0 ? 'Server: ${apiBaseUrl()}' : '$ok / ${boEntries.length} BOs answering',

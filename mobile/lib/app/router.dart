@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 
+import '../core/auth/auth.dart';
+import 'auth_screens.dart';
 import 'home_screen.dart';
 import 'shell.dart';
 
@@ -19,11 +21,20 @@ import '../features/bo9_try_on/ui/bo9_try_on_screen.dart';
 
 final router = GoRouter(
   initialLocation: '/',
+  refreshListenable: authController,
+  // signed out -> welcome; signed in -> never back to welcome
+  redirect: (_, state) {
+    final atWelcome = state.uri.path == '/welcome';
+    if (!authController.signedIn) return atWelcome ? null : '/welcome';
+    return atWelcome ? '/' : null;
+  },
   routes: [
+    GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
     ShellRoute(
       builder: (_, state, child) => AppShell(location: state.uri.path, child: child),
       routes: [
     GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
+    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
     GoRoute(path: '/bo1_recommendations', builder: (_, __) => const RecommendationsScreen()),
     GoRoute(path: '/bo2_time', builder: (_, __) => const OutfitOfDayScreen()),
     GoRoute(path: '/bo3_sustainability', builder: (_, __) => const InventoryScreen()),

@@ -11,10 +11,13 @@ String apiBaseUrl() {
   return kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
 }
 
-/// Demo users of the modules (the app has no login yet).
+/// Who the modules are asked about: the signed-in user. The demo account maps to each module's demo data.
 abstract final class DemoUsers {
-  static const wardrobe = 'usr_demo'; // M1 / M6 / M7 / M13 / M18
-  static const outfits = 'demo_f'; // M2 / M3 / M4 / M17 demo wardrobe
+  static String? signedIn; // set by AuthController (core/auth/auth.dart)
+  static String? token;
+
+  static String get wardrobe => signedIn ?? 'usr_demo'; // M1 / M6 / M7 / M13 / M18
+  static String get outfits => signedIn == null || signedIn == 'usr_demo' ? 'demo_f' : signedIn!; // M2 / M3 / M4 / M17
 }
 
 typedef Json = Map<String, dynamic>;
@@ -26,7 +29,13 @@ class DmApi {
           baseUrl: baseUrl ?? apiBaseUrl(),
           connectTimeout: const Duration(seconds: 8),
           receiveTimeout: const Duration(seconds: 180), // LLM / 3D calls can be slow
-        ));
+        )) {
+    _dio.interceptors.add(InterceptorsWrapper(onRequest: (o, h) {
+      final t = DemoUsers.token;
+      if (t != null) o.headers['Authorization'] = 'Bearer $t';
+      h.next(o);
+    }));
+  }
 
   final String base;
   final Dio _dio;
