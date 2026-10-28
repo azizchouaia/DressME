@@ -47,6 +47,18 @@ def _m9_items(user_id: str | None) -> list:
         return []
 
 
+def _m1_items(user_id: str | None) -> list:
+    """The user's REAL wardrobe (M1, BO4) as WardrobeItems with 1024-d vectors, [] if not usable."""
+    try:
+        from shared.user_wardrobe import m1_garments
+
+        from .contract import WardrobeItem
+
+        return [WardrobeItem.model_validate(g) for g in m1_garments(user_id)]
+    except Exception:  # noqa: BLE001  - M1 is optional for M2
+        return []
+
+
 def _setup(user_id: str | None, p):
     """payload -> (all items, filtered items, ctx, weather source)."""
     import numpy as np
@@ -61,7 +73,8 @@ def _setup(user_id: str | None, p):
         items = wardrobe.from_payload(p.items)
         demo = False
     else:
-        own = _m9_items(user_id)  # the user's own pieces (3D wardrobe of M9) when they have some
+        # the user's own pieces: their M1 wardrobe (photos), else their 3D wardrobe (M9), else a demo wardrobe
+        own = _m1_items(user_id) or _m9_items(user_id)
         if own:
             items = wardrobe.from_payload(own)
             demo = False

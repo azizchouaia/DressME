@@ -71,7 +71,10 @@ async def catalog(user_id: str = "demo_f"):
 
     c = await cat(user_id)
     images = {}
-    if c["source"].startswith("my 3D"):
+    if c["source"].startswith("my wardrobe"):
+        for g in c["m2_items"]:
+            images[g["item_id"]] = g.get("image_cutout") or g.get("image_raw")
+    elif c["source"].startswith("my 3D"):
         from modules.m09_avatar_3d import wardrobe3d
 
         for p in wardrobe3d.state(user_id)["pieces"]:

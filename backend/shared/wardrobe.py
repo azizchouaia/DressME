@@ -20,7 +20,13 @@ MOODS = ("comfy", "bold", "classy")
 # ---------------- the user's wardrobe (catalog) ----------------
 async def catalog(user: str) -> dict:
     """{"source", "items": [{id, name, category}], "m2_items": items to pass to M2 or None (demo
-    wardrobe)}."""
+    wardrobe)}. Order: the user's M1 wardrobe (BO4 photos), their 3D wardrobe (M9), a demo wardrobe."""
+    from shared.user_wardrobe import m1_garments
+
+    mine = m1_garments(user)
+    if mine:
+        return {"source": "my wardrobe (M1)", "m2_items": mine,
+                "items": [{"id": g["item_id"], "name": g["name"], "category": g["category"]} for g in mine]}
     r = await ask("m09_avatar_3d", "items", user_id=user, sender=ME)
     items = (r.get("result") or {}).get("items") or []
     if len(items) >= 2:
