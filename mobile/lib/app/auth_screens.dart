@@ -123,7 +123,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         TextFormField(controller: _city, decoration: const InputDecoration(labelText: 'City')),
                         const SizedBox(height: 12),
                         Wrap(spacing: 6, children: [
-                          for (final (v, label) in const [('female', 'Woman'), ('male', 'Man'), ('other', 'Prefer not to say')])
+                          for (final (v, label) in const [('female', 'Woman'), ('male', 'Man')])
                             DmChoiceChip(label: label, selected: _gender == v, onTap: () => setState(() => _gender = v)),
                         ]),
                       ],
