@@ -3,17 +3,18 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/dm_api.dart' as dm;
 import '../../../core/api_client.dart';
 
 /// Address of the DressMe API.
 /// - `--dart-define=API_URL=http://192.168.1.10:8000` wins (real phone on the same Wi-Fi);
-/// - on the web, the app is served by the API itself (http://localhost:8000/bo7/app/), so the same address;
-/// - otherwise the Android emulator address of the PC.
+/// - inside the DressMe app: the same backend as every other BO (localhost:8000 on the web);
+/// - when the app is served by the API itself (http://localhost:8000/bo7/app/): that address.
 String apiBaseUrl() {
   const override = String.fromEnvironment('API_URL');
   if (override.isNotEmpty) return override;
-  if (kIsWeb) return Uri.base.origin;
-  return 'http://10.0.2.2:8000';
+  if (kIsWeb && Uri.base.path.startsWith('/bo7/')) return Uri.base.origin;
+  return dm.apiBaseUrl();
 }
 
 class Bo7Api {
