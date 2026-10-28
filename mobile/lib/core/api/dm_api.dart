@@ -45,6 +45,11 @@ class DmApi {
     return _json(r.data);
   }
 
+  Future<Json> delete(String path, {Map<String, dynamic>? query}) async {
+    final r = await _dio.delete<dynamic>(path, queryParameters: query);
+    return _json(r.data);
+  }
+
   Future<Json> post(String path, [Object? body]) async {
     final r = await _dio.post<dynamic>(path, data: body ?? const <String, dynamic>{});
     return _json(r.data);

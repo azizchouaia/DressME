@@ -36,13 +36,23 @@ class _StyleProfileScreenState extends ConsumerState<StyleProfileScreen> {
         'mode': 'add_to_wardrobe',
         'on_duplicate': 'ask',
       });
-      final g = (r['garment'] as Map?) ?? const {};
-      if (mounted) {
-        dmToast(context, r['duplicate_of'] != null
-            ? 'Looks like a piece you already have'
-            : 'Added: ${g['colors'] is List && (g['colors'] as List).isNotEmpty ? (g['colors'] as List).first['name'] : ''} ${g['subcategory'] ?? g['category'] ?? ''}');
-        setState(() => _run++);
+      final g = ((r['garment'] as Map?) ?? const {}).cast<String, dynamic>();
+      final label = _label(g);
+      if (r['pending'] == true) {
+        // M1 found a piece that looks the same: it waits (hidden) until the user decides
+        final keep = await _askDuplicate(g, jsonList(r['duplicates']));
+        final id = g['item_id'];
+        if (keep == true) {
+          await _api.post('/m01/items/$id/confirm?user_id=${DemoUsers.wardrobe}');
+          if (mounted) dmToast(context, 'Added anyway: $label');
+        } else {
+          await _api.delete('/m01/items/$id', query: {'user_id': DemoUsers.wardrobe});
+          if (mounted) dmToast(context, 'Not added: you already have it');
+        }
+      } else if (mounted) {
+        dmToast(context, r['needs_confirmation'] == true ? 'Added: $label (check the details, the AI was not sure)' : 'Added: $label');
       }
+      if (mounted) setState(() => _run++);
     } catch (e) {
       if (mounted) dmToast(context, apiError(e));
     } finally {
@@ -128,13 +138,76 @@ class _StyleProfileScreenState extends ConsumerState<StyleProfileScreen> {
     );
   }
 
+  static String _label(Map g) {
+    final colors = g['colors'];
+    final colour = colors is List && colors.isNotEmpty ? '${(colors.first as Map)['name']} ' : '';
+    return '$colour${g['subcategory'] ?? g['category'] ?? 'piece'}';
+  }
+
+  /// "Same piece?" -> true = keep both, false/null = cancel the new one.
+  Future<bool?> _askDuplicate(Json g, List<Json> dups) async {
+    final items = (await _api.post('/m01/items', {'user_id': DemoUsers.wardrobe}))['items'];
+    final byId = {for (final it in jsonList(items)) it['item_id']: it};
+    if (!mounted) return false;
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('You may already have it'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('This ${_label(g)} looks like:', style: DmText.body),
+          const SizedBox(height: 12),
+          Wrap(spacing: 10, runSpacing: 10, children: [
+            for (final d in dups.take(3))
+              DmPieceTile(
+                name: byId[d['item_id']] == null ? '${d['item_id']}' : _label(byId[d['item_id']]!),
+                imageUrl: _api.media((byId[d['item_id']]?['image_cutout'] ?? byId[d['item_id']]?['image_raw']) as String?),
+                caption: '${pct(d['similarity'])} same',
+                width: 96,
+              ),
+          ]),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('It is another piece, keep it')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Same piece, don\'t add')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext sheet, Json it) async {
+    final ok = await showDialog<bool>(
+      context: sheet,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove this piece?'),
+        content: Text('${_label(it)} will be removed from your wardrobe.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _api.delete('/m01/items/${it['item_id']}', query: {'user_id': DemoUsers.wardrobe});
+      if (sheet.mounted) Navigator.pop(sheet);
+      if (mounted) {
+        dmToast(context, 'Removed');
+        setState(() => _run++);
+      }
+    } catch (e) {
+      if (mounted) dmToast(context, apiError(e));
+    }
+  }
+
   static String _summary(Json d) =>
       d.entries.where((e) => !e.key.startsWith('_')).map((e) => '${e.key}: ${e.value}').join('\n');
 
   void _details(BuildContext context, Json it) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => Padding(
+      isScrollControlled: true,
+      builder: (sheet) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(cap('${it['subcategory'] ?? it['category']}'), style: DmText.title),
@@ -149,6 +222,19 @@ class _StyleProfileScreenState extends ConsumerState<StyleProfileScreen> {
                 label: Text('${c['name']} ${pct(c['share'])}'),
               ),
           ]),
+          const SizedBox(height: 12),
+          FutureBuilder<Json>(
+            future: _api.post('/m01/similar', {'user_id': DemoUsers.wardrobe, 'item_id': it['item_id'], 'k': 3, 'threshold': 0.8}),
+            builder: (_, snap) {
+              final near = jsonList(snap.data?['items'] ?? snap.data?['neighbours'] ?? snap.data?['similar']);
+              if (near.isEmpty) return const SizedBox.shrink();
+              return Text('Looks like ${near.length} other piece(s) you own (${near.map((n) => pct(n['similarity'])).join(', ')})',
+                  style: DmText.body.copyWith(color: DmColors.warning));
+            },
+          ),
+          const SizedBox(height: 16),
+          DmButton('Remove from my wardrobe', kind: DmButtonKind.outline, icon: Icons.delete_outline_rounded,
+              onPressed: () => _delete(sheet, it)),
         ]),
       ),
     );
