@@ -23,11 +23,41 @@ BO1 = (
 BO2 = ("daily_plan", "swap", "laundry", "event_looks", "local_shops", "photo_piece", "declutter")
 
 
+PIECES = [
+    ("t_black", "black t-shirt", "top", "black", "#111111"),
+    ("t_white", "white shirt", "top", "white", "#f5f5f5"),
+    ("b_blue", "blue jeans", "bottom", "blue", "#3355aa"),
+    ("b_yellow", "yellow pants", "bottom", "yellow", "#e8c440"),
+    ("s_white", "white sneakers", "shoes", "white", "#fafafa"),
+    ("o_navy", "navy jacket", "outerwear", "navy", "#1f2a44"),
+]
+
+
+async def fake_catalog(user):
+    """Small built-in wardrobe: the agent tests do not need M2's downloaded model files (ml/models)."""
+    items = [{"id": i, "name": n, "category": c} for i, n, c, _, _ in PIECES]
+    m2 = [
+        {
+            "item_id": i,
+            "user_id": user,
+            "image_raw": "",
+            "category": c,
+            "colors": [{"name": col, "hex": hx, "share": 1.0}],
+            "embedding": [float(k == j) for j in range(1024)],
+        }
+        for k, (i, _, c, col, hx) in enumerate(PIECES)
+    ]
+    return {"source": "test wardrobe", "items": items, "m2_items": m2}
+
+
 @pytest.fixture(autouse=True)
 def env(tmp_path, monkeypatch):
     monkeypatch.setattr(agent_memory, "DATA", tmp_path)
     for m in ("M02", "M03", "M04", "M17", "M09", "M07"):
         monkeypatch.setenv(f"{m}_USE_MOCK", "true")
+    from shared import wardrobe
+
+    monkeypatch.setattr(wardrobe, "catalog", fake_catalog)
 
 
 def llm_script(monkeypatch, replies):
