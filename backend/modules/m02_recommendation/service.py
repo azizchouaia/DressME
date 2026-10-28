@@ -32,6 +32,21 @@ def _m03():
     return m03 if m03_router._impl() is m03 else None
 
 
+def _m9_items(user_id: str | None) -> list:
+    """The user's pieces from M9 (photo -> 3D wardrobe) as WardrobeItems, [] if none / M9 unavailable."""
+    if not user_id or user_id.startswith("demo_"):
+        return []
+    try:
+        from modules.m09_avatar_3d import wardrobe3d
+
+        from .contract import WardrobeItem
+
+        raw = wardrobe3d.wardrobe_items(user_id)
+        return [WardrobeItem.model_validate(r) for r in raw] if len(raw) >= 2 else []
+    except Exception:  # noqa: BLE001  - M9 is optional for M2
+        return []
+
+
 def _setup(user_id: str | None, p):
     """payload -> (all items, filtered items, ctx, weather source)."""
     import numpy as np
@@ -46,8 +61,13 @@ def _setup(user_id: str | None, p):
         items = wardrobe.from_payload(p.items)
         demo = False
     else:
-        items = wardrobe.load_demo(user_id)
-        demo = True
+        own = _m9_items(user_id)  # the user's own pieces (3D wardrobe of M9) when they have some
+        if own:
+            items = wardrobe.from_payload(own)
+            demo = False
+        else:
+            items = wardrobe.load_demo(user_id)
+            demo = True
     log = [e.model_dump() for e in p.wear_log]
     wear_source = "request" if log else None
     m03 = _m03()

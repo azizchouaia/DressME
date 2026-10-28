@@ -30,6 +30,18 @@ def agents() -> dict:
         a = getattr(mod, "agent", None)
         if a is not None:
             out[a.name] = a
+    # BO idea agents + BO orchestrators: bo/<bo>/agents.py exposes AGENTS (instances)
+    import bo
+
+    for m in sorted(pkgutil.iter_modules(bo.__path__), key=lambda m: m.name):
+        try:
+            mod = importlib.import_module(f"bo.{m.name}.agents")
+        except ModuleNotFoundError as e:
+            if e.name != f"bo.{m.name}.agents":
+                raise
+            continue
+        for a in getattr(mod, "AGENTS", []):
+            out[a.name] = a
     return out
 
 
@@ -48,4 +60,5 @@ async def ask(
 
 def directory() -> list[dict]:
     """Cards of every agent: what each one can do (for other agents and the orchestrator)."""
-    return [a.card() for a in agents().values()]
+    return [a.card() if hasattr(a, "card") else {"agent": a.name, "description": a.description}
+            for a in agents().values()]

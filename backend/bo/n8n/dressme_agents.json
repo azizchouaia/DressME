@@ -1,0 +1,228 @@
+{
+ "id": "DressMeAgents001",
+ "name": "DressMe · agents talking to each other",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## DressMe agents · n8n showcase\nn8n plays an **external app / another BO** talking to our agents over HTTP (`POST /bo/chat`).\nThe agents, their LLM (Qwen2.5 3B, Ollama) and the tools (M2, M3, M4, M7, M9, M17) run in the DressMe backend.\n\n**Top row = buttons** (structured calls, 0 LLM calls). **Bottom row = a sentence** (the agents use their LLM).",
+    "width": 1180,
+    "height": 200,
+    "color": 7
+   },
+   "name": "About",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -360
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "Start (button press / 07:00)",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    120
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### Buttons → no LLM\nSame session: \"Change shoes\" works on the outfit of the day (shared memory).",
+    "width": 760,
+    "height": 330,
+    "color": 5
+   },
+   "name": "Buttons",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    200,
+    -120
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"agent\": \"time_optimisation\", \"user_id\": \"demo_f\", \"session_id\": \"n8n-demo\", \"message\": \"\", \"payload\": {\"action\": \"daily_plan.today\", \"reply\": false}}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "name": "BO2 agent · Outfit of the day",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    240,
+    40
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"agent\": \"time_optimisation\", \"user_id\": \"demo_f\", \"session_id\": \"n8n-demo\", \"message\": \"\", \"payload\": {\"action\": \"swap.swap\", \"args\": {\"slot\": \"shoes\"}, \"reply\": false}}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "name": "BO2 agent · Change shoes",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    480,
+    40
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"agent\": \"time_optimisation\", \"user_id\": \"demo_f\", \"session_id\": \"n8n-demo\", \"message\": \"\", \"payload\": {\"action\": \"personalised_recommendations:forgotten.rediscover\", \"reply\": false}}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "name": "BO2 → BO1 · Forgotten pieces",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    720,
+    40
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "\n// Turn the agent trace (result.steps) into \"who called whom\" lines\nfunction tree(agent, steps, depth = 1, out = []) {\n  for (const s of steps || []) {\n    const pad = '  '.repeat(depth);\n    if (s.step === 'agent') { out.push(`${pad}${agent} → agent ${s.to}.${s.action || ''}`); tree(s.to, s.sub_steps, depth + 1, out); }\n    if (s.step === 'tool') out.push(`${pad}${agent} → tool ${s.to}.${s.action} (${s.ms} ms)`);\n    if (s.step === 'llm_route' || s.step === 'llm_answer') out.push(`${pad}${agent} → LLM ${s.step} (${s.ms} ms)`);\n    if (s.step === 'rule_route') out.push(`${pad}${agent} → rule → ${s.decision} (LLM skipped)`);\n  }\n  return out;\n}\n\nconst calls = ['BO2 agent · Outfit of the day', 'BO2 agent · Change shoes', 'BO2 → BO1 · Forgotten pieces'];\nreturn calls.map(n => {\n  const r = $(n).first().json; const res = r.result || {};\n  const steps = res.steps || [];\n  const llm = JSON.stringify(steps).match(/\"llm_(route|answer)\"/g) || [];\n  return { json: { button: n, handled_by: (res.data || {}).handled_by, llm_calls: llm.length,\n                   who_called_whom: [`app → ${r.agent}`, ...tree(r.agent, steps)].join('\\n') } };\n});"
+   },
+   "name": "Who called whom (buttons)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    980,
+    40
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### Sentence → LLM\nBO1 agent's LLM picks the idea agent, the idea agent's LLM picks the action, the LLM writes the answer.",
+    "width": 760,
+    "height": 260,
+    "color": 6
+   },
+   "name": "Sentence",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    200,
+    300
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"agent\": \"personalised_recommendations\", \"user_id\": \"demo_f\", \"session_id\": \"n8n-demo-chat\", \"message\": \"What should I wear tomorrow for work?\"}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "BO1 agent · sentence (LLM)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    360,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "\n// Turn the agent trace (result.steps) into \"who called whom\" lines\nfunction tree(agent, steps, depth = 1, out = []) {\n  for (const s of steps || []) {\n    const pad = '  '.repeat(depth);\n    if (s.step === 'agent') { out.push(`${pad}${agent} → agent ${s.to}.${s.action || ''}`); tree(s.to, s.sub_steps, depth + 1, out); }\n    if (s.step === 'tool') out.push(`${pad}${agent} → tool ${s.to}.${s.action} (${s.ms} ms)`);\n    if (s.step === 'llm_route' || s.step === 'llm_answer') out.push(`${pad}${agent} → LLM ${s.step} (${s.ms} ms)`);\n    if (s.step === 'rule_route') out.push(`${pad}${agent} → rule → ${s.decision} (LLM skipped)`);\n  }\n  return out;\n}\n\nconst r = $input.first().json; const res = r.result || {};\nconst steps = res.steps || [];\nconst llm = JSON.stringify(steps).match(/\"llm_(route|answer)\"/g) || [];\nreturn [{ json: { sentence: 'What should I wear tomorrow for work?', reply: res.reply, llm_calls: llm.length,\n                  model: res.model, who_called_whom: [`app → ${r.agent}`, ...tree(r.agent, steps)].join('\\n') } }];"
+   },
+   "name": "Who called whom (LLM)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    980,
+    420
+   ]
+  }
+ ],
+ "connections": {
+  "Start (button press / 07:00)": {
+   "main": [
+    [
+     {
+      "node": "BO2 agent · Outfit of the day",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "BO1 agent · sentence (LLM)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "BO2 agent · Outfit of the day": {
+   "main": [
+    [
+     {
+      "node": "BO2 agent · Change shoes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "BO2 agent · Change shoes": {
+   "main": [
+    [
+     {
+      "node": "BO2 → BO1 · Forgotten pieces",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "BO2 → BO1 · Forgotten pieces": {
+   "main": [
+    [
+     {
+      "node": "Who called whom (buttons)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "BO1 agent · sentence (LLM)": {
+   "main": [
+    [
+     {
+      "node": "Who called whom (LLM)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "active": false,
+ "pinData": {}
+}

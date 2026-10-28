@@ -1,0 +1,896 @@
+{
+ "id": "DressMePipeline3",
+ "name": "DressMe · BO1 pipeline (daily outfit, forgotten, capsule)",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## DressMe · BO1 agent pipeline (3 ideas)\n**BO agent** chooses the **idea agent** → the idea agent chooses the **action** → the action calls the **tools** → the BO agent answers.\nIn the app the two choices are made by the **LLM** (Qwen2.5 3B, Ollama) or a keyword rule; here the Switch nodes stand for those choices. Every action node calls the real agent action (`POST /bo/chat`).",
+    "width": 1900,
+    "height": 170,
+    "color": 7
+   },
+   "name": "About",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -470
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### BO1 agent\n**personalised_recommendations**\n\nLLM (or a keyword rule) chooses the idea agent",
+    "width": 250,
+    "height": 1360,
+    "color": 3
+   },
+   "name": "BO lane",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    420,
+    -270
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### Idea agent · daily_outfit\nLLM chooses 1 of 4 actions · tools M4 + M2",
+    "width": 820,
+    "height": 670,
+    "color": 6
+   },
+   "name": "daily_outfit lane",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    700,
+    -270
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### Idea agent · forgotten\nLLM reads the number of days · tools M3 + M2",
+    "width": 820,
+    "height": 250,
+    "color": 6
+   },
+   "name": "forgotten lane",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    700,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### Idea agent · capsule\nLLM reads size / season · tools M17 (+ M4)",
+    "width": 820,
+    "height": 400,
+    "color": 6
+   },
+   "name": "capsule lane",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    700,
+    690
+   ]
+  },
+  {
+   "parameters": {
+    "content": "### BO1 agent · answer\nLLM writes the sentence from the results (sentence); a button screen shows the data (0 LLM)",
+    "width": 300,
+    "height": 1360,
+    "color": 3
+   },
+   "name": "Answer lane",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1560,
+    -270
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "Request (sentence or button)",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    400
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// one request per idea, as the app would send them\nreturn [\n  { json: { user_id: 'demo_f', idea: 'daily_outfit', action: 'recommend', args: { day: 'tomorrow', occasion: 'work' }, sentence: 'What should I wear tomorrow for work?' } },\n  { json: { user_id: 'demo_f', idea: 'forgotten', action: 'rediscover', args: { days: 45 }, sentence: \"Show me pieces I haven't worn in a long time\" } },\n  { json: { user_id: 'demo_f', idea: 'capsule', action: 'build', args: { size: 8 }, sentence: 'Make me a capsule of 8 pieces' } },\n];"
+   },
+   "name": "3 requests (one per idea)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    400
+   ]
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.idea }}",
+          "rightValue": "daily_outfit",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "daily_outfit"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.idea }}",
+          "rightValue": "forgotten",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "forgotten"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.idea }}",
+          "rightValue": "capsule",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "capsule"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "BO1 agent · choose idea agent",
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.2,
+   "position": [
+    480,
+    400
+   ]
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "recommend",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "recommend"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "remix",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "remix"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "build",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "build"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "why",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "why"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "daily_outfit · choose action",
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.2,
+   "position": [
+    780,
+    80
+   ]
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "rediscover",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "rediscover"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "forgotten · choose action",
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.2,
+   "position": [
+    780,
+    540
+   ]
+  },
+  {
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "build",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "build"
+      },
+      {
+       "conditions": {
+        "options": {
+         "caseSensitive": true,
+         "leftValue": "",
+         "typeValidation": "strict",
+         "version": 2
+        },
+        "conditions": [
+         {
+          "leftValue": "={{ $json.action }}",
+          "rightValue": "plan",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          }
+         }
+        ],
+        "combinator": "and"
+       },
+       "renameOutput": true,
+       "outputKey": "plan"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "capsule · choose action",
+   "type": "n8n-nodes-base.switch",
+   "typeVersion": 3.2,
+   "position": [
+    780,
+    870
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// what came back from each idea agent: who handled it and which tools ran\nreturn $input.all().map(i => {\n  const r = i.json, res = r.result || {};\n  const tools = (res.steps || []).filter(s => s.step === 'tool').map(s => `${s.to}.${s.action} (${s.ms} ms)`);\n  return { json: { idea_agent: r.agent, action: res.action, tools_called: tools.join(' → '),\n    llm_calls: (JSON.stringify(res.steps || []).match(/\"llm_(route|answer)\"/g) || []).length, data: res.data } };\n});"
+   },
+   "name": "BO1 agent · answer",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1660,
+    400
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'daily_outfit', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'recommend', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "recommend",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    -140
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M4 calendar → M2 recommend",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    -140
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'daily_outfit', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'remix', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "remix",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    10
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M2 remix",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    10
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'daily_outfit', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'build', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "build",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    160
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M2 complete",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'daily_outfit', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'why', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "why",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    310
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M2 score (breakdown)",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    310
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'forgotten', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'rediscover', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "rediscover",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    540
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M3 forgotten → M2 complete",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    540
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'capsule', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'build', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "build capsule",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    800
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M17 capsule (ILP)",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    800
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "http://127.0.0.1:8000/bo/chat",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ agent: 'capsule', user_id: $json.user_id, session_id: 'n8n-pipeline', message: '', payload: { action: 'plan', args: $json.args, reply: false } }) }}",
+    "options": {
+     "timeout": 180000
+    }
+   },
+   "name": "plan",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1040,
+    950
+   ]
+  },
+  {
+   "parameters": {},
+   "name": "M17 plan + M4",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    1320,
+    950
+   ]
+  }
+ ],
+ "connections": {
+  "Request (sentence or button)": {
+   "main": [
+    [
+     {
+      "node": "3 requests (one per idea)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "3 requests (one per idea)": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · choose idea agent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "BO1 agent · choose idea agent": {
+   "main": [
+    [
+     {
+      "node": "daily_outfit · choose action",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "forgotten · choose action",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "capsule · choose action",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "daily_outfit · choose action": {
+   "main": [
+    [
+     {
+      "node": "recommend",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "remix",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "build",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "why",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "recommend": {
+   "main": [
+    [
+     {
+      "node": "M4 calendar → M2 recommend",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M4 calendar → M2 recommend": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "remix": {
+   "main": [
+    [
+     {
+      "node": "M2 remix",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M2 remix": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "build": {
+   "main": [
+    [
+     {
+      "node": "M2 complete",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M2 complete": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "why": {
+   "main": [
+    [
+     {
+      "node": "M2 score (breakdown)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M2 score (breakdown)": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "forgotten · choose action": {
+   "main": [
+    [
+     {
+      "node": "rediscover",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "rediscover": {
+   "main": [
+    [
+     {
+      "node": "M3 forgotten → M2 complete",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M3 forgotten → M2 complete": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "capsule · choose action": {
+   "main": [
+    [
+     {
+      "node": "build capsule",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "plan",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "build capsule": {
+   "main": [
+    [
+     {
+      "node": "M17 capsule (ILP)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M17 capsule (ILP)": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "plan": {
+   "main": [
+    [
+     {
+      "node": "M17 plan + M4",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "M17 plan + M4": {
+   "main": [
+    [
+     {
+      "node": "BO1 agent · answer",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "active": false,
+ "pinData": {}
+}

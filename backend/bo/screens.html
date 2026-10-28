@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DressMe Screens</title>
+<style>
+  :root { --bg:#f6f3ee; --panel:#fffdf9; --ink:#1f1d1a; --muted:#6f6a62; --line:#e6dfd4; --accent:#8a5a2b; --accent-ink:#fff; --chip:#efe9df; --soft:#f1e4d4;
+          --btn:#2b2724; --btn-ink:#fff; --orch:#8a5a2b; --idea:#6b4fa0; --tool:#2f6d8a; --good:#3f7d4e; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#151412; --panel:#1f1d1a; --ink:#f0ebe3; --muted:#a39d93; --line:#34302a;
+          --accent:#d9a46a; --accent-ink:#1b1209; --chip:#2a2723; --soft:#3a2d20; --btn:#f0ebe3; --btn-ink:#151412; --orch:#d9a46a; --idea:#b9a2e6; --tool:#8cc6de; --good:#7cc08b; } }
+  * { box-sizing:border-box; } html, body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; overflow-x:hidden; }
+  button, select { font:inherit; color:inherit; }
+  .app { max-width:1260px; margin:0 auto; padding:12px 16px 40px; }
+  header { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; } header h1 { margin:0; font-size:20px; }
+  .muted { color:var(--muted); } .small { font-size:12px; }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; } @media (min-width:1000px){ .grid { grid-template-columns:380px minmax(0,1fr); align-items:start; } }
+  .grid > * { min-width:0; }
+  .phone { background:var(--panel); border:1px solid var(--line); border-radius:28px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+  .scr { border:1px solid var(--line); border-radius:16px; padding:12px; margin-bottom:12px; background:var(--bg); }
+  .scr h3 { margin:0 0 8px; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  .scr h3 span { font-size:11px; color:var(--accent); font-weight:700; }
+  .btns { display:flex; gap:6px; flex-wrap:wrap; }
+  .b { border:0; background:var(--btn); color:var(--btn-ink); padding:8px 12px; border-radius:12px; cursor:pointer; font-size:13px; font-weight:600; }
+  .b.alt { background:var(--chip); color:var(--ink); border:1px solid var(--line); }
+  .b:disabled { opacity:.45; cursor:default; }
+  .opts { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; font-size:13px; }
+  select { padding:7px 9px; border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:14px; min-width:0; }
+  .card h2 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .result { font-size:14px; } .result .pieces { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .pc { width:76px; text-align:center; font-size:11px; color:var(--muted); } .pc img, .pc .sw { width:76px; height:76px; object-fit:contain; border-radius:10px; background:var(--chip); display:block; }
+  .kv { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:3px 10px; font-size:13px; margin-top:6px; } .kv b { color:var(--muted); font-weight:600; }
+  pre { font:12px/1.4 Consolas,monospace; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; white-space:pre-wrap; word-break:break-word; max-height:260px; overflow:auto; margin:0; }
+  .flow { overflow-x:auto; padding:4px 0 8px; }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:4px; vertical-align:-2px; }
+  .explain { font-size:13px; } .explain ol { margin:6px 0 0; padding-left:20px; } .explain li { margin-bottom:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>DressMe · app screens → agents → tools</h1><span class="small muted">each button calls an agent directly (no sentence): the diagram shows who calls whom</span></header>
+  <div class="grid">
+    <div class="phone">
+      <div class="opts">
+        <label>Wardrobe <select id="user"><option value="demo_f">demo_f</option><option value="demo_m">demo_m</option><option value="me">my 3D wardrobe</option></select></label>
+        <label>Route <select id="route"><option value="direct">button → idea agent</option><option value="bo">button → BO agent → idea agent</option></select></label>
+      </div>
+      <div class="scr"><h3>Today <span>BO2 · daily_plan</span></h3><div class="btns">
+        <button class="b" data-a="daily_plan" data-x="today">Outfit of the day</button>
+        <button class="b alt" data-a="daily_plan" data-x="tomorrow">Tomorrow</button>
+        <button class="b alt" data-a="daily_plan" data-x="approve">✓ I take it</button>
+        <button class="b alt" data-a="daily_plan" data-x="change">↻ Another</button>
+        <button class="b alt" data-a="daily_plan" data-x="widget">Widget</button></div></div>
+      <div class="scr"><h3>One tap <span>BO2 · swap</span></h3><div class="btns">
+        <button class="b" data-a="swap" data-x="swap" data-args='{"slot":"shoes"}'>Change shoes</button>
+        <button class="b alt" data-a="swap" data-x="swap" data-args='{"slot":"top"}'>Change top</button>
+        <button class="b alt" data-a="swap" data-x="swap" data-args='{"slot":"bottom"}'>Change bottom</button></div></div>
+      <div class="scr"><h3>Outfit <span>BO1 · daily_outfit</span></h3><div class="btns">
+        <button class="b" data-a="daily_outfit" data-x="recommend" data-args='{"occasion":"work"}'>Work outfit</button>
+        <button class="b alt" data-a="daily_outfit" data-x="remix">Remix</button>
+        <button class="b alt" data-a="daily_outfit" data-x="why">Why this outfit?</button></div></div>
+      <div class="scr"><h3>Laundry <span>BO2 · laundry</span></h3><div class="btns">
+        <button class="b" data-a="laundry" data-x="status">What's in the laundry</button>
+        <button class="b alt" data-a="laundry" data-x="put" data-from="outfit">Outfit → laundry</button>
+        <button class="b alt" data-a="laundry" data-x="back">Laundry done</button></div></div>
+      <div class="scr"><h3>Wardrobe <span>BO1</span></h3><div class="btns">
+        <button class="b" data-a="forgotten" data-x="rediscover">Forgotten pieces</button>
+        <button class="b alt" data-a="rotation" data-x="report">Rotation</button>
+        <button class="b alt" data-a="capsule" data-x="build" data-args='{"size":8}'>Capsule of 8</button>
+        <button class="b alt" data-a="style_insights" data-x="palette">My colours</button>
+        <button class="b alt" data-a="gap_filling" data-x="suggest">What I'm missing</button></div></div>
+      <div class="scr"><h3>Cross-BO <span>BO2 agent → BO1 agent</span></h3><div class="small muted" style="margin-bottom:6px">always sent to the time agent, which asks the recommendations agent</div><div class="btns">
+        <button class="b" data-bo="time_optimisation" data-a="personalised_recommendations:forgotten" data-x="rediscover">Forgotten pieces (via BO2)</button>
+        <button class="b alt" data-bo="time_optimisation" data-a="personalised_recommendations:daily_outfit" data-x="recommend" data-args='{"occasion":"event"}'>Event outfit (via BO2)</button>
+        <button class="b alt" data-bo="personalised_recommendations" data-a="time_optimisation:laundry" data-x="status">Laundry (via BO1)</button></div></div>
+      <div class="scr"><h3>Plans <span>BO1 / BO2</span></h3><div class="btns">
+        <button class="b" data-a="travel" data-x="plan" data-args='{"city":"Paris","days":3}'>Pack for Paris · 3 days</button>
+        <button class="b alt" data-a="event_looks" data-x="upcoming">My events</button>
+        <button class="b alt" data-a="local_shops" data-x="find" data-args='{"query":"black trousers Tunis 120 TND"}'>Shops: black trousers</button>
+        <button class="b alt" data-a="declutter" data-x="suggest">Declutter</button></div></div>
+    </div>
+
+    <div>
+      <div class="card"><h2>Screen result <span class="small" id="time"></span></h2><div class="result" id="result"><span class="muted">Tap a button on the phone.</span></div></div>
+      <div class="card"><h2>Workflow · who calls whom</h2>
+        <div class="legend"><span><i style="background:var(--btn)"></i>button (app)</span><span><i style="background:var(--orch)"></i>BO agent (orchestrator)</span><span><i style="background:var(--idea)"></i>idea agent</span><span><i style="background:var(--tool)"></i>tool (module agent / model)</span></div>
+        <div class="flow" id="flow"><span class="small muted">The diagram of the last click appears here.</span></div>
+        <div class="explain" id="explain"></div>
+      </div>
+      <div class="card"><h2>Messages exchanged</h2><div class="small muted" style="margin-bottom:6px">what the app sent (AgentCall) and what came back (AgentResult, shortened)</div><pre id="msgs">—</pre></div>
+    </div>
+  </div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let CATALOG = {}; const SESSION = 'screens-' + Math.random().toString(36).slice(2, 7); let LAST_IDS = [];
+const BO_OF = { daily_outfit: 'personalised_recommendations', rotation: 'personalised_recommendations', forgotten: 'personalised_recommendations',
+  capsule: 'personalised_recommendations', style_insights: 'personalised_recommendations', gap_filling: 'personalised_recommendations', travel: 'personalised_recommendations',
+  daily_plan: 'time_optimisation', swap: 'time_optimisation', laundry: 'time_optimisation', event_looks: 'time_optimisation', local_shops: 'time_optimisation', declutter: 'time_optimisation' };
+const COLOR = { button: 'var(--btn)', orch: 'var(--orch)', idea: 'var(--idea)', tool: 'var(--tool)' };
+const ORCH = ['personalised_recommendations', 'time_optimisation'];
+const TOOL_LABEL = { m02_recommendation: 'M2 recommend', m03_wear_log: 'M3 wear log', m04_scheduler: 'M4 scheduler', m17_capsule: 'M17 capsule', m09_avatar_3d: 'M9 3D', m07_local_catalogue: 'M7 shops', fashionclip: 'FashionCLIP' };
+
+async function j(url, opts) { const r = await fetch(url, opts); const t = await r.text(); try { return JSON.parse(t); } catch (e) { throw new Error(r.status + ' ' + t.slice(0, 150)); } }
+async function loadCatalog() { try { CATALOG = (await j('/bo/catalog?user_id=' + encodeURIComponent($('#user').value))).pieces; } catch (e) { CATALOG = {}; } }
+function piece(id, name) { const p = CATALOG[id] || {}; const n = name || p.name || id; return `<div class="pc">${p.image ? `<img src="${esc(p.image)}" alt="">` : '<span class="sw"></span>'}${esc(n)}</div>`; }
+
+// ---- workflow graph from the agent steps ----
+function buildTree(rootAgent, steps, button) {
+  // node = {label, kind, ms, children}
+  const node = (label, kind, ms, extra) => ({ label, kind, ms, children: [], ...extra });
+  const root = node(button, 'button', 0);
+  function walk(agentName, steps, parent, ms) {
+    const a = node(agentName, ORCH.includes(agentName) ? 'orch' : 'idea', ms);
+    parent.children.push(a);
+    for (const s of steps || []) {
+      if (s.step === 'llm_route' || s.step === 'rule_route') a.route = (s.step === 'rule_route' ? 'rule' : 'LLM') + ' → ' + s.decision;
+      if (s.step === 'tool') a.children.push(node(TOOL_LABEL[s.to] || s.to, 'tool', s.ms, { action: s.action, ok: s.ok }));
+      if (s.step === 'agent') walk(s.to, s.sub_steps, a, s.ms).action = s.action;
+      if (s.step === 'wardrobe') a.children.push(node('wardrobe (RAG)', 'tool', s.ms, { action: s.source }));
+      if (s.step === 'llm_answer') a.answer = true;
+    }
+    return a;
+  }
+  walk(rootAgent, steps, root, 0);
+  return root;
+}
+function layout(root) {
+  // tidy left-to-right tree: x by depth, y by leaf order
+  let leaf = 0; const W = 190, H = 60, out = [];
+  (function place(n, depth) {
+    n.x = depth * (W + 28);
+    if (!n.children.length) { n.y = leaf++ * H; }
+    else { n.children.forEach(c => place(c, depth + 1)); n.y = (n.children[0].y + n.children[n.children.length - 1].y) / 2; }
+    out.push(n);
+  })(root, 0);
+  return { nodes: out, w: Math.max(...out.map(n => n.x)) + W + 10, h: leaf * H + 10, W };
+}
+function drawFlow(root) {
+  const { nodes, w, h, W } = layout(root);
+  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:${w}px;height:auto;min-width:520px" font-family="system-ui,Segoe UI" font-size="12">`;
+  for (const n of nodes) for (const c of n.children) {
+    const x1 = n.x + W, y1 = n.y + 24, x2 = c.x, y2 = c.y + 24, mx = (x1 + x2) / 2;
+    svg += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#b9ad9c" stroke-width="1.6" marker-end="url(#ar)"/>`;
+  }
+  svg += `<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b9ad9c"/></marker></defs>`;
+  for (const n of nodes) {
+    const col = COLOR[n.kind];
+    const sub = n.kind === 'tool' ? (n.action ? '.' + n.action : '') : (n.route || (n.kind === 'button' ? 'tap' : (n.action ? 'action: ' + n.action : '')));
+    svg += `<g><rect x="${n.x}" y="${n.y}" width="${W}" height="48" rx="10" fill="${col}" opacity="${n.kind === 'button' ? 1 : .92}"/>
+      <text x="${n.x + 10}" y="${n.y + 19}" fill="#fff" font-weight="700">${esc(String(n.label).slice(0, 26))}</text>
+      <text x="${n.x + 10}" y="${n.y + 36}" fill="#fff" opacity=".85" font-size="10.5">${esc(String(sub).slice(0, 34))}${n.ms ? '  · ' + (n.ms / 1000).toFixed(1) + 's' : ''}</text></g>`;
+  }
+  return svg + '</svg>';
+}
+function explainText(root) {
+  const lines = [];
+  (function walk(n) {
+    for (const c of n.children) {
+      if (n.kind === 'button') lines.push(`The app button sends an <b>AgentCall</b> to <b>${esc(c.label)}</b> with the action <code>${esc(c.action || '')}</code> (no sentence, so no LLM routing).`);
+      else if (c.kind === 'orch' || c.kind === 'idea') lines.push(`<b>${esc(n.label)}</b> calls the agent <b>${esc(c.label)}</b>${c.action ? ` (action <code>${esc(c.action)}</code>)` : ''} through the agent bus.`);
+      else lines.push(`<b>${esc(n.label)}</b> uses the tool <b>${esc(c.label)}</b>${c.action ? ` → <code>${esc(c.action)}</code>` : ''}${c.ms ? ` (${(c.ms / 1000).toFixed(1)} s)` : ''}.`);
+      walk(c);
+    }
+  })(root);
+  lines.push('The result goes back up the same path as an <b>AgentResult</b> and the screen shows it.');
+  return '<ol>' + lines.map(l => `<li>${l}</li>`).join('') + '</ol>';
+}
+
+// ---- screen result ----
+function renderResult(agent, action, data, question) {
+  const outs = [];
+  for (const k of ['outfits', 'looks']) if (Array.isArray(data[k])) data[k].forEach(o => o.item_ids && outs.push(o));
+  let html = `<div><b>${esc(agent)}.${esc(action)}</b></div>`;
+  if (question) html += `<div class="muted">${esc(question)}</div>`;
+  if (data.item_ids && data.item_ids.length) { LAST_IDS = data.item_ids; html += `<div class="pieces">${data.item_ids.map((id, i) => piece(id, (data.pieces || [])[i])).join('')}</div>`; }
+  if (outs.length) { LAST_IDS = outs[0].item_ids; html += outs.slice(0, 2).map((o, k) => `<div class="small muted">${k ? 'alternative' : 'proposed'} · ${Math.round((o.score || 0) * 100)}%</div><div class="pieces">${o.item_ids.map((id, i) => piece(id, (o.pieces || [])[i])).join('')}</div>`).join(''); }
+  if (data.before && data.after) {
+    const byName = n => Object.keys(CATALOG).find(id => CATALOG[id].name === n) || n;
+    const row = list => (list || []).map(n => piece(byName(n), n)).join('');
+    LAST_IDS = data.after.map(byName).filter(id => CATALOG[id]);
+    html += `<div class="small muted">before</div><div class="pieces">${row(data.before)}</div>`
+          + `<div class="small muted">after (${esc(data.slot || '')} changed)</div><div class="pieces">${row(data.after)}</div>`;
+  }
+  const skip = new Set(['before', 'after', 'outfits', 'looks', 'item_ids', 'pieces', 'next_actions', 'breakdown', 'handled_by']);
+  const kv = Object.entries(data).filter(([k]) => !skip.has(k)).slice(0, 10);
+  if (kv.length) html += `<div class="kv">${kv.map(([k, v]) => `<b>${esc(k)}</b><span>${esc(typeof v === 'object' ? JSON.stringify(v).slice(0, 220) : v)}</span>`).join('')}</div>`;
+  $('#result').innerHTML = html;
+}
+
+async function tap(btn) {
+  const agent = btn.dataset.a, action = btn.dataset.x;
+  let args = btn.dataset.args ? JSON.parse(btn.dataset.args) : {};
+  if (btn.dataset.from === 'outfit') { const names = LAST_IDS.map(id => (CATALOG[id] || {}).name).filter(Boolean); if (!names.length) { $('#result').innerHTML = '<span class="muted">Get an outfit first.</span>'; return; } args = { pieces: names.join(', ') }; }
+  const viaBo = btn.dataset.bo || $('#route').value === 'bo';
+  const body = viaBo
+    ? { agent: btn.dataset.bo || BO_OF[agent], user_id: $('#user').value, session_id: SESSION, message: '', payload: { action: `${agent}.${action}`, args, reply: false } }
+    : { agent, user_id: $('#user').value, session_id: SESSION, message: '', payload: { action, args, reply: false } };
+  document.querySelectorAll('.b').forEach(b => b.disabled = true);
+  $('#result').innerHTML = '<span class="muted">…</span>'; const t0 = performance.now();
+  try {
+    const r = await j('/bo/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = r.result || {}; const data = res.data || {};
+    $('#time').textContent = `${((performance.now() - t0) / 1000).toFixed(2)} s · no LLM (button)`;
+    if (res.error) $('#result').innerHTML = `<span style="color:#b5532f">${esc(res.error)}</span>`; else renderResult(agent, action, data, r.question);
+    const root = buildTree(body.agent, res.steps || [], btn.textContent.trim());
+    // the first agent node carries the action of the button
+    if (root.children[0]) root.children[0].action = body.payload.action;
+    $('#flow').innerHTML = drawFlow(root); $('#explain').innerHTML = explainText(root);
+    const shortRes = { agent: r.agent, question: r.question, next_actions: r.next_actions, result: { action: res.action, data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, typeof v === 'object' ? (JSON.stringify(v).length > 120 ? JSON.stringify(v).slice(0, 120) + '…' : v) : v])), steps: `[${(res.steps || []).length} steps]` } };
+    $('#msgs').textContent = 'POST /bo/chat\n' + JSON.stringify(body, null, 1) + '\n\n→ ' + JSON.stringify(shortRes, null, 1);
+  } catch (e) { $('#result').innerHTML = `<span style="color:#b5532f">${esc(e.message)}</span>`; }
+  document.querySelectorAll('.b').forEach(b => b.disabled = false);
+}
+document.querySelectorAll('.b').forEach(b => b.onclick = () => tap(b));
+$('#user').onchange = loadCatalog;
+loadCatalog();
+</script>
+</body>
+</html>
