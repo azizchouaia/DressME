@@ -42,13 +42,15 @@ def _rescue_text_call(reply, tools, messages):
     import uuid
 
     text = (getattr(reply, "content", "") or "").strip()
-    if getattr(reply, "tool_calls", None) or not text.startswith("{") or '"name"' not in text:
+    if getattr(reply, "tool_calls", None) or '"name"' not in text:
         return reply
     names = {getattr(t, "name", None) for t in tools or []}
     m = re.search(r'"name"\s*:\s*"([^"]+)"', text)
     if not m or m.group(1) not in names:
         return reply
     args: dict = {}
+    start, end = text.find("{"), text.rfind("}")  # the JSON may be wrapped in prose or a ``` block
+    text = text[start:end + 1] if 0 <= start < end else text
     try:
         data = json.loads(text)
         args = data.get("parameters") or data.get("arguments") or {}
