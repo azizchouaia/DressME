@@ -1,0 +1,105 @@
+# M5 configuration: every tunable value of the style profile and the bandit lives here.
+# Style list: styles.json (replaceable without code changes). Reference looks: reference_looks.json.
+
+styles_file: styles.json
+reference_looks_file: reference_looks.json
+style_mix_factor: 30          # softmax temperature of style_mix (higher = peakier mixes)
+
+# how cards are chosen and what is learnt (env M05_RANKING):
+#   rocchio : taste vector from the liked / rejected cards, cards ranked by cosine(card, taste) (rocchio.py)
+#   bandit  : contextual bandit, Linear Thompson Sampling (bandit.py): kept for a taste that depends on the
+#             context (work / weekend, weather); not used by default
+ranking: rocchio
+
+rocchio:
+  reject_weight: 0.3          # taste = normalise(mean(liked) - 0.3 * mean(rejected) + wishes): a "no" weighs less
+  wish_weight: 0.3            # POST /preferences: each "more" / "less" style vector added / removed at this weight
+  explore_cards: 2            # per batch of /choose: cards picked away from the taste (discovery)
+  negative_reward: 0.0        # reward <= this counts as a rejection (reject); "ignored" (0.2) counts as nothing
+
+bandit:
+  v: 0.3                      # ranking: bandit. Exploration of Thompson Sampling (std of theta = v * sqrt(A^-1))
+  prior_strength: 2.0         # ranking: bandit. A = prior_strength * I: the neutral prior counts like ~2 swipes
+  batch_size: 10              # cards returned by /choose (both rankings)
+  onboarding_cards: 10        # first swipes of a new user, no question before them (both rankings)
+
+# situations shown during the onboarding swipes (each card gets one)
+onboarding_contexts:
+  - {occasion: work, temp_c: 18, rain: false, weekend: false}
+  - {occasion: casual, temp_c: 29, rain: false, weekend: true}
+  - {occasion: event, temp_c: 21, rain: false, weekend: true}
+  - {occasion: casual, temp_c: 8, rain: true, weekend: false}
+  - {occasion: sport, temp_c: 22, rain: false, weekend: true}
+
+taste_lr: 0.1                 # ranking: bandit only. taste = normalise((1 - lr) * taste + lr * outfit embedding),
+                              # lr = max(taste_lr, 1/n likes)
+positive_reward: 0.7          # reward >= this counts as a liked card (taste vector + style mix update)
+
+# reward of each reaction (dressme_bandit.REWARDS + "like" = swipe right in onboarding)
+rewards:
+  reject: 0.0
+  ignored: 0.2
+  accept: 0.7
+  like: 1.0
+  heart: 1.0
+  worn: 1.0
+
+# weight of one feedback in the bandit update, by source
+source_weights:
+  swipe: 1.0
+  onboarding: 1.0
+  worn: 1.0
+  chat: 0.5
+
+context:
+  occasions: [work, casual, event]   # one flag each in the context vector
+  baseline_occasion: sport           # all-zeros flags
+  aliases: {uni: casual}             # extra occasions accepted, mapped for the context vector
+  temp_center: 15                    # temp feature = clip((temp_c - center) / scale, -1, 1)
+  temp_scale: 15
+
+# ranking: bandit only. Bandit prior mean (prior.py): neutral for a new user; wishes (POST /preferences) shift it
+prior:
+  want_more: 0.2              # styles the user asked to see more of (style coach agent, POST /preferences)
+  want_less: -0.3             # styles the user asked to see less of
+  taste_sim: 0.5              # similarity to the taste vector learnt from the liked cards
+
+# warmth of an item, 0 (summer) .. 1 (winter): mean of its seasons + bonuses (clipped to 0..1)
+warmth:
+  seasons: {summer: 0.0, spring: 0.35, autumn: 0.65, winter: 1.0}
+  default: 0.5
+  subcategory_bonus: {coat: 0.3, kachabia: 0.3, sweater: 0.2, hoodie: 0.15, sweatshirt: 0.15, boots: 0.15,
+                      leather jacket: 0.15, tank top: -0.2, shorts: -0.2, sandals: -0.2, summer dress: -0.15}
+  material_bonus: {wool: 0.15, knit: 0.1, leather: 0.05, linen: -0.15}
+
+# M2 (recommendation engine): candidates for /choose and the onboarding swipes
+m02:
+  source: mock                # mock (built in, from the user's M1 items) | module (modules.m02_recommendation)
+  n_candidates: 20
+  hot_temp: 25                # above: warm items (warmth >= warm_item) are dropped
+  warm_item: 0.6
+  outer_below: 18             # below: outfits may add outerwear
+  sized_categories: [top, bottom, dress, outerwear, traditional]
+
+# M3 (wear log)
+m03:
+  source: mock                # mock (novelty = default_novelty) | item_fields (from M1 last_worn)
+  default_novelty: 0.5
+  novelty_full_after_days: 30
+
+storage: auto                 # auto (postgres when M1 is real, memory otherwise) | memory | postgres (env M05_STORE)
+
+# POST /preferences (more / less of a style): the profile's style mix moves by this step, then is renormalised
+chat_mix_step: 0.1
+
+# style coach agent (agent/, POST /m05/agent/chat). Env overrides: M05_AGENT_PROVIDER, M05_AGENT_MODEL,
+# M05_AGENT_BASE_URL
+agent:
+  provider: ollama            # ollama (local, free) | shared (backend/shared/llm.py: LLM_PROVIDER / LLM_MODEL)
+  model: qwen3:4b-instruct    # non-thinking Qwen3: tool calling, FR / AR / EN, fits a 4 GB GPU
+  base_url: http://localhost:11434
+  temperature: 0.2
+  num_ctx: 6144               # context window asked to Ollama (its default 4096 is short for tools + history)
+  history_messages: 12        # last messages of the conversation sent to the LLM (short-term memory window)
+  max_steps: 16               # graph steps per turn (each tool round = recall + coach + tools: ~4 rounds)
+  recommend_k: 3              # outfits returned by the recommend_outfits tool
