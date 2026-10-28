@@ -35,7 +35,7 @@ def embed_images(images) -> np.ndarray:
     """PIL images -> (N, 512) L2-normalised image embeddings."""
     model, proc = _load()
     px = proc(images=[im.convert("RGB") for im in images], return_tensors="pt")["pixel_values"]
-    return _l2(model.get_image_features(pixel_values=px))
+    return _l2(model.visual_projection(model.vision_model(pixel_values=px).pooler_output))
 
 
 @torch.no_grad()
@@ -43,7 +43,7 @@ def embed_texts(texts: list[str]) -> np.ndarray:
     """Strings -> (N, 512) L2-normalised text embeddings."""
     model, proc = _load()
     tok = proc(text=list(texts), return_tensors="pt", padding=True, truncation=True, max_length=77)
-    return _l2(model.get_text_features(**tok))
+    return _l2(model.text_projection(model.text_model(input_ids=tok["input_ids"], attention_mask=tok.get("attention_mask")).pooler_output))
 
 
 def item_vectors(image_emb: np.ndarray, descriptions: list[str]) -> np.ndarray:
