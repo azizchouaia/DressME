@@ -47,7 +47,15 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: AnimatedSwitcher( // soft fade + rise between screens
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOutCubic,
+        transitionBuilder: (w, a) => FadeTransition(
+          opacity: a,
+          child: SlideTransition(position: Tween(begin: const Offset(0, .015), end: Offset.zero).animate(a), child: w),
+        ),
+        child: KeyedSubtree(key: ValueKey(location), child: child),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         backgroundColor: DmColors.surface,
