@@ -13,6 +13,7 @@ import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../data/m1_wardrobe.dart';
 import 'piece_sheet.dart';
+import 'wardrobe_fx.dart';
 
 const _bays = [('accessories', 'Accessories'), ('clothes', 'Clothes'), ('shoes', 'Shoes')];
 
@@ -28,6 +29,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
   List<Json> items = [];
   Set<String> dupIds = {};
   final newIds = <String>{};
+  final doors = GlobalKey<WardrobeDoorsState>();
   String? category;
   String? season;
   String bay = 'clothes';
@@ -93,6 +95,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
         g = active;
       }
       newIds.add('${g['item_id']}');
+      doors.currentState?.open(); // the new piece drops into the open wardrobe
       if ((category != null && category != g['category']) ||
           (season != null && !(g['season'] as List? ?? const []).contains(season))) {
         category = null;
@@ -307,13 +310,17 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
                   DmCard(child: DmEmptyState(icon: Icons.wifi_off_rounded, title: 'Something went wrong', message: error!,
                       action: DmButton('Try again', onPressed: _load)))
                 else
-                  _Closet(
-                    bay: bay,
-                    items: groups[bay]!,
-                    m1: m1,
-                    newIds: newIds,
-                    dupIds: dupIds,
-                    onTap: _open,
+                  WardrobeDoors(
+                    key: doors,
+                    child: _Closet(
+                      key: ValueKey('$bay-${items.length}'), // replay the reveal when the section changes
+                      bay: bay,
+                      items: groups[bay]!,
+                      m1: m1,
+                      newIds: newIds,
+                      dupIds: dupIds,
+                      onTap: _open,
+                    ),
                   ),
               ]),
             ),
@@ -351,7 +358,7 @@ class _Drop extends StatelessWidget {
 
 /// One section of the closet: hanging rails for clothes, shelves (2 per shelf) for accessories and shoes.
 class _Closet extends StatelessWidget {
-  const _Closet({required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, required this.onTap});
+  const _Closet({super.key, required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, required this.onTap});
 
   final String bay;
   final List<Json> items;
@@ -362,7 +369,8 @@ class _Closet extends StatelessWidget {
 
   Widget _piece(Json it, {required bool hanging}) {
     final id = '${it['item_id']}';
-    return Padding(
+    final i = items.indexOf(it);
+    final tile = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: InkWell(
         onTap: () => onTap(it),
@@ -389,6 +397,8 @@ class _Closet extends StatelessWidget {
         ),
       ),
     );
+    final moving = hanging ? Swing(child: tile) : HoverLift(slanted: bay == 'shoes', child: tile);
+    return newIds.contains(id) ? DropIn(child: moving) : FadeUp(index: i, child: moving);
   }
 
   Widget _rail(String name, List<Json> list) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
