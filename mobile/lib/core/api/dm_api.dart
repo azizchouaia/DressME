@@ -17,7 +17,7 @@ abstract final class DemoUsers {
   static String? token;
 
   static String get wardrobe => signedIn ?? 'usr_demo'; // M1 / M6 / M7 / M13 / M18
-  static String get outfits => signedIn == null || signedIn == 'usr_demo' ? 'demo_f' : signedIn!; // M2 / M3 / M4 / M17
+  static String get outfits => signedIn ?? 'demo_f'; // M2 / M3 / M4 / M17: the user's own M1 wardrobe
 }
 
 typedef Json = Map<String, dynamic>;

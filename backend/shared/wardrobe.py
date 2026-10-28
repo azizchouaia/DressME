@@ -46,7 +46,10 @@ async def catalog(user: str) -> dict:
     from modules.m02_recommendation import service as m2  # demo wardrobes of M2 (users demo_f / demo_m)
 
     who = user if user.startswith("demo_") else "demo_f"
-    m2_items = demo_items_with_vectors(who)
+    try:
+        m2_items = demo_items_with_vectors(who)
+    except FileNotFoundError:  # Racem's demo wardrobe files (ml/models/m02) are not on this machine
+        return {"source": "empty: add at least 2 pieces in your wardrobe (BO4)", "items": [], "m2_items": []}
     ids = {i["item_id"] for i in m2_items}
     demo = m2.demo_wardrobe(who)
     out = [

@@ -79,7 +79,7 @@ async def catalog(user_id: str = "demo_f"):
 
         for p in wardrobe3d.state(user_id)["pieces"]:
             images[p["piece_id"]] = p.get("cutout_url") or p.get("front_url")
-    else:
+    elif c["items"]:
         from modules.m02_recommendation import service as m2
 
         who = user_id if user_id.startswith("demo_") else "demo_f"
