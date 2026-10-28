@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Avatar</title>
+    <style>
+      :root {
+        --paper: #f6f4f0;
+        --ink: #141414;
+        --soft: #3b3935;
+        --muted: #8a857d;
+        --line: #e4dfd6;
+        --fill: #efebe4;
+      }
+      * { box-sizing: border-box; }
+      html, body, canvas {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
+      body {
+        overflow: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font: 14px/1.3 "Segoe UI", system-ui, sans-serif;
+      }
+      canvas {
+        display: block;
+        background: var(--paper);
+        touch-action: none;
+      }
+      .top {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: calc(12px + env(safe-area-inset-top)) 16px 0;
+        pointer-events: none;
+      }
+      .eyebrow {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 2px 0 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 28px;
+        font-weight: 500;
+        line-height: 1.05;
+      }
+      #reset {
+        pointer-events: auto;
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff;
+        color: var(--ink);
+        font: 13px "Segoe UI", system-ui, sans-serif;
+        box-shadow: 0 4px 16px rgba(20, 20, 20, 0.08);
+      }
+      .build-bar {
+        position: absolute;
+        z-index: 3;
+        top: calc(64px + env(safe-area-inset-top));
+        left: 16px;
+        right: 16px;
+        padding: 12px 14px 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 24px rgba(20, 20, 20, 0.08);
+      }
+      .icon-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 2px;
+      }
+      .icon-row button {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 0;
+        border-radius: 14px;
+        background: var(--fill);
+        color: var(--ink);
+      }
+      .icon-row button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .icon-row svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .sheet {
+        position: absolute;
+        z-index: 3;
+        left: 12px;
+        right: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        max-height: min(42vh, 380px);
+        padding: 8px 16px 12px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 30px rgba(20, 20, 20, 0.12);
+      }
+      .sheet[hidden] { display: none; }
+      .handle {
+        width: 36px;
+        height: 4px;
+        margin: 0 auto 10px;
+        border-radius: 999px;
+        background: var(--line);
+      }
+      .sex, .menu {
+        display: flex;
+        gap: 6px;
+      }
+      .menu { margin-top: 8px; }
+      .sex button, .menu button, .chips button, .sheet button.action {
+        border: 0;
+        border-radius: 999px;
+        background: var(--fill);
+        color: var(--ink);
+        font: 13px "Segoe UI", system-ui, sans-serif;
+      }
+      .sex button, .menu button {
+        flex: 1;
+        min-height: 36px;
+        padding: 8px 6px;
+      }
+      .sex button.active, .menu button.active, .chips button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        margin-top: 10px;
+      }
+      .panel[hidden] { display: none; }
+      .scroll {
+        min-height: 0;
+        overflow: auto;
+        padding-bottom: 4px;
+      }
+      .hero {
+        margin: 0 0 4px;
+      }
+      .hint, #fit {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      label {
+        display: grid;
+        gap: 2px;
+        margin: 8px 0;
+      }
+      label span, .hero span {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--soft);
+        font-size: 13px;
+      }
+      .hero span { font-size: 15px; font-weight: 600; color: var(--ink); }
+      input[type='range'] {
+        width: 100%;
+        height: 28px;
+        margin: 0;
+        appearance: none;
+        background: transparent;
+      }
+      input[type='range']::-webkit-slider-runnable-track {
+        height: 4px;
+        border-radius: 999px;
+        background: var(--line);
+      }
+      input[type='range']::-webkit-slider-thumb {
+        width: 22px;
+        height: 22px;
+        margin-top: -9px;
+        appearance: none;
+        border: 0;
+        border-radius: 50%;
+        background: var(--ink);
+      }
+      input[type='range']::-moz-range-track {
+        height: 4px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--line);
+      }
+      input[type='range']::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--ink);
+      }
+      details {
+        border-top: 1px solid var(--line);
+      }
+      summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 44px;
+        padding: 10px 0;
+        font-weight: 600;
+        cursor: pointer;
+        list-style: none;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary::after {
+        content: '+';
+        color: var(--muted);
+        font-weight: 500;
+      }
+      details[open] summary::after { content: '–'; }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 4px 0 8px;
+      }
+      .chips button {
+        flex: 1 1 30%;
+        min-height: 34px;
+        padding: 6px 8px;
+      }
+      .sheet button.action {
+        width: 100%;
+        min-height: 42px;
+        margin-top: 8px;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 600;
+      }
+      .sheet button.ghost {
+        width: 100%;
+        min-height: 40px;
+        margin-top: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        font: 14px "Segoe UI", system-ui, sans-serif;
+      }
+      input[type='text'], input[type='file'] {
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        font: 14px "Segoe UI", system-ui, sans-serif;
+      }
+      .poses {
+        margin: 4px 0 8px;
+        padding-left: 18px;
+        color: var(--soft);
+        font-size: 12px;
+      }
+      .person, .photo-row button {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--fill);
+        color: var(--ink);
+        text-align: left;
+        font: 14px "Segoe UI", system-ui, sans-serif;
+      }
+      .check {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 8px 0;
+      }
+      #error {
+        position: absolute;
+        z-index: 4;
+        left: 12px;
+        right: 12px;
+        top: calc(12px + env(safe-area-inset-top));
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #fff;
+        color: #b3261e;
+        font: 14px system-ui, sans-serif;
+      }
+      @media (min-width: 800px) {
+        .build-bar, .sheet {
+          left: 50%;
+          right: auto;
+          width: min(420px, calc(100% - 32px));
+          transform: translateX(-50%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <header class="top">
+      <div>
+        <p class="eyebrow">DressMe</p>
+        <h1>Avatar</h1>
+      </div>
+      <button id="reset" type="button" hidden>Reset view</button>
+    </header>
+    <div class="build-bar">
+      <label class="hero"><span>Build <b data-readout="build">Average</b></span><input data-shape="build" type="range" min="-100" max="100" value="0" /></label>
+      <div class="icon-row">
+        <button type="button" data-panel="body-panel" aria-label="Body details">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="2" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button type="button" data-panel="photo-panel" aria-label="Avatar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5c1.4-3 3.7-4.5 6.5-4.5s5.1 1.5 6.5 4.5"/></svg>
+        </button>
+      </div>
+    </div>
+    <aside class="sheet" hidden>
+      <div id="body-panel" class="panel" hidden>
+        <div class="scroll">
+          <details>
+            <summary>Whole body</summary>
+            <label><span>Height <b data-readout="height">170 cm</b></span><input data-shape="height" type="range" min="145" max="210" value="170" /></label>
+            <label><span>Muscle <b data-readout="muscle">0</b></span><input data-shape="muscle" type="range" min="-40" max="70" value="0" /></label>
+            <label><span>Body fat <b data-readout="fat">0</b></span><input data-shape="fat" type="range" min="-40" max="70" value="0" /></label>
+            <span class="hint">Skin</span>
+            <div class="sex chips">
+              <button type="button" data-skin="fair">Fair</button>
+              <button type="button" class="active" data-skin="light">Light</button>
+              <button type="button" data-skin="warm">Warm</button>
+              <button type="button" data-skin="tan">Tan</button>
+              <button type="button" data-skin="brown">Brown</button>
+              <button type="button" data-skin="deep">Deep</button>
+            </div>
+            <label><span>Shine <b data-readout="shine">20</b></span><input data-shape="shine" type="range" min="0" max="100" value="20" /></label>
+            <span class="hint">Hair</span>
+            <div class="sex chips">
+              <button type="button" data-hair="black">Black</button>
+              <button type="button" class="active" data-hair="brown">Brown</button>
+              <button type="button" data-hair="red">Red</button>
+              <button type="button" data-hair="blonde">Blonde</button>
+            </div>
+            <span class="hint">Eyes</span>
+            <div class="sex chips">
+              <button type="button" class="active" data-eye="hazel">Noisette</button>
+              <button type="button" data-eye="black">Black</button>
+              <button type="button" data-eye="green">Green</button>
+              <button type="button" data-eye="blue">Blue</button>
+            </div>
+          </details>
+          <details>
+            <summary>Upper body</summary>
+            <label><span>Breasts <b data-readout="bust">0</b></span><input data-shape="bust" type="range" min="-40" max="80" value="0" /></label>
+            <p class="hint">Size only. This model has no separate spacing, sag, nipple, or jiggle control.</p>
+            <label><span>Shoulder width <b data-readout="shoulders">0</b></span><input data-shape="shoulders" type="range" min="-40" max="60" value="0" /></label>
+            <label><span>Shoulder thickness <b data-readout="shoulderThick">0</b></span><input data-shape="shoulderThick" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Shoulder slope <b data-readout="shoulderSlope">0</b></span><input data-shape="shoulderSlope" type="range" min="-18" max="18" value="0" /></label>
+            <label><span>Torso width <b data-readout="chest">0</b></span><input data-shape="chest" type="range" min="-50" max="60" value="0" /></label>
+            <label><span>Torso depth <b data-readout="chestDepth">0</b></span><input data-shape="chestDepth" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Waist <b data-readout="waist">0</b></span><input data-shape="waist" type="range" min="-50" max="60" value="0" /></label>
+            <label><span>Stomach <b data-readout="stomach">0</b></span><input data-shape="stomach" type="range" min="-40" max="70" value="0" /></label>
+          </details>
+          <details>
+            <summary>Lower body</summary>
+            <label><span>Hip width <b data-readout="hips">0</b></span><input data-shape="hips" type="range" min="-50" max="70" value="0" /></label>
+            <label><span>Lower hip width <b data-readout="hipLow">0</b></span><input data-shape="hipLow" type="range" min="-40" max="60" value="0" /></label>
+            <label><span>Hip height <b data-readout="hipHeight">0</b></span><input data-shape="hipHeight" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Pelvic tilt <b data-readout="pelvisTilt">0</b></span><input data-shape="pelvisTilt" type="range" min="-18" max="18" value="0" /></label>
+            <label><span>Butt width <b data-readout="seat">0</b></span><input data-shape="seat" type="range" min="-40" max="70" value="0" /></label>
+            <label><span>Butt height <b data-readout="seatLength">0</b></span><input data-shape="seatLength" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Butt projection <b data-readout="seatDepth">0</b></span><input data-shape="seatDepth" type="range" min="-40" max="60" value="0" /></label>
+            <label><span>Upper thighs <b data-readout="thighUpper">0</b></span><input data-shape="thighUpper" type="range" min="-40" max="60" value="0" /></label>
+            <label><span>Lower thighs <b data-readout="thighLower">0</b></span><input data-shape="thighLower" type="range" min="-40" max="60" value="0" /></label>
+          </details>
+          <details>
+            <summary>Limbs</summary>
+            <label><span>Arm length <b data-readout="armLength">0</b></span><input data-shape="armLength" type="range" min="-30" max="40" value="0" /></label>
+            <label><span>Biceps <b data-readout="biceps">0</b></span><input data-shape="biceps" type="range" min="-40" max="60" value="0" /></label>
+            <label><span>Forearms <b data-readout="forearm">0</b></span><input data-shape="forearm" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Hands <b data-readout="hands">0</b></span><input data-shape="hands" type="range" min="-40" max="50" value="0" /></label>
+            <label><span>Leg length <b data-readout="legLength">0</b></span><input data-shape="legLength" type="range" min="-25" max="35" value="0" /></label>
+            <label><span>Calves <b data-readout="calves">0</b></span><input data-shape="calves" type="range" min="-40" max="55" value="0" /></label>
+            <label><span>Feet <b data-readout="feet">0</b></span><input data-shape="feet" type="range" min="-40" max="50" value="0" /></label>
+          </details>
+          <button id="reset-shape" class="ghost" type="button">Reset body</button>
+        </div>
+      </div>
+      <div id="move-panel" class="panel" hidden>
+        <div class="sex chips" id="pose-presets">
+          <button type="button" data-preset="tpose" class="active">T-pose</button>
+          <button type="button" data-preset="stand">Standing</button>
+          <button type="button" data-preset="hips">Hands on hips</button>
+          <button type="button" data-preset="step">Step</button>
+          <button type="button" data-preset="wave">Wave</button>
+        </div>
+        <div class="scroll">
+          <input data-pose="armInL" type="range" min="-90" max="90" value="0" hidden />
+          <input data-pose="armInR" type="range" min="-90" max="90" value="0" hidden />
+          <details>
+            <summary>Arms</summary>
+            <label>Left arm <input data-pose="armL" type="range" min="-80" max="90" value="0" /></label>
+            <label>Right arm <input data-pose="armR" type="range" min="-80" max="90" value="0" /></label>
+            <label>Left elbow <input data-pose="elbowL" type="range" min="0" max="130" value="0" /></label>
+            <label>Right elbow <input data-pose="elbowR" type="range" min="0" max="130" value="0" /></label>
+            <label>Left wrist <input data-pose="wristL" type="range" min="-50" max="50" value="0" /></label>
+            <label>Right wrist <input data-pose="wristR" type="range" min="-50" max="50" value="0" /></label>
+            <label>Left wrist twist <input data-pose="wristTwistL" type="range" min="-70" max="70" value="0" /></label>
+            <label>Right wrist twist <input data-pose="wristTwistR" type="range" min="-70" max="70" value="0" /></label>
+          </details>
+          <details>
+            <summary>Legs</summary>
+            <label>Left leg <input data-pose="legL" type="range" min="-25" max="70" value="0" /></label>
+            <label>Right leg <input data-pose="legR" type="range" min="-25" max="70" value="0" /></label>
+            <label>Left knee <input data-pose="kneeL" type="range" min="0" max="110" value="0" /></label>
+            <label>Right knee <input data-pose="kneeR" type="range" min="0" max="110" value="0" /></label>
+            <label>Left leg out <input data-pose="outL" type="range" min="-15" max="40" value="0" /></label>
+            <label>Right leg out <input data-pose="outR" type="range" min="-15" max="40" value="0" /></label>
+            <label>Left ankle <input data-pose="ankleL" type="range" min="-25" max="45" value="0" /></label>
+            <label>Right ankle <input data-pose="ankleR" type="range" min="-25" max="45" value="0" /></label>
+          </details>
+          <details>
+            <summary>Head</summary>
+            <label>Bend <input data-pose="spine" type="range" min="-25" max="40" value="0" /></label>
+            <label>Head <input data-pose="head" type="range" min="-45" max="45" value="0" /></label>
+            <label>Neck <input data-pose="neck" type="range" min="-25" max="30" value="0" /></label>
+            <label>Jaw <input data-pose="jaw" type="range" min="0" max="28" value="0" /></label>
+            <label>Eyes <input data-pose="eyes" type="range" min="-30" max="30" value="0" /></label>
+            <label>Eyes up <input data-pose="eyesUp" type="range" min="-20" max="20" value="0" /></label>
+          </details>
+          <details>
+            <summary>Hands</summary>
+            <label>Left thumb <input data-pose="leftthumb" type="range" min="0" max="50" value="0" /></label>
+            <label>Left index <input data-pose="leftindex" type="range" min="0" max="90" value="0" /></label>
+            <label>Left middle <input data-pose="leftmiddle" type="range" min="0" max="90" value="0" /></label>
+            <label>Left ring <input data-pose="leftring" type="range" min="0" max="90" value="0" /></label>
+            <label>Left pinky <input data-pose="leftpinky" type="range" min="0" max="90" value="0" /></label>
+            <label>Right thumb <input data-pose="rightthumb" type="range" min="0" max="50" value="0" /></label>
+            <label>Right index <input data-pose="rightindex" type="range" min="0" max="90" value="0" /></label>
+            <label>Right middle <input data-pose="rightmiddle" type="range" min="0" max="90" value="0" /></label>
+            <label>Right ring <input data-pose="rightring" type="range" min="0" max="90" value="0" /></label>
+            <label>Right pinky <input data-pose="rightpinky" type="range" min="0" max="90" value="0" /></label>
+          </details>
+          <label class="check"><input id="skeleton" type="checkbox" checked /> Show skeleton</label>
+          <button id="reset-pose" class="ghost" type="button">Reset pose</button>
+        </div>
+      </div>
+      <div id="photo-panel" class="panel" hidden>
+        <div class="scroll">
+          <div class="sex">
+            <button type="button" class="active" data-sex="auto">Auto</button>
+            <button type="button" data-sex="female">Female</button>
+            <button type="button" data-sex="male">Male</button>
+          </div>
+          <p id="fit">Choose a gender, then add full-body photos.</p>
+          <label class="shot"><span>Add photos</span><input id="photo-add" type="file" accept="image/*" multiple /></label>
+          <div id="photo-list"></div>
+          <input id="person-name" type="text" placeholder="Name" />
+          <button id="person-create" class="action" type="button">Build from photos</button>
+          <button id="proto-female" class="ghost" type="button">Female prototype</button>
+          <button id="proto-male" class="ghost" type="button">Male prototype</button>
+          <details>
+            <summary>How to photograph</summary>
+            <p id="fit-photos" class="hint">Add as many as you have. The model decides which photo is the front, the back, or a side. Full body, feet together, camera at chest height. Each photo adds a minute or two.</p>
+            <ul class="poses">
+              <li><b>Front T-pose</b> — arms straight out. Sets shoulders, chest, waist, hips, and thigh length.</li>
+              <li><b>Left side</b> — arms down and slightly forward, not out to the side. Sets thickness and bust. Add the right side the same way if you can.</li>
+              <li><b>Back T-pose</b> — same arms-out pose. Checks shoulders and hips.</li>
+              <li><b>Three-quarter</b> — turn about 45°. Sets the bust.</li>
+            </ul>
+          </details>
+          <div id="people"></div>
+        </div>
+      </div>
+    </aside>
+    <p id="error" hidden></p>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./scene.mjs?v=49"></script>
+  </body>
+</html>

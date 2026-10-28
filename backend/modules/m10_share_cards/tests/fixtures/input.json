@@ -1,0 +1,14 @@
+{
+  "user_id": "usr_042",
+  "kind": "outfit",
+  "title": "Linen day at work",
+  "subtitle": "Tuesday · 24°C · work",
+  "format": "story",
+  "source_id": "out_7781",
+  "items": [
+    {"item_id": "itm_001", "category": "top", "label": "Linen shirt", "color_hex": "#E3CFAE"},
+    {"item_id": "itm_002", "category": "bottom", "label": "Beige chinos", "color_hex": "#D9C3A0"},
+    {"item_id": "itm_003", "category": "shoes", "label": "Brown loafers", "color_hex": "#B08868"},
+    {"item_id": "itm_004", "category": "accessory", "label": "Sage tote", "color_hex": "#A8C3A0", "brand": "Atelier Medina"}
+  ]
+}

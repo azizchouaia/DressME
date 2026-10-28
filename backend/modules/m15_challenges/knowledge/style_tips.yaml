@@ -1,0 +1,43 @@
+# RAG knowledge base for the challenge coach (M15). One entry = one retrievable tip.
+- id: repeat_rotation
+  text: Already worn this week? Rotate by category, not by outfit; swap only the piece that repeats, keep the rest.
+  tags: [no_repeat, already worn, rotation]
+- id: repeat_layers
+  text: When your basics run out, layering creates a new look; a jacket or an overshirt over a tee changes the silhouette.
+  tags: [no_repeat, outerwear, layering]
+- id: shoes_bottleneck
+  text: Shoes are often the limit in a no-repeat week. Plan them first, then build the outfit around each pair.
+  tags: [no_repeat, shoes, limit]
+- id: mono_texture
+  text: For a monochrome week, play with textures (knit, denim, linen) and shades of grey so black and white never look flat.
+  tags: [color_theme, monochrome, black, white, grey]
+- id: mono_any
+  text: If the theme only asks for one piece in the colour, use a statement piece (shoes, bag) in that colour.
+  tags: [color_theme, any, accessory]
+- id: trad_jebba
+  text: A jebba or a kachabia counts as the whole outfit; pair it with balgha slippers or simple loafers for a modern Traditional Friday.
+  tags: [category_required, traditional, jebba, kachabia, balgha]
+- id: trad_mix
+  text: Mix one traditional piece with modern basics, for example a sefsari-inspired scarf with jeans, to keep it wearable every week.
+  tags: [category_required, traditional, sefsari]
+- id: capsule_choose
+  text: For a 10 × 10 capsule, pick neutral pieces that all match each other; each new piece you add uses one of the ten slots.
+  tags: [capsule_limit, capsule, neutral]
+- id: capsule_reuse
+  text: Over the capsule limit? Reuse a piece you already wore in the challenge; repeats are allowed, new pieces are not.
+  tags: [capsule_limit, limit, reuse]
+- id: local_brand
+  text: Local brand week counts with any piece tagged with a Tunisian brand; accessories like a tote or balgha slippers are the easiest win.
+  tags: [local_brand, tunisian brand, accessory]
+- id: min_items
+  text: An outfit needs at least the number of pieces in the rules; add shoes or an accessory you are already wearing.
+  tags: [min_items, pieces]
+- id: streak_social
+  text: Users who share their challenge card get more likes and are more likely to finish; post your valid days.
+  tags: [motivation, share, streak]
+- id: at_risk
+  text: If the challenge feels hard, aim for the next valid day only; a short streak is the best predictor of finishing.
+  tags: [at_risk, high_risk, motivation]
+- id: easier_challenge
+  text: When the wardrobe fit is low, switch to a challenge that fits it better, such as Local brand week or Traditional Friday.
+  tags: [high_risk, feasibility, switch]

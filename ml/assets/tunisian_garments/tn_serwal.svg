@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500"><defs>
+<filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="0.6"/></filter>
+<linearGradient id="shade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".10"/>
+<stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#fff" stop-opacity=".10"/>
+<stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>
+<pattern id="gold" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#b8862b"/>
+<path d="M8 1 L15 8 L8 15 L1 8Z" fill="#e7c46a"/><circle cx="8" cy="8" r="2" fill="#7a4b12"/></pattern>
+<pattern id="goldred" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9a93f"/>
+<path d="M7 1 L13 7 L7 13 L1 7Z" fill="#8f1d24"/></pattern>
+<pattern id="kstripe" width="44" height="10" patternUnits="userSpaceOnUse"><rect width="44" height="10" fill="#e8dcc4"/>
+<rect width="18" height="10" fill="#6b4a2f"/><rect x="22" width="4" height="10" fill="#6b4a2f"/></pattern>
+<pattern id="weave" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9b779"/>
+<path d="M0 3.5h14M0 10.5h14" stroke="#b8924f" stroke-width="3"/><path d="M3.5 0v7M10.5 7v7" stroke="#e8cf9c" stroke-width="3"/></pattern>
+<pattern id="fouta" width="60" height="10" patternUnits="userSpaceOnUse"><rect width="60" height="10" fill="#f4f1ea"/>
+<rect width="14" height="10" fill="#2c5d9e"/><rect x="18" width="3" height="10" fill="#c23a2c"/><rect x="25" width="6" height="10" fill="#2c5d9e"/>
+<rect x="35" width="3" height="10" fill="#2c5d9e"/></pattern>
+<pattern id="silk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#f5f2ea"/>
+<rect width="1.2" height="8" fill="#e2dccd"/></pattern>
+</defs>
+<path d="M110,40 L290,40 L300,70 Q360,260 330,440 L344,476 L256,480 L250,446 Q220,300 200,250 Q180,300 150,446 L144,480 L56,476 L70,440 Q40,260 100,70Z" fill="#efe9dc" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<path d="M110,40 L290,40 L300,70 Q360,260 330,440 L344,476 L256,480 L250,446 Q220,300 200,250 Q180,300 150,446 L144,480 L56,476 L70,440 Q40,260 100,70Z" fill="url(#shade)"/>
+<path d="M100,70 L300,70 L290,40 L110,40Z" fill="#d8cfbb"/>
+<path d="M120,56 h160" stroke="#a3896a" stroke-width="3" stroke-dasharray="6 6"/>
+<path d="M70,440 L150,446 M250,446 L330,440" stroke="#c9bfa8" stroke-width="10"/>
+<path d="M140,120 Q120,260 110,420 M260,120 Q280,260 290,420" stroke="#00000014" stroke-width="5" fill="none"/></svg>

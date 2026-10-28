@@ -1,0 +1,2 @@
+# Extra dependencies of M15 · Community challenges (owner BO7): it draws its cards and RAG with M10
+-r ../m10_share_cards/requirements.txt

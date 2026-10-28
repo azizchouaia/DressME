@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="400" height="480"><defs>
+<filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="0.6"/></filter>
+<linearGradient id="shade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".10"/>
+<stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#fff" stop-opacity=".10"/>
+<stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>
+<pattern id="gold" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#b8862b"/>
+<path d="M8 1 L15 8 L8 15 L1 8Z" fill="#e7c46a"/><circle cx="8" cy="8" r="2" fill="#7a4b12"/></pattern>
+<pattern id="goldred" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9a93f"/>
+<path d="M7 1 L13 7 L7 13 L1 7Z" fill="#8f1d24"/></pattern>
+<pattern id="kstripe" width="44" height="10" patternUnits="userSpaceOnUse"><rect width="44" height="10" fill="#e8dcc4"/>
+<rect width="18" height="10" fill="#6b4a2f"/><rect x="22" width="4" height="10" fill="#6b4a2f"/></pattern>
+<pattern id="weave" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9b779"/>
+<path d="M0 3.5h14M0 10.5h14" stroke="#b8924f" stroke-width="3"/><path d="M3.5 0v7M10.5 7v7" stroke="#e8cf9c" stroke-width="3"/></pattern>
+<pattern id="fouta" width="60" height="10" patternUnits="userSpaceOnUse"><rect width="60" height="10" fill="#f4f1ea"/>
+<rect width="14" height="10" fill="#2c5d9e"/><rect x="18" width="3" height="10" fill="#c23a2c"/><rect x="25" width="6" height="10" fill="#2c5d9e"/>
+<rect x="35" width="3" height="10" fill="#2c5d9e"/></pattern>
+<pattern id="silk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#f5f2ea"/>
+<rect width="1.2" height="8" fill="#e2dccd"/></pattern>
+</defs>
+<ellipse cx="200" cy="420" rx="150" ry="34" fill="#7d1418"/>
+<path d="M50,420 Q56,230 90,170 L310,170 Q344,230 350,420 Q200,456 50,420Z" fill="#b5222a" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<path d="M50,420 Q56,230 90,170 L310,170 Q344,230 350,420 Q200,456 50,420Z" fill="url(#shade)"/>
+<ellipse cx="200" cy="170" rx="110" ry="28" fill="#c9343b" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="200" cy="168" r="8" fill="#1d1b1e"/>
+<path d="M200,168 Q250,180 268,240 Q276,290 262,330" stroke="#1d1b1e" stroke-width="5" fill="none"/>
+<path d="M262,330 l-16,80 M262,330 l-4,84 M262,330 l8,82 M262,330 l20,76 M262,330 l-26,72" stroke="#1d1b1e" stroke-width="4"/></svg>

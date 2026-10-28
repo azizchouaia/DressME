@@ -35,6 +35,8 @@
 /backend/bo/bo7_sharing/                @bo7-owner
 /backend/bo/bo8_assistant/              @bo8-owner
 /backend/bo/bo9_try_on/                 @bo9-owner
+/avatar_studio/                         @bo9-owner
+/ai/                                    @bo9-owner
 /mobile/lib/features/bo1_recommendations/@bo1-owner
 /mobile/lib/features/bo2_time/          @bo2-owner
 /mobile/lib/features/bo3_sustainability/@bo3-owner

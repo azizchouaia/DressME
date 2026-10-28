@@ -1,0 +1,43 @@
+# RAG knowledge base for share captions (M10). Edit freely: one entry = one retrievable document.
+- id: tone_general
+  text: Captions are short (max 2 sentences), friendly and in the first person. Name the key pieces, no price, end with one or two hashtags.
+  tags: [all, tone]
+- id: outfit_weather
+  text: For an outfit of the day, mention the weather or the occasion in a few words, e.g. "24°C and a linen shirt, perfect for work".
+  tags: [outfit, weather, work]
+- id: board_diy
+  text: For a builder board, stress that the user styled it themself and invite friends to recreate it with their own wardrobe.
+  tags: [board, recreate, builder]
+- id: tryon_privacy
+  text: For an avatar try-on, say that no selfie was needed; the faceless 3D avatar protects privacy.
+  tags: [tryon, avatar, privacy]
+- id: recap_numbers
+  text: For a monthly recap, lead with one striking number (outfits worn, favourite piece, cost per wear) and keep it playful like a year-in-review.
+  tags: [recap, stats, month]
+- id: giveaway_kind
+  text: For a give-away, be warm and practical; mention size and condition, invite friends to message, and add an anti-waste note.
+  tags: [giveaway, donate, sustainability]
+- id: challenge_progress
+  text: For a challenge entry, give the day number and the streak, and challenge friends to join with the link.
+  tags: [challenge, streak, friends]
+- id: trip_lookbook
+  text: For a trip lookbook, name the destination and how few pieces were packed, e.g. "Djerba, 4 days, 7 pieces".
+  tags: [trip, travel, packing]
+- id: timeline_style
+  text: For a style timeline, describe the change in two words (casual to minimal) and the months it took.
+  tags: [style_timeline, evolution]
+- id: poll_question
+  text: For a should-I-buy poll, ask a direct question, give the AI score, and ask friends to vote through the link.
+  tags: [poll, smartbuy, vote]
+- id: local_brand
+  text: When a piece comes from a Tunisian brand, credit the brand by name, for example "linen shirt by Sidi Linen Co.", to support local designers.
+  tags: [local, brand, tunisia]
+- id: tunisian_vocab
+  text: Tunisian traditional pieces are jebba, kachabia, sefsari, balgha and chechia; use these words as they are, never translate them.
+  tags: [traditional, jebba, tunisia]
+- id: hashtags
+  text: Allowed hashtags are #MadeWithDressMe, #OOTD, #TunisianStyle, #SlowFashion and #DressMeChallenge. Use at most two.
+  tags: [all, hashtags]
+- id: languages
+  text: Write in the user's language (French, English or Tunisian Arabic in Latin letters). Keep brand and piece names unchanged.
+  tags: [all, language]

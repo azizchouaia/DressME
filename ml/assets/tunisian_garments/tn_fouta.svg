@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" width="400" height="480"><defs>
+<filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="0.6"/></filter>
+<linearGradient id="shade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".10"/>
+<stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#fff" stop-opacity=".10"/>
+<stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>
+<pattern id="gold" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#b8862b"/>
+<path d="M8 1 L15 8 L8 15 L1 8Z" fill="#e7c46a"/><circle cx="8" cy="8" r="2" fill="#7a4b12"/></pattern>
+<pattern id="goldred" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9a93f"/>
+<path d="M7 1 L13 7 L7 13 L1 7Z" fill="#8f1d24"/></pattern>
+<pattern id="kstripe" width="44" height="10" patternUnits="userSpaceOnUse"><rect width="44" height="10" fill="#e8dcc4"/>
+<rect width="18" height="10" fill="#6b4a2f"/><rect x="22" width="4" height="10" fill="#6b4a2f"/></pattern>
+<pattern id="weave" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#d9b779"/>
+<path d="M0 3.5h14M0 10.5h14" stroke="#b8924f" stroke-width="3"/><path d="M3.5 0v7M10.5 7v7" stroke="#e8cf9c" stroke-width="3"/></pattern>
+<pattern id="fouta" width="60" height="10" patternUnits="userSpaceOnUse"><rect width="60" height="10" fill="#f4f1ea"/>
+<rect width="14" height="10" fill="#2c5d9e"/><rect x="18" width="3" height="10" fill="#c23a2c"/><rect x="25" width="6" height="10" fill="#2c5d9e"/>
+<rect x="35" width="3" height="10" fill="#2c5d9e"/></pattern>
+<pattern id="silk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#f5f2ea"/>
+<rect width="1.2" height="8" fill="#e2dccd"/></pattern>
+</defs>
+<path d="M70,40 L330,40 L338,420 L62,420Z" fill="url(#fouta)" stroke="#00000033" stroke-width="2" stroke-linejoin="round"/>
+<path d="M70,40 L330,40 L338,420 L62,420Z" fill="url(#shade)"/>
+<path d="M70,40 L330,40 L332,70 L68,70Z" fill="#00000014"/>
+<path d="M66,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M75,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M84,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M93,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M102,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M111,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M120,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M129,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M138,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M147,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M156,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M165,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M174,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M183,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M192,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M201,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M210,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M219,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M228,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M237,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M246,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M255,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M264,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M273,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M282,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M291,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M300,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M309,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M318,420 l0,44" stroke="#2c5d9e" stroke-width="3"/><path d="M327,420 l1,44" stroke="#2c5d9e" stroke-width="3"/><path d="M336,420 l-1,44" stroke="#2c5d9e" stroke-width="3"/></svg>
