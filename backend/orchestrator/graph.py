@@ -34,6 +34,37 @@ PROTECTED = (
 )
 
 
+def _rescue_text_call(reply, tools, messages):
+    """Small local models (llama3.1 on Ollama) sometimes WRITE the tool call as JSON text instead of
+    making it. Turn that text back into a real tool call so the user never sees raw JSON."""
+    import json
+    import re
+    import uuid
+
+    text = (getattr(reply, "content", "") or "").strip()
+    if getattr(reply, "tool_calls", None) or not text.startswith("{") or '"name"' not in text:
+        return reply
+    names = {getattr(t, "name", None) for t in tools or []}
+    m = re.search(r'"name"\s*:\s*"([^"]+)"', text)
+    if not m or m.group(1) not in names:
+        return reply
+    args: dict = {}
+    try:
+        data = json.loads(text)
+        args = data.get("parameters") or data.get("arguments") or {}
+        if isinstance(args.get("payload"), str):
+            args["payload"] = json.loads(args["payload"])
+    except Exception:  # noqa: BLE001 - broken JSON: keep what we can read
+        a = re.search(r'"action"\s*:\s*"([^"]+)"', text)
+        args = {"action": a.group(1)} if a else {}
+    if not isinstance(args.get("payload"), dict):
+        last_user = next((x.content for x in reversed(messages) if getattr(x, "type", "") == "human"), "")
+        args["payload"] = {"message": last_user}
+    args.setdefault("action", "chat")
+    return AIMessage(content="", tool_calls=[{"name": m.group(1), "args": args, "id": f"call_{uuid.uuid4().hex[:8]}",
+                                              "type": "tool_call"}], id=getattr(reply, "id", None))
+
+
 def build_graph(model=None, tools=None, checkpointer=None):
     """Compile the graph. Tests pass a scripted model and a stand-in tool."""
 
@@ -70,7 +101,7 @@ def build_graph(model=None, tools=None, checkpointer=None):
                    else " and pass the user's answer.")
             )
         reply = await planner_llm.ainvoke([("system", system), *state["messages"]])
-        return {"messages": [reply]}
+        return {"messages": [_rescue_text_call(reply, chosen, state["messages"])]}
 
     def prepare_tools(state: ChatState, config):
         configurable = (config or {}).get("configurable") or {}
