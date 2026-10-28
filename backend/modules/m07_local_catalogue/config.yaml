@@ -1,0 +1,102 @@
+# M7 Local catalogue (BO6).
+# Data and weights live under ml/ (tracked with DVC, not git); paths are relative to the repo root.
+data_dir: ml/data/shops                    # scraped CSV, photos, cleaned knowledge base, index
+catalogue_csv: local_catalogue_clean.csv   # in data_dir
+index_dir: index                           # in data_dir; FashionCLIP embeddings from pipeline/ingest.py
+embedding_model: patrickjohncyh/fashion-clip
+model_dir: ml/models/fashion-clip          # used instead of the Hugging Face download when present
+embedding_dim: 512
+top_k: 10
+
+# Score = weighted mix of the parts that apply to the request (weights are renormalised).
+weights:
+  visual: 0.45      # FashionCLIP: query text (or probe photo) vs product photo
+  text: 0.20        # BM25 on name / category / colour / shop / city
+  attributes: 0.20  # requested subcategory and colour match the product
+  style: 0.15       # user's style vector (Profile agent, same FashionCLIP space) vs product photo
+  season: 0.15      # summer / winter asked: the piece's name and type say that season (context.py)
+  budget: 0.15      # no budget asked: within the usual budget learned from memory
+
+# Cosine ranges mapped to 0..1 (FashionCLIP text->image similarities are low in absolute value).
+visual_text_range: [0.15, 0.33]   # text vs photo: p50 ~0.11, p99 ~0.30, max ~0.34
+visual_image_range: [0.40, 0.85]  # photo vs photo: catalogue p50 ~0.42, p99 ~0.66
+style_range: [0.20, 0.80]
+
+mmr_lambda: 0.75    # diversity of the final list (1 = pure relevance)
+
+# Gender estimated from the photo (pipeline/attributes.py) only when FashionCLIP is this sure
+# (100 x cosine gap between "women's" and "men's" prompts). Measured on the 1,955 products whose
+# name says it (43 shops): margin 0 -> 93.4 % right; 1.5 -> 96.8 % on 88.8 %; 2 -> 97.9 % on 84.5 %,
+# and 98.2 % with the type rule below. 2, because a wrong gender hides a piece from a search.
+gender_photo_margin: 2.0
+# A photo guess against its type is dropped: if the shops write one gender for at least this share of a
+# type's products (heels, hijabs...), a photo saying the other gender is a mistake (attributes_report.md).
+gender_type_prior: 0.95
+# Season from the photo ("summer <piece>" vs "winter <piece>"), used when the name says nothing.
+# Tested on the 577 products whose name says the season (lin, velours...): margin 1 -> 83 % right,
+# 2 -> 86 % on 71 %, 3 -> 90.5 % on 55 %. It only re-ranks, so 2 (attributes_report.md).
+season_photo_margin: 2.0
+
+# Search / click log (events.py), read by M14's boutique dashboard. Relative to the repo root, never git.
+log_events: true
+log_dir: ml/data/logs
+
+# Other modules (clients.py), called over HTTP on api_url once their branch is merged and listed in `real`;
+# until then a simulation answers, and the output says which one in `sources`. Integration: add m1, m2.
+real: []
+api_url: http://127.0.0.1:8000
+timeout_s: 20
+wardrobe:
+  match: true       # check the top results of a user's search against their wardrobe (idea 10)
+  match_top: 3      # how many results
+  min_score: 0.6    # M2 compatibility for "goes with"
+  max_named: 3      # wardrobe pieces named in the reason
+# 3D try-on of a local piece (Selected 6, POST /m07/try-on): BO9's TripoSR service turns the photo into a
+# GLB put on the avatar. Add m9 to `real` once BO9 runs it (ai/triposr_server.py, port 8766).
+tryon:
+  url: http://127.0.0.1:8766
+  resolution: 256     # mesh resolution sent to TripoSR (64-320)
+  timeout_s: 300      # CPU reconstruction is slow
+  dir: ml/data/bo6/tryon   # GLB cache, never git
+
+# Tunisian pieces for an outfit of the day (Selected 4, POST /m07/local-pieces)
+local_pieces:
+  pool: 12          # local candidates per slot, from the normal search
+  min_score: 0.5    # M2 compatibility of the outfit with the piece
+
+# The shops' pages were last read on the newest `last_checked` of the catalogue; older than this, every
+# search says that prices and stock are to be checked on the shop's site (re-run the scraper, README).
+stale_after_days: 30
+
+# Load the catalogue and FashionCLIP when the API starts (~13 s on CPU), not on the first search.
+warm_up: true
+
+# LLM of the BO6 agent (llm.py), shared with M14: Qwen 2.5 7B run locally by Ollama (free, French + Arabic).
+# It only understands requests the rules miss and writes texts; it never picks products, prices or stylists.
+# Off, not installed or too slow -> every use falls back to the rules. Install: `ollama pull qwen2.5:7b`.
+llm:
+  enabled: true
+  url: http://127.0.0.1:11434
+  model: qwen2.5:7b
+  timeout_s: 90          # CPU only: a 7B model answers in ~5-30 s
+  temperature: 0
+  keep_alive: 15m        # keep the model loaded between calls
+  uses:
+    understand: true         # M7: requests the rules do not understand
+    handoff_summary: true    # M14: one sentence for the stylist
+    escalation: true         # M14: longer chats -> asks for a human / frustrated?
+    insights: true           # M14: tips for a boutique from the dashboard figures
+
+# Agent memory (memory.py): one JSON file per user, relative to the repo root, never git.
+memory_dir: ml/data/bo6/memory
+memory_history: 50    # past searches kept per user
+memory_sessions: 20   # open conversations kept per user
+# A gender learned from an answer ("homme") filters a later search only when at least this share of the
+# pieces of that type (of known gender) are for that gender: not dresses for a man (1 of 247 is a belt).
+memory_gender_min_share: 0.1
+# Usual budget in TND, learned per piece type from the budgets the user gave and the prices of what they
+# bought (feedback). Used only when a request has no budget: it re-ranks, it never hides a piece.
+budget_memory:
+  min_samples: 2   # budgets (or purchases) of this type needed before using one
+  window: 10       # latest ones of the type; their median is the usual budget
+  tolerance: 0.5   # a piece up to 50 % over the usual budget keeps part of the score

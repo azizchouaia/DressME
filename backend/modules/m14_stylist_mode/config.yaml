@@ -1,0 +1,59 @@
+# M14 Stylist / boutique mode (BO6). A skill of the BO6 agent `localshop` (no tool of its own).
+# Data paths are relative to the repo root and never in git.
+data_dir: ml/data/bo6/m14                                  # pros, client links (consent), looks, reviews, hand-offs
+simulated_log: ml/data/logs/m14_simulated_events.jsonl     # synthetic traffic run through the real M7 search
+
+# Modules called for real; the others answer with their mock (mock.py), and the answer says which one was used.
+# m7 is in-process (same BO). The others are called over HTTP on api_url once their branch is merged.
+real: [m7]
+# Integration: add m1, m3, m2 (feat/m02-m03-m04-m17), m6 (feat/bo5-smartbuy), m10 + m15 (feat/bo7-m10-m15).
+api_url: http://127.0.0.1:8000
+timeout_s: 20
+
+# Privacy: a dashboard figure built from fewer searches than this is hidden (no user id is ever shown).
+min_group: 10
+
+dashboard:
+  period_days: 30
+  sources: [real, simulated]   # which logs the dashboard reads by default
+  themes:
+    k_min: 12                  # KMeans: number of themes chosen by silhouette in [k_min, k_max]
+    k_max: 30                  # (silhouette is flat from 8 to 40 on the simulated month: finer themes keep colours)
+    examples: 3                # most frequent requests shown per theme
+    cache_minutes: 10          # themes reused this long, then recomputed in the background (0 = never kept)
+  unmet:
+    low_match: 0.5             # a result under this match is not an exact answer (weak_answer_rate)
+    full_stock: 3              # a shop with this many matching pieces in stock covers the theme by its catalogue
+    coverage_weights:          # coverage = stock part x stock + visual part x best FashionCLIP match
+      stock: 0.5
+      visual: 0.5
+  trends:
+    history_weeks: 8           # last 7 days compared with the 8 weeks before
+    min_count: 10              # at least this many searches in the last 7 days
+    z_threshold: 2.0           # rising when (last - mean) / std >= this
+
+handoff:
+  escalate_threshold: 0.6      # noisy-OR of the signals below; "asks for a human" always escalates
+  signals:                     # weight of each signal in the escalation score
+    asks_human: 1.0
+    frustration: 0.5
+    complex_occasion: 0.35
+    low_confidence: 0.4
+    long_conversation: 0.2
+    repeated_request: 0.3
+  low_confidence: 0.5          # assistant confidence under this = low_confidence signal
+  long_conversation: 6         # user messages
+  # Stylist choice: weighted parts (renormalised over the parts that apply to the request).
+  weights:
+    speciality: 0.30           # stylist's specialities vs the occasion / pieces of the conversation
+    style: 0.25                # cosine(client style vector M5, stylist portfolio vector), when both exist
+    city: 0.20
+    language: 0.15
+    load: 0.10                 # fewer open hand-offs is better
+  speciality_decay: 0.5        # speciality part = 1 - decay^matches (1 match 0.5, 2 -> 0.75, 3 -> 0.875)
+  same_governorate: 0.5        # city part for a stylist in the client's governorate but not the same city
+  max_load: 5                  # a stylist with this many open hand-offs is not proposed
+  candidates: 3
+
+# Local brand challenges (Backup 5): pieces of the sponsoring shop suggested to the participants.
+challenge_pieces: 6

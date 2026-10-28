@@ -1,18 +1,158 @@
-"""HTTP endpoints of M7. Included automatically by api/main.py."""
+"""HTTP endpoints of M7. Included automatically by api/main.py.
 
-from fastapi import APIRouter
+M7 is implemented, so the router always serves service.py (mock.py stays for other BOs' offline tests).
+"""
 
-from shared.config import settings
+import asyncio
+import re
+from contextlib import asynccontextmanager
 
-from . import mock, service
-from .contract import SearchRequest, SearchResponse
+from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
-router = APIRouter(prefix="/m07", tags=["M7 Local catalogue"])
+from shared.base_agent import AgentError
+
+from . import events, service
+from .contract import (
+    ClickEvent,
+    Feedback,
+    LocalPiecesInput,
+    LocalPiecesOutput,
+    LocalShopInput,
+    LocalShopOutput,
+    OutfitsInput,
+    OutfitsOutput,
+    TryOnInput,
+    TryOnOutput,
+)
+from .identity import CARD
+from .paths import CONFIG, IMAGES_DIR, REPO_ROOT
+
+_IMAGE_NAME = re.compile(r"[0-9a-f]{16}\.jpg")  # names written by scraper/images.py, nothing else
+_PRODUCT_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")  # never a path
 
 
-def _impl():
-    return mock if getattr(settings, "use_mocks", True) else service
+@asynccontextmanager
+async def _warm_up(app: FastAPI):
+    """Load the catalogue and FashionCLIP as soon as the API starts (config.yaml warm_up), so the
+    first search does not wait ~13 s for them."""
+    task = None
+    if CONFIG.get("warm_up") and service.knowledge_base_ready():
+        task = asyncio.create_task(service.get_agent())
+    yield
+    if task is not None and not task.done():
+        task.cancel()
 
-@router.post("/search", response_model=SearchResponse)
-def search(req: SearchRequest):
-    return _impl().search(req.model_dump())
+
+router = APIRouter(prefix="/m07", tags=["M7 Local catalogue"], lifespan=_warm_up)
+
+
+@router.post("/search", response_model=LocalShopOutput)
+async def search(body: LocalShopInput):
+    """'baskets blanches à Tunis max 80 TND', a gap from Smart Buy, a photo embedding or a style vector."""
+    try:
+        return await service.search(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/outfits", response_model=OutfitsOutput)
+async def outfits(body: OutfitsInput):
+    """Outfits from the user's wardrobe (M1) around one local piece, scored by M2, with why this piece.
+    M1 and M2 answer for real once they are listed in config.yaml `real`; until then a simulation does."""
+    try:
+        return await service.outfits(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/local-pieces", response_model=LocalPiecesOutput)
+async def local_pieces(body: LocalPiecesInput):
+    """Tunisian pieces for an outfit of the day (BO1): a missing piece (shoes, bag...) or one to replace,
+    each scored by M2 with the whole outfit. M1 / M2 are simulated until they are listed in `real`."""
+    try:
+        return await service.local_pieces(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/try-on", response_model=TryOnOutput)
+async def try_on(body: TryOnInput):
+    """A local piece on the avatar (BO6 Selected 6): its photo is sent to BO9's 3D service (TripoSR), the GLB
+    is cached and served at `model_url`. Simulated until m9 is listed in `real` (`sources.m9`)."""
+    try:
+        return await service.try_on(body.model_dump())
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/try-on/{product_id}.glb")
+async def try_on_model(product_id: str):
+    """The 3D model (GLB) of a local piece, built by BO9's service, for the avatar viewer."""
+    path = REPO_ROOT / CONFIG["tryon"]["dir"] / f"{product_id}.glb"
+    if not _PRODUCT_ID.fullmatch(product_id) or not path.is_file():
+        raise HTTPException(status_code=404, detail="no 3D model for this product yet (POST /m07/try-on)")
+    return FileResponse(path, media_type="model/gltf-binary")
+
+
+@router.get("/card")
+async def card():
+    """Agent card: identity, skills, when to use, contract. Read by the orchestrator / other agents."""
+    return CARD
+
+
+@router.get("/identity")
+async def identity_card():
+    """Same card, at the path the orchestrator branch (BO8) reads."""
+    return CARD
+
+
+@router.post("/feedback")
+async def feedback(body: Feedback):
+    """Were the results of a search useful / did the user buy one? (decision_id from the search output)"""
+    try:
+        return service.feedback(body.user_id, body.decision_id, body.useful, body.bought_product_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/history/{user_id}")
+async def history(user_id: str, n: int = 10):
+    """Past searches of this user (long-term memory)."""
+    return {"history": service.memory().history(user_id, n)}
+
+
+@router.delete("/memory/{user_id}", status_code=204)
+async def forget(user_id: str):
+    """Forget everything localshop remembers about this user (privacy)."""
+    service.memory().forget(user_id)
+
+
+@router.post("/events", status_code=204)
+async def click(body: ClickEvent):
+    """The app reports that a result was opened or that the user went to the shop (logged for M14)."""
+    events.log_click(body.type, body.product_id, body.search_id, body.shop, body.rank, body.user_id)
+
+
+@router.get("/shops")
+async def shops():
+    """Shops in the catalogue with their city, product count and website."""
+    return await service.shops()
+
+
+@router.get("/products/{product_id}")
+async def product(product_id: str):
+    found = await service.product(product_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail="unknown product_id")
+    return found
+
+
+@router.get("/images/{name}")
+async def image(name: str):
+    """Local copy of a product photo (result field image_path = "images/<name>"), served by DressMe so the
+    app does not depend on the shops' websites."""
+    path = IMAGES_DIR / name
+    if not _IMAGE_NAME.fullmatch(name) or not path.is_file():
+        raise HTTPException(status_code=404, detail="unknown image")
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
