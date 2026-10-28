@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" role="img" aria-label="Mocassins camel"><title>Mocassins camel</title><defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".65" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient><linearGradient id="vt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs><path d="M16 104 Q18 84 40 80 L84 72 Q112 66 136 76 L170 88 Q188 94 186 106 Z" fill="#A0703F"/><path d="M16 104 Q18 84 40 80 L84 72 Q112 66 136 76 L170 88 Q188 94 186 106 Z" fill="url(#vt)"/>
+<path d="M12 104 H190 Q190 116 178 116 H22 Q12 116 12 104 Z" fill="#5E3E26"/>
+<path d="M98 76 Q120 70 140 80 L136 90 Q118 84 100 88 Z" fill="#8D6842"/>
+<rect x="110" y="78" width="16" height="5" rx="2" fill="#3E2A1E"/>
+<path d="M34 84 Q60 78 84 80" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>
+<rect x="22" y="112" width="34" height="6" rx="2" fill="#3E2A1E"/></svg>
