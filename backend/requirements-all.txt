@@ -1,0 +1,12 @@
+# Everything the integrated API needs (gateway + every module). One command:
+#   python -m pip install -r requirements-all.txt
+-r requirements.txt
+-r modules/m01_wardrobe/requirements.txt
+-r modules/m02_recommendation/requirements.txt
+-r modules/m03_wear_log/requirements.txt
+-r modules/m04_scheduler/requirements.txt
+-r modules/m06_smartbuy/requirements.txt
+-r modules/m07_local_catalogue/requirements.txt
+-r modules/m10_share_cards/requirements.txt
+-r modules/m14_stylist_mode/requirements.txt
+-r modules/m17_capsule/requirements.txt
