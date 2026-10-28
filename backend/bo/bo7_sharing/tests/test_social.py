@@ -57,8 +57,10 @@ def test_owner_answer_is_used_when_the_team_ships_its_module(monkeypatch):
     assert body["sources"]["complete"] == "M02" and body["added"] == []
 
 
-def test_week1_placeholder_counts_as_not_built():
-    assert ext._owner("m03_wear_log", "stats", {"user_id": U, "payload": {}}) is None  # mock says {"todo": …}
+def test_real_wear_log_is_used_now_that_m3_is_built():
+    # integration: M3 (BO1/BO2) is real now, so BO7 reads its stats instead of the week-1 placeholder
+    out = ext._owner("m03_wear_log", "stats", {"user_id": U, "payload": {}})
+    assert out is None or "summary" in out
 
 
 def test_poll_gets_a_verdict_and_friends_vote():

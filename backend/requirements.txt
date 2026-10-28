@@ -12,5 +12,6 @@ httpx>=0.27
 python-jose[cryptography]>=3.3
 langgraph>=0.2
 langchain-core>=0.3
+langchain-ollama>=0.2      # orchestrator brain on the local model
 pyyaml>=6.0
 # Agent-specific heavy deps live in backend/agents/<name>/requirements.txt

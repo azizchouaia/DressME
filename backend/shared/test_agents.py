@@ -19,7 +19,8 @@ def mocks(monkeypatch):
 def test_every_module_has_an_agent_and_a_tool():
     assert MINE <= set(agent_bus.agents())
     tools = set(tool_names())
-    assert {"m02_recommendation", "m03_wear_log", "m04_scheduler", "m17_capsule", "m09_avatar_3d"} <= tools
+    # integration: the orchestrator sees one tool per agent; M2/M3/M4/M17 are skills of `stylist`, M9 is `tryon`
+    assert {"stylist", "tryon"} <= tools
 
 
 def test_cards_describe_actions_and_payloads():

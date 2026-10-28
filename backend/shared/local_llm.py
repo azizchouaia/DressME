@@ -1,5 +1,5 @@
-"""Local LLM through Ollama (no API key, runs on the user's GPU). Default: Qwen2.5 3B Instruct, which supports
-tool calling and fits a 4 GB GPU. Change with LLM_LOCAL_MODEL (e.g. qwen2.5:7b) / OLLAMA_URL."""
+"""Local LLM through Ollama (no API key, runs on the user's GPU). Default: Llama 3.1 8B (the team model: tool calling,
+EN/FR/Tounsi). On a 4 GB GPU use qwen2.5:3b. Change with LLM_LOCAL_MODEL (e.g. qwen2.5:7b) / OLLAMA_URL."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import os
 import httpx
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-MODEL = os.environ.get("LLM_LOCAL_MODEL", "qwen2.5:3b")
+MODEL = os.environ.get("LLM_LOCAL_MODEL") or os.environ.get("OLLAMA_MODEL") or "llama3.1:8b"
 
 
 class LLMError(RuntimeError):

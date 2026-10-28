@@ -197,13 +197,17 @@ def match_pieces(user_id: str, targets: list[dict]) -> dict:
             out.append({"target": t, "item_id": best.item_id, "score": score})
         return {"items": out}
 
-    return _answer(
+    res = _answer(
         "m02_recommendation",
         "recommend",
         {"user_id": user_id, "payload": {"mode": "match", "targets": targets}},
         ("items",),
         mock,
     )
+    # integration: the real M2 has no "match" mode yet and answers another shape -> keep BO7's matcher
+    if not all(isinstance(i, dict) and "item_id" in i for i in res.get("items") or []):
+        return {**mock(), "source": "mock"}
+    return res
 
 
 def complete_board(user_id: str, item_ids: list[str]) -> dict:
