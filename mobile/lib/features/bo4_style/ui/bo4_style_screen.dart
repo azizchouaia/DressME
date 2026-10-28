@@ -1,4 +1,7 @@
-// Owner: BO4 (Amine) — my wardrobe (M1: photo -> piece) and my style profile (M5). Integration screen.
+// Owner: BO4 (Amine) — "Your wardrobe, digitised": the M1 closet, as Amine presents it in his web app
+// (backend/modules/m01_wardrobe/ui): three sections (accessories shelves · clothes rails · shoe shelves),
+// filters by category and season, add a photo (cutout, classification, colours), duplicate question,
+// piece sheet (colours, information, details, analysis, similar pieces), give-away bag.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -7,241 +10,443 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
-import '../../../core/widgets/dm_async.dart';
 import '../../../core/widgets/dm_widgets.dart';
+import '../data/m1_wardrobe.dart';
+import 'piece_sheet.dart';
+
+const _bays = [('accessories', 'Accessories'), ('clothes', 'Clothes'), ('shoes', 'Shoes')];
 
 class StyleProfileScreen extends ConsumerStatefulWidget {
   const StyleProfileScreen({super.key});
 
   @override
-  ConsumerState<StyleProfileScreen> createState() => _StyleProfileScreenState();
+  ConsumerState<StyleProfileScreen> createState() => _WardrobeScreenState();
 }
 
-class _StyleProfileScreenState extends ConsumerState<StyleProfileScreen> {
-  int _run = 0;
-  bool _adding = false;
-  String? _category;
+class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
+  late final M1 m1 = M1(ref.read(dmApiProvider), DemoUsers.wardrobe);
+  List<Json> items = [];
+  Set<String> dupIds = {};
+  final newIds = <String>{};
+  String? category;
+  String? season;
+  String bay = 'clothes';
+  bool loading = true;
+  bool adding = false;
+  bool mocked = false;
+  String? error;
+  int bagCount = 0;
+  bool resumed = false;
 
-  DmApi get _api => ref.read(dmApiProvider);
+  @override
+  void initState() {
+    super.initState();
+    _load().then((_) {
+      if (!resumed) {
+        resumed = true;
+        _resumePending();
+      }
+    });
+  }
 
+  Future<void> _load() async {
+    setState(() => error = null);
+    try {
+      final data = await m1.items(category: category, season: season);
+      final dups = await m1.duplicateIds();
+      int bag = bagCount;
+      try {
+        bag = jsonList((await m1.items(status: 'donated'))['items']).length;
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        items = jsonList(data['items']);
+        mocked = data['mocked'] == true;
+        dupIds = dups;
+        bagCount = bag;
+        loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          error = apiError(e);
+          loading = false;
+        });
+      }
+    }
+  }
+
+  // ---------- add a photo (Amine's addPhoto) ----------
   Future<void> _add(ImageSource source) async {
-    final file = await ImagePicker().pickImage(source: source, maxWidth: 1000, imageQuality: 85);
+    final file = await ImagePicker().pickImage(source: source, maxWidth: 1280, maxHeight: 1280, imageQuality: 90);
     if (file == null) return;
-    setState(() => _adding = true);
+    setState(() => adding = true);
     try {
       final bytes = await file.readAsBytes();
-      final r = await _api.post('/m01/classify', {
-        'user_id': DemoUsers.wardrobe,
-        'image': 'data:image/jpeg;base64,${base64Encode(bytes)}',
-        'mode': 'add_to_wardrobe',
-        'on_duplicate': 'ask',
-      });
-      final g = ((r['garment'] as Map?) ?? const {}).cast<String, dynamic>();
-      final label = _label(g);
-      if (r['pending'] == true) {
-        // M1 found a piece that looks the same: it waits (hidden) until the user decides
-        final keep = await _askDuplicate(g, jsonList(r['duplicates']));
-        final id = g['item_id'];
-        if (keep == true) {
-          await _api.post('/m01/items/$id/confirm?user_id=${DemoUsers.wardrobe}');
-          if (mounted) dmToast(context, 'Added anyway: $label');
-        } else {
-          await _api.delete('/m01/items/$id', query: {'user_id': DemoUsers.wardrobe});
-          if (mounted) dmToast(context, 'Not added: you already have it');
-        }
-      } else if (mounted) {
-        dmToast(context, r['needs_confirmation'] == true ? 'Added: $label (check the details, the AI was not sure)' : 'Added: $label');
+      final res = await m1.classify('data:image/jpeg;base64,${base64Encode(bytes)}');
+      var g = (res['garment'] as Map).cast<String, dynamic>();
+      final dups = jsonList(res['duplicates']);
+      if (res['pending'] == true) {
+        // M1 held the piece (status pending): nothing is added until the user decides
+        final active = await _resolvePending(g, dups);
+        if (active == null) return;
+        g = active;
       }
-      if (mounted) setState(() => _run++);
+      newIds.add('${g['item_id']}');
+      if ((category != null && category != g['category']) ||
+          (season != null && !(g['season'] as List? ?? const []).contains(season))) {
+        category = null;
+        season = null;
+      }
+      bay = shelf(g);
+      await _load();
+      if (!mounted) return;
+      dmToast(context, 'New piece "${pieceTitle(g)}", put in the ${shelf(g)} section.');
+      if (res['needs_confirmation'] == true) {
+        dmToast(context, 'Confidence ${pct(g['confidence'])}: check the proposed category.');
+      }
+      // optional right away: size, price, receipt…
+      final saved = await Navigator.of(context).push<Json>(
+        MaterialPageRoute(fullscreenDialog: true, builder: (_) => PieceForm(m1: m1, item: g, intro: true)),
+      );
+      if (saved != null) await _load();
+    } catch (e) {
+      if (mounted) dmToast(context, 'Analysis failed: ${apiError(e)}');
+    } finally {
+      if (mounted) setState(() => adding = false);
+    }
+  }
+
+  /// Ask, then confirm (returns the active piece) or cancel (deletes it, returns null).
+  Future<Json?> _resolvePending(Json g, List<Json> dups) async {
+    final keep = await askDuplicate(context, m1, g, dups);
+    if (!keep) {
+      await m1.delete('${g['item_id']}');
+      if (mounted) dmToast(context, 'Add cancelled: the piece was not added to the wardrobe.');
+      return null;
+    }
+    final active = await m1.confirm('${g['item_id']}');
+    dupIds = {...dupIds, '${active['item_id']}', for (final d in dups) '${d['item_id']}'};
+    return active;
+  }
+
+  /// Pieces left pending (app closed before deciding) are asked again when the wardrobe opens.
+  Future<void> _resumePending() async {
+    List<Json> held;
+    try {
+      held = jsonList((await m1.items(status: 'pending'))['items']);
+    } catch (_) {
+      return;
+    }
+    for (final it in held) {
+      if (!mounted) return;
+      var dups = <Json>[];
+      try {
+        dups = await m1.similar('${it['item_id']}', k: 2, threshold: duplicateThreshold);
+      } catch (_) {}
+      try {
+        final active = await _resolvePending(it, dups);
+        if (active != null) {
+          newIds.add('${active['item_id']}');
+          await _load();
+          if (mounted) dmToast(context, '"${pieceTitle(active)}" added to the wardrobe.');
+        }
+      } catch (e) {
+        if (mounted) dmToast(context, 'Decision not saved: ${apiError(e)}');
+      }
+    }
+  }
+
+  void _open(Json it) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => PieceSheet(
+        m1: m1,
+        item: it,
+        isNew: newIds.contains(it['item_id']),
+        isDup: dupIds.contains(it['item_id']),
+        onChanged: _load,
+      ),
+    );
+  }
+
+  Future<void> _openBag() async {
+    List<Json> given;
+    try {
+      given = jsonList((await m1.items(status: 'donated'))['items']);
     } catch (e) {
       if (mounted) dmToast(context, apiError(e));
-    } finally {
-      if (mounted) setState(() => _adding = false);
+      return;
     }
+    given.sort((a, b) => '${b['donated_at']}'.compareTo('${a['donated_at']}'));
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        builder: (_, c) => ListView(controller: c, padding: const EdgeInsets.all(20), children: [
+          Text('Bag'.toUpperCase(), style: DmText.eyebrow),
+          const Text('To give away', style: DmText.title),
+          const SizedBox(height: 6),
+          Text(given.isEmpty
+              ? 'Your bag is empty. Open a duplicated piece to give it away.'
+              : '${given.length} piece(s) ready for a second life.', style: DmText.body),
+          const SizedBox(height: 12),
+          for (final it in given)
+            ListTile(
+              leading: Container(
+                decoration: BoxDecoration(color: DmColors.sand, borderRadius: BorderRadius.circular(DmRadius.small)),
+                child: PieceImage(m1: m1, item: it, size: 52),
+              ),
+              title: Text(pieceTitle(it)),
+              subtitle: Text([
+                if (it['donated_at'] != null) 'Put aside on ${'${it['donated_at']}'.split('T').first}',
+                if (it['donation_place'] != null) donationPlaces[it['donation_place']] ?? '${it['donation_place']}',
+              ].join(' · ')),
+            ),
+        ]),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return DmPage(
-      eyebrow: 'BO4 · My style',
-      title: 'My wardrobe',
-      heroChild: Row(children: [
-        Expanded(
-          child: DmButton(_adding ? 'Reading the photo…' : 'Add a piece', kind: DmButtonKind.gold, icon: Icons.photo_camera_outlined,
-              onPressed: _adding ? null : () => _add(ImageSource.camera)),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          tooltip: 'From the gallery',
-          onPressed: _adding ? null : () => _add(ImageSource.gallery),
-          icon: const Icon(Icons.image_outlined, color: Colors.white),
-        ),
-      ]),
-      children: [
-        Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final c in const [null, 'top', 'bottom', 'outerwear', 'dress', 'shoes', 'accessory'])
-            DmChoiceChip(label: c == null ? 'All' : cap(c), selected: _category == c, onTap: () => setState(() => _category = c)),
-        ]),
-        const SizedBox(height: 12),
-        DmLoad(
-          key: ValueKey('items-$_run-$_category'),
-          load: () => _api.post('/m01/items', {'user_id': DemoUsers.wardrobe, if (_category != null) 'category': _category}),
-          builder: (d, _) {
-            final items = jsonList(d['items']);
-            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Row(children: [
-                Expanded(child: Text('${items.length} pieces', style: DmText.cardTitle)),
-                DmSource(mocked: d['mocked'] == true, label: 'M1'),
-              ]),
-              const SizedBox(height: 10),
-              if (items.isEmpty)
-                const DmCard(child: DmEmptyState(title: 'Empty', message: 'Add a photo of a piece you own.'))
-              else
-                Wrap(spacing: 10, runSpacing: 14, children: [
-                  for (final it in items)
-                    InkWell(
-                      onTap: () => _details(context, it),
-                      child: DmPieceTile(
-                        name: '${it['subcategory'] ?? it['category']}',
-                        imageUrl: _api.media((it['image_cutout'] ?? it['image_raw']) as String?),
-                        caption: [
-                          if (it['colors'] is List && (it['colors'] as List).isNotEmpty) (it['colors'] as List).first['name'],
-                          it['material'],
-                        ].whereType<String>().join(' · '),
-                        width: 104,
-                      ),
-                    ),
-                ]),
-            ]);
-          },
-        ),
-        const SizedBox(height: 20),
-        const DmSectionHeader(eyebrow: 'M5', title: 'My style profile'),
-        const SizedBox(height: 8),
-        DmLoad(
-          load: () => _api.call('/m05/profile', userId: DemoUsers.wardrobe),
-          builder: (d, _) => DmCard(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Expanded(child: Text('Profile', style: DmText.cardTitle)),
-                DmSource(mocked: d['_mocked'] == true, label: 'M5'),
-              ]),
-              const SizedBox(height: 6),
-              Text(
-                d.containsKey('todo') ? 'M5 is not built yet (mock). Your style profile will show here.' : _summary(d),
-                style: DmText.body,
+    final groups = {for (final (b, _) in _bays) b: <Json>[]};
+    for (final it in items) {
+      groups[shelf(it)]!.add(it);
+    }
+    final filtered = category != null || season != null;
+    return Scaffold(
+      backgroundColor: DmColors.page,
+      body: ListView(padding: EdgeInsets.zero, children: [
+        DmHero(
+          eyebrow: 'BO4 · Module M1 · Wardrobe digitiser',
+          title: 'Your wardrobe, digitised',
+          trailing: Badge(
+            isLabelVisible: bagCount > 0,
+            label: Text('$bagCount'),
+            backgroundColor: DmColors.gold,
+            child: IconButton(
+              tooltip: 'To give away',
+              onPressed: _openBag,
+              icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+            ),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Every piece is cut out, classified and put in the right place.',
+                style: DmText.body.copyWith(color: DmColors.goldLight)),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: DmButton(adding ? 'Analysing: cutout, classification, colours…' : 'Add a piece',
+                    kind: DmButtonKind.gold, icon: Icons.photo_camera_outlined, onPressed: adding ? null : () => _add(ImageSource.camera)),
+              ),
+              IconButton(
+                tooltip: 'From the gallery',
+                onPressed: adding ? null : () => _add(ImageSource.gallery),
+                icon: const Icon(Icons.image_outlined, color: Colors.white),
               ),
             ]),
+          ]),
+        ),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                // filters: category · season · reset (Amine's toolbar)
+                Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  _Drop(label: 'Category', value: category, options: categories, onChanged: (v) {
+                    setState(() => category = v);
+                    _load();
+                  }),
+                  _Drop(label: 'Season', value: season, options: seasons, onChanged: (v) {
+                    setState(() => season = v);
+                    _load();
+                  }),
+                  if (filtered)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          category = null;
+                          season = null;
+                        });
+                        _load();
+                      },
+                      child: const Text('Reset'),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: mocked ? DmColors.warningBg : DmColors.successBg,
+                      borderRadius: BorderRadius.circular(DmRadius.pill),
+                    ),
+                    child: Text(mocked ? 'Demo · mock data' : 'Live · FashionCLIP',
+                        style: DmText.caption.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                Text('${items.length} piece(s)${filtered ? ' (filtered)' : ''}', style: DmText.cardTitle),
+                const SizedBox(height: 10),
+                // the three sections of the closet
+                Row(children: [
+                  for (final (b, label) in _bays)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: DmChoiceChip(label: '$label (${groups[b]!.length})', selected: bay == b, onTap: () => setState(() => bay = b)),
+                    ),
+                ]),
+                const SizedBox(height: 12),
+                if (loading)
+                  const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+                else if (error != null)
+                  DmCard(child: DmEmptyState(icon: Icons.wifi_off_rounded, title: 'Something went wrong', message: error!,
+                      action: DmButton('Try again', onPressed: _load)))
+                else
+                  _Closet(
+                    bay: bay,
+                    items: groups[bay]!,
+                    m1: m1,
+                    newIds: newIds,
+                    dupIds: dupIds,
+                    onTap: _open,
+                  ),
+              ]),
+            ),
           ),
         ),
-      ],
+      ]),
     );
   }
+}
 
-  static String _label(Map g) {
-    final colors = g['colors'];
-    final colour = colors is List && colors.isNotEmpty ? '${(colors.first as Map)['name']} ' : '';
-    return '$colour${g['subcategory'] ?? g['category'] ?? 'piece'}';
-  }
+class _Drop extends StatelessWidget {
+  const _Drop({required this.label, required this.value, required this.options, required this.onChanged});
 
-  /// "Same piece?" -> true = keep both, false/null = cancel the new one.
-  Future<bool?> _askDuplicate(Json g, List<Json> dups) async {
-    final items = (await _api.post('/m01/items', {'user_id': DemoUsers.wardrobe}))['items'];
-    final byId = {for (final it in jsonList(items)) it['item_id']: it};
-    if (!mounted) return false;
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('You may already have it'),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('This ${_label(g)} looks like:', style: DmText.body),
-          const SizedBox(height: 12),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            for (final d in dups.take(3))
-              DmPieceTile(
-                name: byId[d['item_id']] == null ? '${d['item_id']}' : _label(byId[d['item_id']]!),
-                imageUrl: _api.media((byId[d['item_id']]?['image_cutout'] ?? byId[d['item_id']]?['image_raw']) as String?),
-                caption: '${pct(d['similarity'])} same',
-                width: 96,
+  final String label;
+  final String? value;
+  final Map<String, String> options;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 190,
+        child: DropdownButtonFormField<String?>(
+          key: ValueKey('$label-$value'),
+          initialValue: value,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: label, isDense: true),
+          items: [
+            const DropdownMenuItem<String?>(value: null, child: Text('All')),
+            for (final e in options.entries) DropdownMenuItem<String?>(value: e.key, child: Text(e.value)),
+          ],
+          onChanged: onChanged,
+        ),
+      );
+}
+
+/// One section of the closet: hanging rails for clothes, shelves (2 per shelf) for accessories and shoes.
+class _Closet extends StatelessWidget {
+  const _Closet({required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, required this.onTap});
+
+  final String bay;
+  final List<Json> items;
+  final M1 m1;
+  final Set<String> newIds;
+  final Set<String> dupIds;
+  final void Function(Json) onTap;
+
+  Widget _piece(Json it, {required bool hanging}) {
+    final id = '${it['item_id']}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: InkWell(
+        onTap: () => onTap(it),
+        borderRadius: BorderRadius.circular(DmRadius.card),
+        child: SizedBox(
+          width: 112,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (hanging) const Icon(Icons.checkroom, size: 30, color: DmColors.bar),
+            Stack(children: [
+              Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(DmRadius.card),
+                    boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2))]),
+                padding: const EdgeInsets.all(6),
+                child: PieceImage(m1: m1, item: it, size: 96),
               ),
+              if (newIds.contains(id))
+                const Positioned(top: 4, left: 4, child: newBadge)
+              else if (dupIds.contains(id))
+                const Positioned(top: 4, left: 4, child: dupBadge),
+            ]),
+            const SizedBox(height: 4),
+            Text(pieceTitle(it), style: DmText.itemName, maxLines: 1, overflow: TextOverflow.ellipsis),
           ]),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('It is another piece, keep it')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Same piece, don\'t add')),
-        ],
+        ),
       ),
     );
   }
 
-  Future<void> _delete(BuildContext sheet, Json it) async {
-    final ok = await showDialog<bool>(
-      context: sheet,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove this piece?'),
-        content: Text('${_label(it)} will be removed from your wardrobe.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove')),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    try {
-      await _api.delete('/m01/items/${it['item_id']}', query: {'user_id': DemoUsers.wardrobe});
-      if (sheet.mounted) Navigator.pop(sheet);
-      if (mounted) {
-        dmToast(context, 'Removed');
-        setState(() => _run++);
+  Widget _rail(String name, List<Json> list) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(name.toUpperCase(), style: DmText.eyebrow),
+        Container(height: 4, margin: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(color: DmColors.bronze, borderRadius: BorderRadius.circular(2))),
+        SizedBox(
+          height: 180,
+          child: list.isEmpty
+              ? const Center(child: Text('Nothing on this rail', style: DmText.caption))
+              : ListView(scrollDirection: Axis.horizontal, children: [for (final it in list) _piece(it, hanging: true)]),
+        ),
+      ]);
+
+  @override
+  Widget build(BuildContext context) {
+    Widget body;
+    if (bay == 'clothes') {
+      final upper = items.where((it) => upperRail.contains(it['category'])).toList();
+      final lower = items.where((it) => !upperRail.contains(it['category'])).toList();
+      body = items.isEmpty
+          ? const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('No clothes on the rails', style: DmText.body)))
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              _rail('Upper rail · tops & jackets', upper),
+              const SizedBox(height: 10),
+              _rail('Lower rail · bottoms, dresses, traditional', lower),
+            ]);
+    } else {
+      final shelves = <List<Json>>[
+        for (var i = 0; i < items.length; i += 2) items.sublist(i, i + 2 > items.length ? items.length : i + 2),
+      ];
+      while (shelves.length < 3) {
+        shelves.add(const []);
       }
-    } catch (e) {
-      if (mounted) dmToast(context, apiError(e));
+      body = items.isEmpty
+          ? const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('No piece on these shelves', style: DmText.body)))
+          : Column(children: [
+              for (final row in shelves)
+                Container(
+                  constraints: const BoxConstraints(minHeight: 150),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: DmColors.bronze, width: 4))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [for (final it in row) _piece(it, hanging: false)],
+                  ),
+                ),
+            ]);
     }
-  }
-
-  static String _summary(Json d) =>
-      d.entries.where((e) => !e.key.startsWith('_')).map((e) => '${e.key}: ${e.value}').join('\n');
-
-  void _details(BuildContext context, Json it) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheet) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(cap('${it['subcategory'] ?? it['category']}'), style: DmText.title),
-          const SizedBox(height: 8),
-          for (final k in const ['category', 'pattern', 'material', 'season', 'formality', 'brand', 'size'])
-            if (it[k] != null && '${it[k]}' != '[]') Text('$k: ${it[k]}', style: DmText.body),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, children: [
-            for (final c in jsonList(it['colors']))
-              Chip(
-                avatar: CircleAvatar(backgroundColor: _hex('${c['hex']}')),
-                label: Text('${c['name']} ${pct(c['share'])}'),
-              ),
-          ]),
-          const SizedBox(height: 12),
-          FutureBuilder<Json>(
-            future: _api.post('/m01/similar', {'user_id': DemoUsers.wardrobe, 'item_id': it['item_id'], 'k': 3, 'threshold': 0.8}),
-            builder: (_, snap) {
-              final near = jsonList(snap.data?['items'] ?? snap.data?['neighbours'] ?? snap.data?['similar']);
-              if (near.isEmpty) return const SizedBox.shrink();
-              return Text('Looks like ${near.length} other piece(s) you own (${near.map((n) => pct(n['similarity'])).join(', ')})',
-                  style: DmText.body.copyWith(color: DmColors.warning));
-            },
-          ),
-          const SizedBox(height: 16),
-          DmButton('Remove from my wardrobe', kind: DmButtonKind.outline, icon: Icons.delete_outline_rounded,
-              onPressed: () => _delete(sheet, it)),
-        ]),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: DmColors.sandDark,
+        borderRadius: BorderRadius.circular(DmRadius.panel),
+        border: Border.all(color: DmColors.borderStrong, width: 2),
       ),
+      child: body,
     );
-  }
-
-  static Color _hex(String h) {
-    final v = int.tryParse(h.replaceFirst('#', ''), radix: 16);
-    return v == null ? DmColors.sand : Color(0xFF000000 | v);
   }
 }
