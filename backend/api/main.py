@@ -2,6 +2,12 @@
 
 import importlib
 import pkgutil
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# infra/.env -> os.environ, so module switches (M01_USE_MOCKS, M03_DATABASE_URL...) work without exporting them
+load_dotenv(Path(__file__).resolve().parents[2] / "infra" / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

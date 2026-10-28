@@ -10,6 +10,8 @@ c = TestClient(app)
 def test_register_login_me(tmp_path, monkeypatch):
     from api.routes import auth
     monkeypatch.setattr(auth, "STORE", tmp_path / "users.json")
+    monkeypatch.setenv("AUTH_STORE", "json")
+    monkeypatch.setattr(auth, "_pg_engine", None)
     r = c.post("/auth/register", json={"name": "Sarra", "email": "Sarra@Mail.tn", "password": "secret1"})
     assert r.status_code == 201
     uid = r.json()["user"]["user_id"]
@@ -26,5 +28,7 @@ def test_register_login_me(tmp_path, monkeypatch):
 def test_demo_account_exists(tmp_path, monkeypatch):
     from api.routes import auth
     monkeypatch.setattr(auth, "STORE", tmp_path / "users.json")
+    monkeypatch.setenv("AUTH_STORE", "json")
+    monkeypatch.setattr(auth, "_pg_engine", None)
     r = c.post("/auth/login", json={"email": "demo@dressme.tn", "password": "demo1234"})
     assert r.status_code == 200 and r.json()["user"]["user_id"] == "usr_demo"
