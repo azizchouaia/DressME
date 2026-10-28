@@ -23,6 +23,9 @@ from .contract import (
     DeleteResponse,
     DocumentRequest,
     DocumentResponse,
+    DonateRequest,
+    DonationSuggestionsRequest,
+    DonationSuggestionsResponse,
     DuplicatesRequest,
     DuplicatesResponse,
     ExtractionUnavailableError,
@@ -87,6 +90,25 @@ async def get_item(item_id: str, user_id: str = Query(min_length=1)):
 async def confirm_item(item_id: str, user_id: str = Query(min_length=1)):
     """Accept a pending item (possible duplicate held by /classify). To cancel instead: DELETE /items/{id}."""
     return await _call(_impl().confirm_item(user_id, item_id))
+
+
+@router.post("/items/{item_id}/donation-suggestions", response_model=DonationSuggestionsResponse)
+async def donation_suggestions(
+    item_id: str, req: DonationSuggestionsRequest | None = None, user_id: str = Query(min_length=1)
+):
+    """Where to give this piece: places of the verified list (donation_places.json), picked and explained by
+    the local LLM. Without Ollama, the list's own order and text (llm_used=false). Nothing is saved."""
+    from . import donation
+
+    item = await _call(_impl().get_item(user_id, item_id))
+    return await donation.suggest(item, (req or DonationSuggestionsRequest()).city)
+
+
+@router.post("/items/{item_id}/donate", response_model=WardrobeItem)
+async def donate_item(item_id: str, req: DonateRequest | None = None, user_id: str = Query(min_length=1)):
+    """Puts the piece in the 'À donner' bag (status donated). It leaves /items, M2 and M5.
+    The bag: POST /items with status=donated. 422 for a pending or already given piece."""
+    return await _call(_impl().donate_item(user_id, item_id, req or DonateRequest()))
 
 
 @router.patch("/items/{item_id}", response_model=WardrobeItem)

@@ -142,3 +142,31 @@ def test_static_routes_block_path_traversal(client):
     assert client.get("/m01/ui/%2e%2e/router.py").status_code == 404
     assert client.get("/m01/media/../../config.yaml").status_code == 404
     assert client.get("/m01/ui/missing.css").status_code == 404
+
+
+def test_donate_a_duplicate_moves_it_to_the_bag(client):
+    item = "itm_demo_shirt_navy_2"                     # the demo's near-duplicate navy shirt
+    groups = client.post("/m01/duplicates", json={"user_id": DEMO}).json()["groups"]
+    assert any(item in g for g in groups)
+    r = client.post(f"/m01/items/{item}/donate", params={"user_id": DEMO}, json={"place": "association"})
+    assert r.status_code == 200
+    out = r.json()
+    assert out["status"] == "donated" and out["donation_place"] == "association" and out["donated_at"]
+    listed = client.post("/m01/items", json={"user_id": DEMO}).json()
+    assert listed["total"] == 12 and item not in {i["item_id"] for i in listed["items"]}   # left the wardrobe
+    bag = client.post("/m01/items", json={"user_id": DEMO, "status": "donated"}).json()
+    assert [i["item_id"] for i in bag["items"]] == [item]
+    assert client.post("/m01/duplicates", json={"user_id": DEMO}).json()["groups"] == []
+    assert client.get(f"/m01/items/{item}", params={"user_id": DEMO}).json()["status"] == "donated"
+
+
+def test_donate_validation(client):
+    url = "/m01/items/itm_demo_jeans_blue/donate"
+    assert client.post(url, params={"user_id": DEMO}).json()["donation_place"] is None       # place optional
+    assert client.post(url, params={"user_id": DEMO}).status_code == 422                     # already given
+    r = client.post("/m01/items/itm_demo_belt_brown/donate", params={"user_id": DEMO}, json={"place": "moon"})
+    assert r.status_code == 422
+    assert client.post("/m01/items/nope/donate", params={"user_id": DEMO}).status_code == 404
+    item_url = url.removesuffix("/donate")
+    back = client.patch(item_url, params={"user_id": DEMO}, json={"status": "active"}).json()   # back in
+    assert back["status"] == "active" and back["donated_at"] is None

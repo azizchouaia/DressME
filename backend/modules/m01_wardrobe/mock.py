@@ -28,6 +28,7 @@ from .contract import (
     DocumentKind,
     DocumentRequest,
     DocumentResponse,
+    DonateRequest,
     DuplicatesRequest,
     DuplicatesResponse,
     ItemNotFoundError,
@@ -267,7 +268,7 @@ async def items(req: ItemsRequest) -> ItemsResponse:
             continue
         if req.status and item.status != req.status:
             continue
-        if not req.status and item.status == ItemStatus.pending:
+        if not req.status and item.status in (ItemStatus.pending, ItemStatus.donated):
             continue
         if req.season and req.season.lower() not in item.season:
             continue
@@ -298,6 +299,17 @@ async def update_item(user_id: str, item_id: str, update: ItemUpdate) -> Wardrob
         raise ItemNotFoundError(item_id)
     item, embedding = wardrobe[item_id]
     changes = details.prepare_changes(item, update)
+    updated = WardrobeItem.model_validate(item.model_dump(exclude={"shelf"}) | changes)
+    wardrobe[item_id] = (updated, embedding)
+    return updated
+
+
+async def donate_item(user_id: str, item_id: str, req: DonateRequest) -> WardrobeItem:
+    wardrobe = _wardrobe(user_id)
+    if item_id not in wardrobe:
+        raise ItemNotFoundError(item_id)
+    item, embedding = wardrobe[item_id]
+    changes = details.donate_changes(item, req)
     updated = WardrobeItem.model_validate(item.model_dump(exclude={"shelf"}) | changes)
     wardrobe[item_id] = (updated, embedding)
     return updated
@@ -339,6 +351,19 @@ async def extract_document(req: DocumentRequest) -> DocumentResponse:
     kind = DocumentKind.receipt if req.kind == DocumentKind.auto else req.kind
     doc = DocumentResponse.model_validate(_DOCUMENTS[kind] | {"mocked": True})
     return details.finalize(doc, item)
+
+
+async def embeddings(user_id: str, item_ids: list[str] | None = None) -> dict[str, list[float]]:
+    wanted = None if item_ids is None else set(item_ids)
+    return {
+        i: v.tolist() for i, (item, v) in _wardrobe(user_id).items()
+        if item.status != ItemStatus.pending and (wanted is None or i in wanted)
+    }
+
+
+async def embed_texts(texts: list[str]) -> list[list[float]]:
+    """Deterministic unit vectors from the text: right shape, no meaning (the mock has no FashionCLIP)."""
+    return [_rand(f"text:{t}").tolist() for t in texts]
 
 
 async def delete_item(user_id: str, item_id: str) -> DeleteResponse:

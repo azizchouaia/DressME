@@ -4,7 +4,7 @@
 signatures: they take the request models below and return the response models below.
 """
 
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Literal
 
@@ -15,7 +15,7 @@ from shared.schemas import Color, Garment, GarmentCategory
 EMBEDDING_DIM = 512
 
 API = ("classify", "similar", "duplicates", "items", "get_item", "delete_item", "confirm_item",
-       "update_item", "extract_document")
+       "update_item", "extract_document", "embeddings", "embed_texts", "donate_item")
 
 Season = Literal["spring", "summer", "autumn", "winter"]
 
@@ -39,6 +39,14 @@ class ItemStatus(StrEnum):
     archived = "archived"
     sold = "sold"
     donated = "donated"
+
+
+class DonationPlace(StrEnum):
+    """Where a donated piece goes (optional, chosen on the confirmation screen)."""
+
+    association = "association"    # a local association
+    friend = "friend"              # someone close
+    other = "other"
 
 
 class Shelf(StrEnum):
@@ -124,6 +132,8 @@ class WardrobeItem(Garment, ItemDetails):
 
     status: ItemStatus = ItemStatus.active
     price_tnd: float | None = Field(default=None, ge=0)
+    donated_at: datetime | None = Field(default=None, description="set by POST /items/{id}/donate")
+    donation_place: DonationPlace | None = None
 
     _price = field_validator("price_tnd")(lambda v: _round_tnd(v))
 
@@ -203,7 +213,8 @@ class ItemsRequest(BaseModel):
     category: GarmentCategory | None = None
     season: str | None = Field(default=None, description="spring | summer | autumn | winter")
     color: str | None = Field(default=None, description="colour name, e.g. navy")
-    status: ItemStatus | None = Field(default=None, description="default: every status except pending")
+    status: ItemStatus | None = Field(
+        default=None, description="default: every status except pending and donated (the 'À donner' bag)")
 
 
 class ItemsResponse(BaseModel):
@@ -264,6 +275,42 @@ class ItemUpdate(BaseModel):
     def changes(self) -> dict:
         """The fields the client actually sent (null included)."""
         return {k: getattr(self, k) for k in self.model_fields_set}
+
+
+# --- POST /m01/items/{item_id}/donate ---------------------------------------------------------------
+
+class DonateRequest(BaseModel):
+    """Confirmation screen: the piece goes to the 'À donner' bag (status donated + donated_at)."""
+
+    place: DonationPlace | None = Field(default=None, description="optional: association / friend / other")
+
+
+# --- POST /m01/items/{item_id}/donation-suggestions (local LLM over a verified list) -------------------
+
+class DonationSuggestionsRequest(BaseModel):
+    city: str | None = Field(default=None, max_length=40, description="governorate, e.g. Tunis, Sfax")
+
+
+class DonationSuggestion(BaseModel):
+    place_id: str
+    name: str
+    type: Literal["association", "community", "collection", "personal"]
+    place: DonationPlace = Field(description="value to send to /donate if the user picks this suggestion")
+    url: str | None = Field(default=None, description="from donation_places.json, never written by the LLM")
+    phone: str | None = None
+    address: str | None = None
+    how: str
+    reason: str = Field(description="why it fits this piece (LLM), or the place's own text without the LLM")
+
+
+class DonationSuggestionsResponse(BaseModel):
+    item_id: str
+    city: str | None
+    suggestions: list[DonationSuggestion]
+    message: str = Field(description="one friendly sentence for the user")
+    llm_used: bool = Field(description="false: Ollama unreachable, places in the list's order")
+    model: str | None
+    elapsed_ms: float
 
 
 # --- POST /m01/documents/extract (receipt / price tag / care label, through M8) --------------------

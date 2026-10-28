@@ -63,6 +63,7 @@
       </form>
       <div class="toolbar__actions">
         <span class="total" id="total" aria-live="polite"></span>
+        <button type="button" class="btn btn--ghost" id="bag">À donner <span id="bag-count"></span></button>
         <button type="button" class="btn btn--primary" id="add">
           <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 3v14M3 10h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span>Ajouter une pièce</span>
@@ -143,6 +144,35 @@
       <div class="dup-dialog__actions">
         <button type="button" class="btn btn--ghost" id="dup-cancel">Annuler l’ajout</button>
         <button type="button" class="btn btn--primary" id="dup-accept">Ajouter quand même</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dup-layer" id="donate-layer" hidden>
+    <div class="dup-dialog" role="alertdialog" aria-modal="true" aria-labelledby="donate-title" aria-describedby="donate-desc">
+      <p class="sheet__eyebrow">Donner</p>
+      <h2 class="dup-dialog__title" id="donate-title">Donner cette pièce ?</h2>
+      <p class="dup-dialog__desc" id="donate-desc">Elle part dans votre sac « À donner » : elle ne sera plus dans votre garde-robe ni proposée dans vos tenues.</p>
+      <div class="dup-compare" id="donate-piece"></div>
+      <section class="give" aria-labelledby="give-title">
+        <div class="give__head">
+          <h3 class="give__title" id="give-title">Où la donner ?</h3>
+          <label class="give__city">Ville <select id="donate-city"></select></label>
+        </div>
+        <p class="give__message" id="donate-message" aria-live="polite"></p>
+        <ul class="give__list" id="donate-list"></ul>
+        <p class="give__meta" id="donate-meta"></p>
+      </section>
+      <fieldset class="place">
+        <legend>À qui ? <small>(facultatif)</small></legend>
+        <label><input type="radio" name="place" value="association"> Une association locale</label>
+        <label><input type="radio" name="place" value="friend"> Un proche</label>
+        <label><input type="radio" name="place" value="other"> Autre</label>
+        <label><input type="radio" name="place" value="" checked> Je ne sais pas encore</label>
+      </fieldset>
+      <div class="dup-dialog__actions">
+        <button type="button" class="btn btn--ghost" id="donate-cancel">Annuler</button>
+        <button type="button" class="btn btn--primary" id="donate-ok">Mettre dans le sac</button>
       </div>
     </div>
   </div>

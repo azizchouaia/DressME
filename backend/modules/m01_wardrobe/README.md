@@ -16,11 +16,13 @@ async functions (`contract.API`), and a test checks that their signatures match.
 | `POST /m01/classify` | `user_id`, `image` (base64, data URL or http(s) URL), `mode` = `add_to_wardrobe` \| `smartbuy_probe` \| `inspiration_photo`, `price_tnd?`, `on_duplicate` = `ask` (default) \| `add` | `garment: WardrobeItem`, `embedding: float[512]`, `needs_confirmation`, `duplicates: [{item_id, similarity}]`, `stored`, `pending` |
 | `POST /m01/similar` | `user_id`, `item_id` **or** `image`, `k=5`, `threshold?` (default 0.75) | `neighbours: [{item_id, similarity}]` |
 | `POST /m01/duplicates` | `user_id`, `threshold?` (default 0.85) | `groups: [[item_id, ...]]` |
-| `POST /m01/items` | `user_id`, filters `category?`, `season?`, `color?`, `status?` (default: all but `pending`) | `items: WardrobeItem[]`, `total` |
+| `POST /m01/items` | `user_id`, filters `category?`, `season?`, `color?`, `status?` (default: all but `pending` and `donated`; `status=donated` = the "À donner" bag) | `items: WardrobeItem[]`, `total` |
 | `GET /m01/items/{item_id}?user_id=` | | `WardrobeItem` (404 if unknown or another user's) |
 | `PATCH /m01/items/{item_id}?user_id=` | `ItemUpdate`: only the fields sent change, `null` clears one (see "Item details") | `WardrobeItem` |
 | `POST /m01/documents/extract` | `user_id`, `image`, `kind` = `auto` \| `receipt` \| `price_tag` \| `care_label`, `item_id?` | `kind`, `fields` (proposed values), `lines`, `selected_line`, `confidence`. **Nothing is saved.** 503 while M8 cannot extract |
 | `POST /m01/items/{item_id}/confirm?user_id=` | | `WardrobeItem`, now `active`: accepts a pending duplicate (404 if not pending) |
+| `POST /m01/items/{item_id}/donation-suggestions?user_id=` | `{city?}` (governorate) | `suggestions` (2–3 places with `name`, `reason`, `how`, `url?`, `phone?`, `address?`, `place` to send to `/donate`), `message`, `llm_used`, `model`. Nothing is saved. See "Donation suggestions" |
+| `POST /m01/items/{item_id}/donate?user_id=` | `{place?}` = `association` \| `friend` \| `other` | `WardrobeItem` with `status=donated`, `donated_at`, `donation_place`: the piece goes to the "À donner" bag (422 if pending or already given) |
 | `DELETE /m01/items/{item_id}?user_id=` | | `{item_id, deleted}`. Also how a pending duplicate is cancelled |
 | `GET /m01/ui` | | wardrobe demo page |
 | `GET /m01/media/{path}` | | locally stored photos and cutouts |
@@ -50,6 +52,36 @@ Every response carries `mocked: bool`.
   "Ajouter quand même"). Esc cancels. When the wardrobe opens, it asks again about any piece left
   pending.
 - Errors: `422` for an invalid image or request, `404` for an unknown item.
+- **Donating a duplicate:** in the item panel, a piece that has a duplicate shows **"Donner cette pièce"**.
+  1. A confirmation screen asks where it goes (association / a friend / other, optional).
+  2. The piece moves to the **"À donner" bag** (toolbar button) with `status=donated` and `donated_at`.
+  3. It leaves `/items`, `/similar`, `/duplicates`, so M2 and M5 never propose it again. M5 keeps the style
+     it already learnt from it (a donation is not a dislike).
+  4. M3 (wear log) and BO3 (sustainability: "N pièces données") read the bag with `status=donated`.
+     `PATCH status=active` brings a piece back and clears the donation fields.
+- **Donation suggestions ("Où la donner ?")**, on the same confirmation screen ([`donation.py`](donation.py)):
+  ```
+  piece + city ─► retrieve the places of donation_places.json that serve this city and category
+               ─► local LLM (qwen3:4b-instruct, Ollama) ranks the 3 best and writes why, in French
+               ─► validated: unknown place ids dropped; names, links and contacts come from the file only
+  ```
+  - The LLM never writes a link. Only verified links are in [`donation_places.json`](donation_places.json),
+    each with its `source` and `verified_on`. On 2026-10-23 only the Croissant-Rouge tunisien had an official
+    page that could be checked; the other entries are real general options without a link (neighbourhood
+    mosque or association, municipal campaign, someone close). Add local places there and re-check the links
+    before a demo.
+  - Picking a suggestion fills "À qui ?". The city is remembered in the browser.
+  - Without Ollama (or with an unusable answer) the places come in the file's order with their own text and
+    `llm_used=false`, so the screen always works. Config: `donation` in `config.yaml`, env `M01_DONATION_MODEL`.
+
+**Python API for other modules** (in-process, no HTTP route; `mock.py` and `service.py` both have them):
+
+| Function | Returns | Used by |
+|---|---|---|
+| `embeddings(user_id, item_ids=None)` | `{item_id: float[512]}`: FashionCLIP image embeddings (L2-normalised) of the user's non-pending items; unknown ids are absent | M5 (style mix, taste vector, `taste_sim`) |
+| `embed_texts(texts)` | `float[512]` per text: FashionCLIP **text** embeddings (L2-normalised), same space as the items; reuses M1's model. The mock returns deterministic vectors with no meaning | M5 (style archetypes, reference looks) |
+
+Pick the implementation the same way the router does: `mock if config.use_mocks(settings.use_mocks) else service`.
 
 ## Item details (form) and receipt / label scan
 
@@ -70,8 +102,9 @@ How it works:
 2. **Multi-article receipts.** All the lines are returned. With `item_id`, M1 picks the line of this piece
    from its type, using French and English keywords and abbreviations (`CHEM` → chemise, `CHINO`…). The
    user can choose another line.
-3. **Extraction belongs to M8** (LLM layer, BO8). M1 never calls an LLM itself (module rule): the bridge
-   is [`m08_client.py`](m08_client.py). M8 is still a skeleton, so in real mode `POST
+3. **Extraction belongs to M8** (LLM layer, BO8). M1 never calls a cloud LLM itself: the bridge is
+   [`m08_client.py`](m08_client.py). The one exception is the donation suggestions below, which use the same
+   small local model as the M5 style coach (Ollama). M8 is still a skeleton, so in real mode `POST
    /documents/extract` answers **503** and the UI asks the user to fill the form by hand. The mock returns
    realistic extractions for the demo.
 4. **The UI flow.** After a piece is added, the form opens as "Complétez les informations (facultatif)",

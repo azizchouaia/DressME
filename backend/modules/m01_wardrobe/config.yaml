@@ -136,3 +136,14 @@ palette:
   lavender: "#B8A9D9"
   gold: "#C4A35A"
   silver: "#BFC1C2"
+
+# donation suggestions for a duplicated piece (donation.py, POST /items/{id}/donation-suggestions):
+# places from a verified list, picked and explained by a local LLM (Ollama). Env: M01_DONATION_MODEL.
+donation:
+  places_file: donation_places.json   # verified places only; add local ones there
+  max_suggestions: 3
+  llm:
+    model: qwen3:4b-instruct          # same local model as the M5 style coach
+    base_url: http://localhost:11434
+    temperature: 0.2
+    timeout_s: 60                     # then the list is shown without the LLM

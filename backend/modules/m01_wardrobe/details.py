@@ -2,6 +2,7 @@
 
 import re
 import unicodedata
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel
@@ -10,6 +11,7 @@ from . import storage
 from .contract import (
     DocumentKind,
     DocumentResponse,
+    DonateRequest,
     InvalidUpdateError,
     ItemStatus,
     ItemUpdate,
@@ -118,6 +120,11 @@ def prepare_changes(item: WardrobeItem, update: ItemUpdate) -> dict:
     changes = update.changes()
     if item.status == ItemStatus.pending and "status" in changes:
         raise InvalidUpdateError("a pending item is accepted with POST /items/{id}/confirm, not with status")
+    if "status" in changes and changes["status"] != item.status:     # keep the donation fields consistent
+        if changes["status"] == ItemStatus.donated:
+            changes["donated_at"] = datetime.now(UTC)
+        elif item.status == ItemStatus.donated:
+            changes["donated_at"] = changes["donation_place"] = None
     if "category" in changes and changes["category"] is None:
         raise InvalidUpdateError("category cannot be empty")
     if "receipt_image" in changes:
@@ -131,6 +138,13 @@ def prepare_changes(item: WardrobeItem, update: ItemUpdate) -> dict:
         if key in changes and changes[key] is None:
             changes[key] = []                                            # list fields are never null
     return changes
+
+
+def donate_changes(item: WardrobeItem, req: DonateRequest) -> dict:
+    """The piece goes to the 'À donner' bag. Only active or archived pieces can be donated."""
+    if item.status not in (ItemStatus.active, ItemStatus.archived):
+        raise InvalidUpdateError(f"only an active or archived piece can be donated (not {item.status})")
+    return {"status": ItemStatus.donated, "donated_at": datetime.now(UTC), "donation_place": req.place}
 
 
 def to_db(changes: dict) -> dict:
