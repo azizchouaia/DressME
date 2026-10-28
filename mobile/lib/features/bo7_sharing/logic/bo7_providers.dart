@@ -1,4 +1,5 @@
 // Owner: BO7 — Riverpod state of the BO7 app.
+import '../../../core/api/dm_api.dart' show DemoUsers;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/bo7_api.dart';
@@ -10,7 +11,8 @@ final bo7RepositoryProvider = Provider<Bo7Repository>((ref) => Bo7Repository(ref
 
 /// Who is using the app. Change it in the profile menu to play as a friend (sarra, amen, yasmine...).
 /// TODO(auth): the signed-in user once the API gateway has auth.
-final currentUserProvider = StateProvider<String>((ref) => 'usr_042');
+/// Integration: starts on the signed-in user (their real M1 wardrobe); the switcher can still view others.
+final currentUserProvider = StateProvider<String>((ref) => DemoUsers.wardrobe);
 
 /// Selected tab of the BO7 screen: 0 Défis, 1 Communauté, 2 Studio, 3 Garde-robe.
 final bo7TabProvider = StateProvider<int>((ref) => 0);

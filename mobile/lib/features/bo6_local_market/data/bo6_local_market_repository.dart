@@ -1,4 +1,5 @@
 // Owner: BO6 — calls the shared module M7 (Local catalogue) through core/api_client.dart
+import '../../../core/api/dm_api.dart' show DemoUsers;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -13,7 +14,8 @@ String defaultApiUrl() {
 }
 
 /// Demo client of the app (no login yet): M7 keeps its memory and M14 its stylist requests under it.
-const demoUserId = 'usr_042';
+/// Integration: the signed-in user (their real wardrobe in M1), not a fixed demo id.
+String get demoUserId => DemoUsers.wardrobe;
 
 /// One piece sold by a Tunisian shop (M7 `ShopResult`).
 class LocalProduct {

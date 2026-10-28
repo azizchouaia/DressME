@@ -1,5 +1,6 @@
 // Owner: BO6 — "Espace pro": boutique demand dashboard, stylist hand-off queue and clients, through
 // M14 (Stylist / boutique mode). Same DressMe design as the local market screen.
+import '../../../core/api/dm_api.dart' show DemoUsers;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -765,7 +766,7 @@ class _SimulateChat extends ConsumerStatefulWidget {
 }
 
 class _SimulateChatState extends ConsumerState<_SimulateChat> {
-  final _client = TextEditingController(text: 'usr_042');
+  final _client = TextEditingController(text: DemoUsers.wardrobe);
   final _chat = TextEditingController(
       text: "n7eb lebsa l 3ers o5ti f Sousse, budget 250 dt\n"
           'ma fhemtnich, n7eb nahki m3a bnadem');
@@ -792,7 +793,7 @@ class _SimulateChatState extends ConsumerState<_SimulateChat> {
     setState(() => _busy = true);
     try {
       final h = await ref.read(boutiqueRepositoryProvider).createHandoff(
-          userId: _client.text.trim().isEmpty ? 'usr_042' : _client.text.trim(),
+          userId: _client.text.trim().isEmpty ? DemoUsers.wardrobe : _client.text.trim(),
           userMessages: lines,
           force: _force || force);
       // No escalation: the assistant answers alone, here with the M7 search of the last message.
