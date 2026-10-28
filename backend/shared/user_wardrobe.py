@@ -16,6 +16,11 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 MIN_PIECES = 2
+last_reason = ""  # why the user's wardrobe could not be used (shown by /bo/catalog)
+
+import logging
+
+log = logging.getLogger("dressme.user_wardrobe")
 
 
 def _run(coro):
@@ -52,8 +57,17 @@ async def _fetch(user_id: str) -> tuple[list[dict], dict[str, list[float]]]:
     return items, vectors
 
 
+def _why(reason: str) -> list:
+    global last_reason
+    last_reason = reason
+    log.warning("user wardrobe not used: %s", reason)
+    return []
+
+
 def m1_garments(user_id: str | None) -> list[dict]:
     """The user's active M1 pieces as Garment dicts + 'embedding' (1024) + 'name'. [] when not usable."""
+    global last_reason
+    last_reason = ""
     if not user_id or user_id.startswith("demo_") or user_id == "me":
         return []
     try:
@@ -61,10 +75,10 @@ def m1_garments(user_id: str | None) -> list[dict]:
         from shared.config import settings
 
         if use_mocks(settings.use_mocks):
-            return []  # M1 mock = shared demo pieces, not this user's wardrobe
+            return _why("M1 runs on its mock (set M01_USE_MOCKS=false in infra/.env)")
         items, vectors = _run(_fetch(user_id))
-    except Exception:  # noqa: BLE001 - M1 / database unavailable: callers use another wardrobe
-        return []
+    except Exception as e:  # noqa: BLE001 - M1 / database unavailable: callers use another wardrobe
+        return _why(f"M1 unavailable: {type(e).__name__}: {e}")
     out = []
     for g in items:
         img = vectors.get(g["item_id"])
@@ -73,7 +87,9 @@ def m1_garments(user_id: str | None) -> list[dict]:
         desc = description(g)
         try:
             text = list(_text_vec(desc))
-        except Exception:  # noqa: BLE001 - FashionCLIP text encoder not installed
-            return []
+        except Exception as e:  # noqa: BLE001 - FashionCLIP text encoder not installed
+            return _why(f"FashionCLIP text encoder (M2) failed: {type(e).__name__}: {e}")
         out.append({**g, "user_id": g.get("user_id") or user_id, "status": "available", "embedding": [float(x) for x in img] + text, "name": desc})
-    return out if len(out) >= MIN_PIECES else []
+    if len(out) < MIN_PIECES:
+        return _why(f"{len(items)} piece(s) in M1, {len(out)} with an image vector (need {MIN_PIECES})")
+    return out

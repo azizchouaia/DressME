@@ -49,7 +49,10 @@ async def catalog(user: str) -> dict:
     try:
         m2_items = demo_items_with_vectors(who)
     except FileNotFoundError:  # Racem's demo wardrobe files (ml/models/m02) are not on this machine
-        return {"source": "empty: add at least 2 pieces in your wardrobe (BO4)", "items": [], "m2_items": []}
+        from shared.user_wardrobe import last_reason
+
+        why = f" ({last_reason})" if last_reason else ""
+        return {"source": f"empty: add at least 2 pieces in your wardrobe (BO4){why}", "items": [], "m2_items": []}
     ids = {i["item_id"] for i in m2_items}
     demo = m2.demo_wardrobe(who)
     out = [
