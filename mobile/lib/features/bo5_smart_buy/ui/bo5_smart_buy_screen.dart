@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/api/dm_api.dart' show DemoUsers;
+import '../../../core/auth/auth.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../data/bo5_smart_buy_repository.dart';
@@ -36,7 +38,7 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
   String _type = 'blazer';
   String _colour = 'navy';
   String? _brand;
-  String _user = 'usr_demo';
+  String get _user => DemoUsers.wardrobe; // the signed-in user: their real wardrobe (M1) and wear log (M3)
   String _lang = 'en';
   Uint8List? _photo;
   PhotoGuess? _guess;
@@ -128,15 +130,8 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
               child: Row(children: [
                 Text('Wardrobe'.toUpperCase(), style: DmText.eyebrow.copyWith(color: const Color(0xFFCDB18D))),
                 const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: _user,
-                  dropdownColor: DmColors.inkDeep,
-                  underline: const SizedBox.shrink(),
-                  iconEnabledColor: DmColors.gold,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                  items: [for (final u in m.users) DropdownMenuItem(value: u.id, child: Text(u.id.replaceFirst('usr_', '')))],
-                  onChanged: (v) => setState(() => _user = v ?? _user),
-                ),
+                Text('yours (${ref.watch(authProvider).user?.name ?? _user})',
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
               ]),
             ),
             Center(

@@ -70,10 +70,31 @@ class HybridClients:
     def __getattr__(self, name):  # anything else (mock stores used by the UI and tests) -> the mock
         return getattr(self.__dict__["mock"], name)
 
-    # mocks keep these (used by the UI / wear prediction)
+    # demo / test users live in the mock; a signed-in user's wardrobe is their real M1 wardrobe
+    def _is_real_user(self, user_id: str) -> bool:
+        """A signed-in user (not a synthetic one), or a synthetic id that has pieces in the real M1 (demo account)."""
+        if "m1" not in self.real:
+            return False
+        from modules.m01_wardrobe.config import use_mocks
+        from shared.config import settings
+
+        if use_mocks(settings.use_mocks):
+            return False  # M1 on its mock: no real wardrobe to read
+        if user_id not in self.mock.wardrobes:
+            return True
+        try:
+            from modules.m01_wardrobe.contract import ItemsRequest
+
+            return bool(self._m1("items", ItemsRequest(user_id=user_id))["items"])
+        except Exception:  # noqa: BLE001 - M1 down: the synthetic wardrobe
+            return False
+
     @property
     def wardrobes(self):
-        return self.mock.wardrobes
+        out = dict(self.mock.wardrobes)
+        for uid, items in self.__dict__.setdefault("_real_cache", {}).items():
+            out[uid] = {"items": items}
+        return out
 
     @property
     def candidates(self):
@@ -125,7 +146,9 @@ class HybridClients:
             c["confidence"] = r["garment"].get("confidence")
             self._probe[str(id(c["embedding"]))] = image
             return c
-        return self._try("m1", "classify", real, lambda: self.mock.classify(image))
+        out = self._try("m1", "classify", real, lambda: self.mock.classify(image))
+        self.__dict__["_last_cand"] = out
+        return out
 
     def _m1_items(self, user_id: str) -> list[dict]:
         from modules.m01_wardrobe.contract import ItemsRequest
@@ -139,19 +162,70 @@ class HybridClients:
             raise LookupError(f"user {user_id} has no wardrobe in M1")
         return out
 
+    def _wears_per_year(self, user_id: str) -> dict[str, float]:
+        """Real wear counts from the wear log (M3): wears in the last 90 days x 4 = per year."""
+        try:
+            from modules.m03_wear_log import router as m3
+
+            r = m3._impl().stats({"user_id": user_id, "payload": {}})
+            r = _sync(r)
+            return {s["item_id"]: 4 * (s.get("wears_90d") or 0) for s in (_dump(r).get("result") or {}).get("items", [])}
+        except Exception as e:  # noqa: BLE001 - no wear log yet
+            log.info("M3 wear log unavailable (%s)", e)
+            return {}
+
+    def _real_items(self, user_id: str) -> list[dict]:
+        """The signed-in user's real wardrobe (M1) with real wear counts (M3). Empty wardrobe = []."""
+        from modules.m01_wardrobe.contract import ItemsRequest
+
+        wears = self._wears_per_year(user_id)
+        out = []
+        for g in self._m1("items", ItemsRequest(user_id=user_id))["items"]:
+            try:
+                it = _from_m1(g)
+            except KeyError:
+                continue  # accessories: not judged by Smart Buy
+            it["wear_count"] = wears.get(it["id"], it.get("wear_count") or 0)
+            it["image"] = g.get("image_cutout") or g.get("image_raw")
+            out.append(it)
+        self.__dict__.setdefault("_real_cache", {})[user_id] = out
+        return out
+
     def _m1_wardrobe(self, user_id):
-        # one source per request: M1's wardrobe only when the photo was read by M1 (same ids, same vectors)
+        if self._is_real_user(user_id):
+            return self._real_items(user_id)
+        # demo users: M1's wardrobe only when the photo was read by M1 (same ids, same vectors)
         if self.sources.get("classify") != "m1":
             raise LookupError("demo candidate: the wardrobe stays in the mock")
         return self._m1_items(user_id)
 
     def items(self, user_id):
+        if self._is_real_user(user_id):
+            self.sources["items"] = "m1"
+            return self._real_items(user_id)  # the real wardrobe, even when it is empty
         return self._try("m1", "items", lambda: self._m1_wardrobe(user_id), lambda: self.mock.items(user_id))
 
     def count_type(self, user_id, subcategory):
         return sum(i["subcategory"] == subcategory for i in self.items(user_id))
 
+    def _similar_by_type(self, user_id, k):
+        """No photo (type + colour picked by hand): same type and colour = very close, same type = close."""
+        cand = self.__dict__.get("_last_cand") or {}
+        out = []
+        for it in self._real_items(user_id):
+            s = 0.0
+            if it["subcategory"] == cand.get("subcategory"):
+                s = 0.9 if it["colour"] == cand.get("colour") else 0.6
+            elif it["category"] == cand.get("category"):
+                s = 0.35 if it["colour"] == cand.get("colour") else 0.2
+            out.append({**{f: it[f] for f in ("label", "category", "subcategory", "colour")}, "item_id": it["id"], "similarity": s})
+        return sorted(out, key=lambda n: -n["similarity"])[:k]
+
     def similar(self, user_id, embedding, k):
+        if self._is_real_user(user_id) and not self._probe.get(str(id(embedding))):
+            self.sources["similar"] = "m1"
+            return self._similar_by_type(user_id, k)
+
         def real():
             image = self._probe.get(str(id(embedding)))
             if not image:
@@ -166,6 +240,9 @@ class HybridClients:
 
     # ---------- M2 · outfits (BO1/BO2)
     def recommend_with(self, user_id, candidate):
+        if self._is_real_user(user_id):
+            return self._try("m2", "recommend_with", lambda: self._recommend_real(user_id, candidate), lambda: [])
+
         def real():
             # M2 scores 1024-d vectors (image + text FashionCLIP). M1 sends 512-d today -> not compatible yet.
             if len(candidate.get("embedding") or []) != 1024:
@@ -179,6 +256,29 @@ class HybridClients:
                 "items": items, "pinned_item_ids": [candidate.get("id", "candidate")], "options": {"n": 10}}})
             return [{"items": [s for s in o["item_ids"] if s != candidate.get("id")]} for o in r["result"]["outfits"]]
         return self._try("m2", "recommend_with", real, lambda: self.mock.recommend_with(user_id, candidate))
+
+    def _recommend_real(self, user_id, candidate):
+        """The user's M1 pieces (1024-d: M1 image + M2 text) + the candidate -> M2 outfits with it."""
+        from shared.user_wardrobe import _text_vec, description, m1_garments
+
+        mine = m1_garments(user_id)
+        if not mine:
+            raise LookupError("the user's wardrobe is not usable by M2 yet")
+        desc = description({"colors": [{"name": candidate["colour"]}], "subcategory": candidate["subcategory"]})
+        text = list(_text_vec(desc))
+        img = candidate.get("embedding") or []
+        vec = (list(img) if len(img) == 512 else text) + text  # no photo: the text vector stands for the image
+        cid = "smartbuy_candidate"
+        items = mine + [{"item_id": cid, "user_id": user_id, "image_raw": "", "category": candidate["category"],
+                         "subcategory": candidate["subcategory"], "colors": [{"name": candidate["colour"], "hex": "#000000", "share": 1}],
+                         "status": "available", "embedding": vec}]
+        from modules.m02_recommendation import router as m2
+
+        r = m2._impl().complete({"user_id": user_id, "payload": {"items": items, "pinned_item_ids": [cid], "options": {"n": 10}}})
+        r = _dump(r)
+        if r.get("mocked"):
+            raise RuntimeError("M2 runs on its mock (M02_USE_MOCK=false + model weights for real outfits)")
+        return [{"items": [s for s in o["item_ids"] if s != cid]} for o in (r.get("result") or r)["outfits"]]
 
     # ---------- M5 · style profile (BO4): no branch yet -> mock
     def gaps(self, user_id):

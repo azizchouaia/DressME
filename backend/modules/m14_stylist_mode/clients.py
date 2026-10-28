@@ -22,7 +22,12 @@ log = logging.getLogger("m14.clients")
 
 
 def _real(module: str) -> bool:
-    return module in (CONFIG.get("real") or [])
+    """config.yaml `real`, or M14_REAL (infra/.env, integration: m7,m1,m2,m3,m6,m10,m15)."""
+    import os
+
+    env = os.environ.get("M14_REAL")
+    listed = [m.strip() for m in env.split(",")] if env else (CONFIG.get("real") or [])
+    return module in listed
 
 
 async def _try(module: str, real_fn: Callable, mock_fn: Callable):
@@ -38,9 +43,24 @@ async def _try(module: str, real_fn: Callable, mock_fn: Callable):
 
 
 def _post(path: str, body: dict) -> dict:
-    r = httpx.post(CONFIG["api_url"].rstrip("/") + path, json=body, timeout=CONFIG["timeout_s"])
-    r.raise_for_status()
-    return r.json()
+    """Same API: in-process (an HTTP call to ourselves would block the dev server). api_url only when
+    DRESSME_REMOTE_API is set (modules deployed apart)."""
+    import os
+
+    if os.environ.get("DRESSME_REMOTE_API"):
+        r = httpx.post(CONFIG["api_url"].rstrip("/") + path, json=body, timeout=CONFIG["timeout_s"])
+        r.raise_for_status()
+        return r.json()
+    from shared.inproc import post
+
+    return post(path, body)
+
+
+def _user_items(user_id: str) -> list[dict]:
+    """The user's real wardrobe: M1 pieces with their 1024-d M2 vectors when available, else M1 as is."""
+    from shared.user_wardrobe import m1_garments
+
+    return m1_garments(user_id) or _post("/m01/items", {"user_id": user_id})["items"]
 
 
 # ---------------------------------------------------------------- mock data of the other modules
@@ -112,7 +132,7 @@ def mock_profile(user_id: str) -> dict:
 # ---------------------------------------------------------------- M1 / M3 / M5 (client data)
 async def wardrobe(user_id: str):
     return await _try(
-        "m1", lambda: _post("/m01/items", {"user_id": user_id})["items"], lambda: mock_items(user_id)
+        "m1", lambda: _user_items(user_id), lambda: mock_items(user_id)
     )
 
 
