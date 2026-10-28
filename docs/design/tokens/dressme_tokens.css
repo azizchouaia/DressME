@@ -1,0 +1,48 @@
+/* DressMe design tokens for web pages, test UIs, slides and diagrams.
+   Same values as mobile/lib/core/design/dressme_design.dart (Figma prototype). */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+:root {
+  /* dark surfaces + text */
+  --dm-ink-deep: #171512;   /* hero, dark screens */
+  --dm-ink: #211D19;        /* primary buttons, selected chips */
+  --dm-text: #1A1714;
+  /* light surfaces */
+  --dm-canvas: #FAF9F7;
+  --dm-page: #F6F3EE;
+  --dm-surface: #FFFFFF;
+  --dm-sand: #F4F0EA;
+  --dm-sand-dark: #F0E8DD;
+  /* gold accent */
+  --dm-gold: #C9A77B;
+  --dm-gold-light: #E3C9A7;
+  --dm-bronze: #9A744B;
+  --dm-bronze-dark: #8D6842;
+  --dm-bar: #B78C5B;
+  /* lines + secondary text */
+  --dm-border: #E5DED4;
+  --dm-border-strong: #DED5C9;
+  --dm-muted: #81776D;
+  --dm-muted-dark: #675F57;
+  /* states */
+  --dm-success: #4C9366;  --dm-success-bg: #EAF5EE;
+  --dm-warning: #9A6733;  --dm-warning-bg: #FFF6E9;
+  --dm-eco: #5E9671;      --dm-eco-bg: #EFF7F1;
+  /* radii */
+  --dm-r-small: 12px; --dm-r-card: 16px; --dm-r-panel: 24px; --dm-r-hero: 28px; --dm-r-pill: 100px;
+  /* type */
+  --dm-serif: "DM Serif Display", Georgia, serif;
+  --dm-sans: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  --dm-shadow-hero: 0 18px 50px rgba(45, 35, 25, .12);
+}
+
+.dm-eyebrow { font: 700 10px/1.2 var(--dm-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--dm-bronze); }
+.dm-title { font: 400 24px/1.15 var(--dm-serif); color: var(--dm-ink); }
+.dm-display { font: 400 34px/1 var(--dm-serif); color: var(--dm-text); }
+.dm-card { background: var(--dm-surface); border: 1px solid var(--dm-border); border-radius: var(--dm-r-card); }
+.dm-card--big { border-radius: var(--dm-r-hero); box-shadow: var(--dm-shadow-hero); }
+.dm-pill { display: inline-flex; padding: 5px 10px; border-radius: var(--dm-r-pill); background: var(--dm-sand); color: var(--dm-muted-dark); font: 600 11px var(--dm-sans); }
+.dm-btn { font: 600 13px var(--dm-sans); border-radius: var(--dm-r-card); padding: 14px 18px; border: 1px solid transparent; cursor: pointer; }
+.dm-btn--dark { background: var(--dm-ink); color: #fff; }
+.dm-btn--gold { background: var(--dm-gold); color: var(--dm-ink-deep); }
+.dm-btn--outline { background: transparent; color: var(--dm-ink); border-color: var(--dm-border-strong); }

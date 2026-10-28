@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
+import '../core/design/dressme_design.dart';
 
-final appTheme = ThemeData(
-  colorSchemeSeed: const Color(0xFF3C3489),
-  useMaterial3: true,
-);
+/// One theme for the whole app: the DressMe design (Figma prototype, see docs/design/).
+final appTheme = dressMeTheme();

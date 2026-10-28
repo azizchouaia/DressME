@@ -1,0 +1,120 @@
+[
+  {
+    "id": "cand_white_shirt",
+    "label": "White poplin shirt",
+    "category": "top",
+    "subcategory": "shirt",
+    "colour": "white",
+    "embedding": [
+      0.809,
+      0.63,
+      0.019,
+      -0.013,
+      0.193,
+      0.01,
+      -0.029,
+      -0.002
+    ],
+    "goes_with": [
+      "beige",
+      "black",
+      "blue",
+      "white",
+      "brown"
+    ],
+    "expected": "buy"
+  },
+  {
+    "id": "cand_navy_shirt",
+    "label": "Navy shirt (almost the same)",
+    "category": "top",
+    "subcategory": "shirt",
+    "colour": "navy",
+    "embedding": [
+      0.987,
+      -0.015,
+      -0.018,
+      0.011,
+      0.185,
+      -0.01,
+      -0.004,
+      0.015
+    ],
+    "goes_with": [
+      "beige",
+      "white"
+    ],
+    "expected": "skip"
+  },
+  {
+    "id": "cand_red_dress",
+    "label": "Red sequin dress",
+    "category": "dress",
+    "subcategory": "dress",
+    "colour": "red",
+    "embedding": [
+      -0.025,
+      -0.003,
+      0.003,
+      0.023,
+      0.019,
+      0.022,
+      -0.013,
+      0.995
+    ],
+    "goes_with": [
+      "black"
+    ],
+    "expected": "skip"
+  },
+  {
+    "id": "cand_grey_jeans",
+    "label": "Grey slim jeans",
+    "category": "bottom",
+    "subcategory": "jeans",
+    "colour": "grey",
+    "embedding": [
+      0.092,
+      0.023,
+      0.227,
+      0.879,
+      -0.019,
+      -0.016,
+      0.084,
+      -0.001
+    ],
+    "goes_with": [
+      "navy",
+      "white",
+      "black",
+      "grey",
+      "brown"
+    ],
+    "expected": "think"
+  },
+  {
+    "id": "cand_olive_tee",
+    "label": "Olive t-shirt (4th t-shirt)",
+    "category": "top",
+    "subcategory": "t-shirt",
+    "colour": "olive",
+    "embedding": [
+      0.3,
+      0,
+      0,
+      0,
+      0.6,
+      0,
+      0,
+      0.6
+    ],
+    "goes_with": [
+      "beige",
+      "black",
+      "blue",
+      "brown",
+      "white"
+    ],
+    "expected": "think"
+  }
+]

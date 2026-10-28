@@ -1,0 +1,23 @@
+digraph G { graph [fontname="Helvetica", fontsize=12, rankdir=TB, nodesep=0.35, ranksep=0.45, pad=0.25, label="BO5 Smart Buy pipeline (v2) - one photo becomes a verdict, then feedback tunes the next one", labelloc=t];
+ node [fontname="Helvetica", fontsize=10, shape=box, style="rounded,filled", color="#5F5E5A", fillcolor="#F1EFE8", penwidth=0.8];
+ edge [fontname="Helvetica", fontsize=8.5, color="#5F5E5A"];
+ photo [label="Photo in the shop\nprice + shop brand"];
+ rec [label="Recognise the piece\nFashionCLIP (type) + pixel colour", fillcolor="#FAEEDA", color="#854F0B"];
+ check [label="User checks AI tags\ncorrections saved for training"];
+ subgraph cluster_f { label="Facts gathered once (other modules mocked for now)"; style="rounded,dashed"; color="#888780";
+  sim [label="Similar pieces\nM1 - duplicate, novelty", fillcolor="#FAEEDA", color="#854F0B"];
+  out [label="New outfits\nM2 - piece locked in", fillcolor="#FAEEDA", color="#854F0B"];
+  gap [label="Gaps\nM5 - what's missing", fillcolor="#FAEEDA", color="#854F0B"];
+  typ [label="Usual local price\npartner shops - fair price", fillcolor="#E1F5EE", color="#0F6E56"]; }
+ dec [label="Decide\nlearned model (logistic regression) or rules\n7 factors - duplicate = always SKIP", fillcolor="#EEEDFE", color="#534AB7", penwidth=1.5];
+ band [label="Personal strictness\nbandit (Thompson sampling)\noff by default", fillcolor="#EEEDFE", color="#534AB7"];
+ unc [label="Close call / blurry photo?\nask ONE question", shape=diamond, fillcolor="#FCEBEB", color="#A32D2D"];
+ v [label="Verdict BUY / THINK / SKIP\nreasons + contribution bars (XAI)\nwhat would change it (counterfactuals)\npredicted wears + cost per wear", fillcolor="#FAECE7", color="#993C1D"];
+ size [label="M18 Size & fit\nsize_charts.json", fillcolor="#E1F5EE", color="#0F6E56"];
+ links [label="M13 Local shops\npartners.json + promo code", fillcolor="#E1F5EE", color="#0F6E56"];
+ fb [label="User feedback\nGood advice / Not for me"];
+ photo->rec->check; check->sim; check->out; check->gap; check->typ;
+ sim->dec; out->dec; gap->dec; typ->dec; band->dec [label="shifts thresholds"];
+ dec->unc; unc->dec [label="answer", style=dashed]; unc->v [label="sure"];
+ v->size; v->links [label="if not SKIP"]; v->fb; fb->band [style=dashed, label="reward"];
+}

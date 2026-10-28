@@ -21,3 +21,8 @@
 | Ask the assistant: does this fit? | M6, M8 |
 | Cost-per-wear estimate | M16 |
 | Price-sensitivity learning | M5 |
+
+## Status (BO5)
+Done: verdict + explanation (test UI), size & fit, buy links, promo codes, cost per wear (via M6 wear prediction).
+Run: `uvicorn bo.bo5_purchase.demo.app:app --reload --port 8005` · `python -m bo.bo5_purchase.evaluate` ·
+`python -m modules.m06_smartbuy.learn` · `python -m modules.m06_smartbuy.bandit`

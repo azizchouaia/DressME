@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 
+import '../core/design/design_gallery_screen.dart';
+
 import '../features/bo1_recommendations/ui/bo1_recommendations_screen.dart';
 import '../features/bo2_time/ui/bo2_time_screen.dart';
 import '../features/bo3_sustainability/ui/bo3_sustainability_screen.dart';
@@ -33,6 +35,7 @@ final router = GoRouter(
             handoffId: state.uri.queryParameters['handoff'])),
     GoRoute(path: '/bo7_sharing', builder: (_, __) => const FeedScreen()),
     GoRoute(path: '/bo8_assistant', builder: (_, __) => const ChatScreen()),
+    GoRoute(path: '/design', builder: (_, __) => const DesignGalleryScreen()),
     GoRoute(path: '/bo9_try_on', builder: (_, __) => const TryOnScreen()),
   ],
 );
