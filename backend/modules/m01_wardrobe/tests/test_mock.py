@@ -184,3 +184,19 @@ def test_similar_request_needs_exactly_one_query():
         SimilarRequest(user_id=DEMO)
     with pytest.raises(ValueError):
         SimilarRequest(user_id=DEMO, item_id="x", image="y")
+
+
+async def test_embeddings_for_other_modules():
+    out = await mock.embeddings(DEMO)
+    assert len(out) == 13 and all(len(v) == EMBEDDING_DIM for v in out.values())
+    some = await mock.embeddings(DEMO, ["itm_demo_jeans_blue", "unknown"])
+    assert list(some) == ["itm_demo_jeans_blue"]
+    assert abs(sum(x * x for x in some["itm_demo_jeans_blue"]) - 1) < 1e-6
+    assert await mock.embeddings("nobody") == {}
+
+
+async def test_embed_texts_is_deterministic_and_normalised():
+    a, b = await mock.embed_texts(["a classic office outfit", "a bohemian outfit"])
+    assert len(a) == EMBEDDING_DIM and abs(sum(x * x for x in a) - 1) < 1e-6
+    assert a != b and (await mock.embed_texts(["a classic office outfit"]))[0] == a
+    assert await mock.embed_texts([]) == []

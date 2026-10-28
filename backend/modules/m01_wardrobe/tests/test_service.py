@@ -216,6 +216,9 @@ class FakeStore:
     async def get_embedding(self, user_id, item_id):
         return self.embeddings.get(item_id)
 
+    async def get_embeddings(self, user_id, item_ids=None):
+        return {i: v for i, v in self.embeddings.items() if item_ids is None or i in item_ids}
+
     async def duplicate_pairs(self, user_id, threshold):
         return self.pairs
 
@@ -342,3 +345,22 @@ def test_real_pipeline_end_to_end():
     assert np.linalg.norm(a.embedding) == pytest.approx(1, abs=1e-4)
     assert a.attributes.category in set(GarmentCategory)
     assert a.colors and a.colors[0].name in {"navy", "blue", "denim", "charcoal"}
+
+
+async def test_service_embeddings_reads_the_store(fake_store):
+    assert list(await service.embeddings("u1")) == ["itm_a"]
+    assert await service.embeddings("u1", ["other"]) == {}
+
+
+async def test_service_embed_texts_uses_the_shared_model(monkeypatch):
+    from modules.m01_wardrobe.pipeline import clip
+
+    class FakeClip:
+        def embed_texts(self, prompts):
+            assert prompts == ("a", "b")
+            return np.eye(2, EMBEDDING_DIM, dtype=np.float32)
+
+    monkeypatch.setattr(clip, "get_clip", lambda: FakeClip())
+    out = await service.embed_texts(["a", "b"])
+    assert len(out) == 2 and out[0][0] == 1.0 and out[1][1] == 1.0
+    assert await service.embed_texts([]) == []

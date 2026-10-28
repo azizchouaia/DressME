@@ -308,6 +308,7 @@ function infoHTML(item) {
 }
 
 function sheetHTML(item) {
+  const isDup = state.dupIds.has(item.item_id);
   const colors = (item.colors || []).map((c) => `<li class="swatch"><i style="--c:${esc(c.hex)}" aria-hidden="true"></i>
       ${esc(cap(tr("color", c.name)))} <small>${pct(c.share)}</small></li>`).join("");
   const seasons = (item.season || []).map((s) => `<span class="chip">${esc(tr("season", s))}</span>`).join("");
@@ -341,7 +342,9 @@ function sheetHTML(item) {
       <div class="similar" id="similar-list" aria-live="polite" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
     </section>
     <div class="sheet__actions">
+      <button type="button" class="btn btn--primary" id="donate-btn" data-donate="${esc(item.item_id)}" ${isDup ? "" : "hidden"}>Donner cette pièce</button>
       <button type="button" class="btn btn--ghost btn--danger" data-delete="${esc(item.item_id)}">Retirer de la garde-robe</button>
+      <p class="sheet__hint" id="donate-hint" ${isDup ? "" : "hidden"}>Vous avez une pièce très proche : celle-ci peut faire plaisir à quelqu’un d’autre.</p>
     </div>`;
 }
 
@@ -385,7 +388,9 @@ async function loadSimilar(item) {
       return { n, other };
     }));
     if (state.panelId !== item.item_id) return;          // the user opened another item meanwhile
-    if (neighbours.some((n) => n.similarity >= DUPLICATE)) $("#dup-badge").hidden = false;
+    if (neighbours.some((n) => n.similarity >= DUPLICATE)) {
+      ["#dup-badge", "#donate-btn", "#donate-hint"].forEach((sel) => { $(sel).hidden = false; });
+    }
     const cards = resolved.filter((r) => r.other).map(({ n, other }) => `
       <button type="button" class="similar__item" data-similar="${esc(other.item_id)}">
         ${imgTag(other, 'loading="lazy"')}
@@ -447,6 +452,140 @@ async function deleteItem(id) {
   } catch (e) {
     toast(`Suppression impossible : ${e.message}`, "error");
   }
+}
+
+// ---------- donation of a duplicate: confirmation screen + "À donner" bag ----------
+const PLACES = { association: "Une association locale", friend: "Un proche", other: "Autre" };
+
+// ---------- "Où la donner ?": places of the verified list, picked and explained by the local LLM ----------
+const CITIES = ["Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Bizerte", "Béja", "Jendouba", "Sousse",
+  "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Gafsa", "Gabès", "Médenine", "Autre"];   // donation_places.json
+const CITY_KEY = "dressme.m01.city";
+let giveToken = 0;
+
+function savedCity() {
+  try { return localStorage.getItem(CITY_KEY) || "Tunis"; } catch { return "Tunis"; }
+}
+
+async function loadDonationIdeas(item) {
+  const token = ++giveToken;
+  const city = $("#donate-city").value;
+  try { localStorage.setItem(CITY_KEY, city); } catch { /* private mode */ }
+  $("#donate-message").textContent = "Le coach cherche où cette pièce peut faire plaisir…";
+  $("#donate-list").innerHTML = "";
+  $("#donate-meta").textContent = "";
+  let r;
+  try {
+    r = await api(`/items/${encodeURIComponent(item.item_id)}/donation-suggestions?user_id=${encodeURIComponent(USER)}`,
+      { body: { city: city === "Autre" ? null : city } });
+  } catch (e) {
+    if (token === giveToken) $("#donate-message").textContent = `Suggestions indisponibles : ${e.message}`;
+    return;
+  }
+  if (token !== giveToken) return;   // the city changed meanwhile
+  $("#donate-message").textContent = r.message;
+  $("#donate-list").innerHTML = r.suggestions.map((s) => `<li><button type="button" class="give__item" data-place="${esc(s.place)}" aria-pressed="false">
+      <span class="give__name">${esc(s.name)}</span>
+      <span class="give__reason">${esc(s.reason)}</span>
+      <span class="give__how">${esc(s.how)}</span>
+      ${s.url || s.phone ? `<span class="give__links">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">Site officiel ↗</a>` : ""}${
+        s.phone ? `<a href="tel:${esc(s.phone.replace(/\s/g, ""))}">${esc(s.phone)}</a>` : ""}${s.address ? `<span>${esc(s.address)}</span>` : ""}</span>` : ""}
+    </button></li>`).join("");
+  $("#donate-meta").textContent = r.llm_used
+    ? `Choisi et expliqué par ${r.model} (local) parmi une liste vérifiée · ${(r.elapsed_ms / 1000).toFixed(1)} s`
+    : "Liste vérifiée (LLM local indisponible : ordre par défaut)";
+}
+
+/** Confirmation screen; resolves to {place} (null = not decided yet) or null when cancelled. */
+function askDonation(item) {
+  const layer = $("#donate-layer");
+  $("#donate-title").textContent = `Donner « ${title(item)} » ?`;
+  $("#donate-piece").innerHTML = dupCard(item, "À donner", null, true);
+  $$('input[name="place"]', layer).forEach((r) => { r.checked = r.value === ""; });
+  const city = $("#donate-city");
+  if (!city.options.length) city.innerHTML = CITIES.map((c) => `<option>${esc(c)}</option>`).join("");
+  city.value = CITIES.includes(savedCity()) ? savedCity() : "Tunis";
+  city.onchange = () => loadDonationIdeas(item);
+  loadDonationIdeas(item);
+  const previous = document.activeElement;
+  layer.hidden = false;
+  $("#donate-ok").focus();
+  return new Promise((resolve) => {
+    const done = (value) => {
+      layer.hidden = true;
+      layer.removeEventListener("click", onClick);
+      layer.removeEventListener("keydown", onKey);
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+      giveToken += 1;   // a late LLM answer must not fill the closed dialog
+      resolve(value);
+    };
+    const onClick = (e) => {
+      const idea = e.target.closest(".give__item");
+      if (idea && !e.target.closest("a")) {   // picking a suggestion fills "À qui ?"
+        $$(".give__item", layer).forEach((b) => b.setAttribute("aria-pressed", String(b === idea)));
+        $$('input[name="place"]', layer).forEach((r) => { r.checked = r.value === idea.dataset.place; });
+        return;
+      }
+      if (e.target.closest("#donate-ok")) done({ place: $('input[name="place"]:checked', layer)?.value || null });
+      else if (e.target.closest("#donate-cancel") || e.target === layer) done(null);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); done(null); }
+    };
+    layer.addEventListener("click", onClick);
+    layer.addEventListener("keydown", onKey);
+  });
+}
+
+async function donateItem(id) {
+  const item = state.cache.get(id) || await fetchItem(id).catch(() => null);
+  if (!item) return;
+  const choice = await askDonation(item);
+  if (!choice) return;
+  try {
+    await api(`/items/${encodeURIComponent(id)}/donate?user_id=${encodeURIComponent(USER)}`, { body: choice });
+    state.cache.delete(id);
+    closePanel(false);
+    await loadDuplicates();
+    await loadItems();
+    await refreshBagCount();
+    toast(`« ${title(item)} » est dans votre sac À donner.`, "success");
+  } catch (e) {
+    toast(`Don impossible : ${e.message}`, "error");
+  }
+}
+
+async function donatedItems() {
+  return (await api("/items", { body: { user_id: USER, status: "donated" } })).items;
+}
+
+async function refreshBagCount() {
+  try {
+    const n = (await donatedItems()).length;
+    $("#bag-count").textContent = n ? String(n) : "";
+  } catch { /* the bag count is optional */ }
+}
+
+async function openBag() {
+  let items;
+  try { items = await donatedItems(); } catch (e) { toast(e.message, "error"); return; }
+  items.sort((a, b) => String(b.donated_at).localeCompare(String(a.donated_at)));
+  const rows = items.map((it) => `<li class="bag__item">${imgTag(it, 'loading="lazy"')}
+      <div><div class="bag__name">${esc(title(it))}</div>
+      <div class="bag__meta">${it.donated_at ? `Mise de côté le ${esc(dateFr.format(new Date(it.donated_at)))}` : ""}${
+        it.donation_place ? ` · ${esc(PLACES[it.donation_place] || it.donation_place)}` : ""}</div></div></li>`).join("");
+  if (panel.hidden) state.returnFocus = $("#bag");
+  state.panelId = null;
+  $("#panel-body").innerHTML = `<p class="sheet__eyebrow">Sac</p>
+    <h2 class="sheet__title" id="panel-title">À donner</h2>
+    <p class="muted">${items.length ? `${plural(items.length, "pièce")} prête${items.length > 1 ? "s" : ""} à faire une seconde vie.`
+      : "Votre sac est vide. Ouvrez une pièce en double pour la donner."}</p>
+    ${rows ? `<ul class="bag">${rows}</ul>` : ""}`;
+  panel.hidden = false;
+  $("#scrim").hidden = false;
+  document.body.classList.add("no-scroll");
+  panel.scrollTop = 0;
+  $("#panel-close").focus();
 }
 
 // ---------- details form (size, price, brand…) + receipt / label scan ----------
@@ -881,6 +1020,7 @@ function bind() {
   $("#filters").addEventListener("submit", (e) => e.preventDefault());
 
   $("#add").addEventListener("click", () => $("#file").click());
+  $("#bag").addEventListener("click", openBag);
   $("#file").addEventListener("change", (e) => {
     const file = e.target.files[0];
     e.target.value = "";
@@ -893,6 +1033,8 @@ function bind() {
   $("#panel-body").addEventListener("click", (e) => {
     const sim = e.target.closest("[data-similar]");
     if (sim) openPanel(sim.dataset.similar);
+    const give = e.target.closest("[data-donate]");
+    if (give) donateItem(give.dataset.donate);
     const del = e.target.closest("[data-delete]");
     if (del) deleteItem(del.dataset.delete);
     const edit = e.target.closest("[data-edit]");
@@ -905,6 +1047,7 @@ async function init() {
   try {
     await loadDuplicates();
     const data = await loadItems();
+    refreshBagCount();
     $("#open-hint").textContent = data.total
       ? `${plural(data.total, "pièce")} vous ${data.total > 1 ? "attendent" : "attend"}`
       : "Votre garde-robe est vide : ajoutez une première pièce";

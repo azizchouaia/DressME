@@ -57,6 +57,8 @@ class ItemRow(Base):
     condition: Mapped[str | None] = mapped_column(String(16))
     notes: Mapped[str | None] = mapped_column(Text)
     receipt_image: Mapped[str | None] = mapped_column(Text)
+    donated_at = mapped_column(DateTime(timezone=True), nullable=True)
+    donation_place: Mapped[str | None] = mapped_column(String(16))
     embedding = mapped_column(Vector(EMBEDDING_DIM), nullable=False)
 
     __table_args__ = (
@@ -78,6 +80,7 @@ _ADDED_COLUMNS = {
     "purchase_date": "DATE", "purchase_year": "INTEGER", "store": "VARCHAR(120)", "store_id": "VARCHAR(64)",
     "composition": "JSONB DEFAULT '[]'::jsonb", "care": "JSONB DEFAULT '[]'::jsonb",
     "condition": "VARCHAR(16)", "notes": "TEXT", "receipt_image": "TEXT",
+    "donated_at": "TIMESTAMPTZ", "donation_place": "VARCHAR(16)",
 }
 
 _ready = False
@@ -116,9 +119,10 @@ def _to_item(row: ItemRow) -> WardrobeItem:
 
 
 async def add_item(item: WardrobeItem, embedding: Sequence[float]) -> WardrobeItem:
-    data = item.model_dump(mode="json", exclude={"shelf", "created_at", "last_worn", "purchase_date"})
+    data = item.model_dump(mode="json", exclude={"shelf", "created_at", "last_worn", "purchase_date",
+                                                 "donated_at"})
     row = ItemRow(**data, last_worn=item.last_worn, purchase_date=item.purchase_date,
-                  embedding=list(embedding))
+                  donated_at=item.donated_at, embedding=list(embedding))
     async with _sessions()() as s:
         s.add(row)
         await s.commit()
@@ -140,14 +144,25 @@ async def get_embedding(user_id: str, item_id: str) -> list[float] | None:
         return None if vec is None else [float(v) for v in vec]
 
 
+async def get_embeddings(user_id: str, item_ids: Sequence[str] | None = None) -> dict[str, list[float]]:
+    """item_id -> embedding of the user's non-pending items; all of them when item_ids is None."""
+    q = select(ItemRow.item_id, ItemRow.embedding).where(
+        ItemRow.user_id == user_id, ItemRow.status != "pending")
+    if item_ids is not None:
+        q = q.where(ItemRow.item_id.in_(list(item_ids)))
+    async with _sessions()() as s:
+        rows = (await s.execute(q)).all()
+    return {i: [float(v) for v in vec] for i, vec in rows}
+
+
 async def list_items(req: ItemsRequest) -> list[WardrobeItem]:
     q = select(ItemRow).where(ItemRow.user_id == req.user_id)
     if req.category:
         q = q.where(ItemRow.category == req.category.value)
     if req.status:
         q = q.where(ItemRow.status == req.status.value)
-    else:
-        q = q.where(ItemRow.status != "pending")
+    else:                       # pending: waiting for the user; donated: in the "À donner" bag
+        q = q.where(ItemRow.status.not_in(("pending", "donated")))
     if req.season:
         q = q.where(ItemRow.season.op("@>")(func.jsonb_build_array(req.season.lower())))
     if req.color:

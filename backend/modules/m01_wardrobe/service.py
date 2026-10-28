@@ -23,6 +23,7 @@ from .contract import (
     DeleteResponse,
     DocumentRequest,
     DocumentResponse,
+    DonateRequest,
     DuplicatesRequest,
     DuplicatesResponse,
     ItemNotFoundError,
@@ -183,6 +184,15 @@ async def update_item(user_id: str, item_id: str, update: ItemUpdate) -> Wardrob
     return updated
 
 
+async def donate_item(user_id: str, item_id: str, req: DonateRequest) -> WardrobeItem:
+    """'À donner' bag: status donated + donated_at (+ place). The piece leaves /items, M2 and M5."""
+    item = await get_item(user_id, item_id)
+    updated = await store.update_item(user_id, item_id, details.to_db(details.donate_changes(item, req)))
+    if updated is None:
+        raise ItemNotFoundError(item_id)
+    return updated
+
+
 async def extract_document(req: DocumentRequest) -> DocumentResponse:
     """Receipt / price tag / care label -> proposed fields, through M8. Nothing is saved."""
     item = await get_item(req.user_id, req.item_id) if req.item_id else None
@@ -191,6 +201,25 @@ async def extract_document(req: DocumentRequest) -> DocumentResponse:
     data_url = "data:image/jpeg;base64," + base64.b64encode(images.encode(img, "JPEG")).decode()
     doc = await m08_client.extract(req.user_id, data_url, req.kind, details.hint_for(item))
     return details.finalize(doc, item)
+
+
+async def embeddings(user_id: str, item_ids: list[str] | None = None) -> dict[str, list[float]]:
+    """item_id -> FashionCLIP image embedding (L2-normalised) of this user's non-pending items.
+
+    Python-level API for other modules (M5); unknown ids are simply absent from the result.
+    """
+    await store.ensure_schema()
+    return await store.get_embeddings(user_id, item_ids)
+
+
+async def embed_texts(texts: list[str]) -> list[list[float]]:
+    """FashionCLIP text embeddings (L2-normalised), same space as the item embeddings. Uses M1's model."""
+    from .pipeline.clip import get_clip
+
+    if not texts:
+        return []
+    vectors = await asyncio.to_thread(lambda: get_clip().embed_texts(tuple(texts)))
+    return [[float(x) for x in v] for v in vectors]
 
 
 async def delete_item(user_id: str, item_id: str) -> DeleteResponse:

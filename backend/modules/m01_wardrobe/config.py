@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from shared.schemas import GarmentCategory
 
@@ -44,6 +44,19 @@ class Thresholds(BaseModel):
     season_relative: float
 
 
+class DonationLLM(BaseModel):
+    model: str = "qwen3:4b-instruct"
+    base_url: str = "http://localhost:11434"
+    temperature: float = Field(default=0.2, ge=0, le=2)
+    timeout_s: float = Field(default=60, gt=0)
+
+
+class Donation(BaseModel):
+    places_file: str = "donation_places.json"
+    max_suggestions: int = Field(default=3, ge=1, le=5)
+    llm: DonationLLM = DonationLLM()
+
+
 class M01Config(BaseModel):
     models: Models
     thresholds: Thresholds
@@ -55,6 +68,7 @@ class M01Config(BaseModel):
     materials: list[Label]
     formality: list[FormalityLabel]
     palette: dict[str, str]
+    donation: Donation = Donation()
 
 
 @lru_cache
@@ -62,6 +76,8 @@ def get_config() -> M01Config:
     cfg = M01Config.model_validate(yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")))
     if device := os.environ.get("M01_DEVICE"):
         cfg.models.device = device
+    if model := os.environ.get("M01_DONATION_MODEL"):
+        cfg.donation.llm.model = model
     return cfg
 
 

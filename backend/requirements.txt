@@ -12,6 +12,6 @@ httpx>=0.27
 python-jose[cryptography]>=3.3
 langgraph>=0.2
 langchain-core>=0.3
-langchain-ollama>=0.2      # orchestrator brain on the local model
+langchain-ollama>=0.3.4   # M1 donation suggestions + M5 style coach agent (local LLM through Ollama)  + orchestrator brain
 pyyaml>=6.0
 # Agent-specific heavy deps live in backend/agents/<name>/requirements.txt

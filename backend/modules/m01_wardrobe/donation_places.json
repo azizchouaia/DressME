@@ -1,0 +1,63 @@
+{
+  "_comment": "Donation places suggested for duplicated pieces (donation.py). Only entries that could be checked: a link is set only when it was verified on `verified_on`; the other entries are real general options without a link (never invent one). cities: governorates, or * for everywhere. accepts: garment categories, or * for all. Add local places here (no code change); re-check the links before a demo.",
+  "cities": ["Tunis", "Ariana", "Ben Arous", "Manouba", "Nabeul", "Bizerte", "Béja", "Jendouba", "Sousse",
+             "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Gafsa", "Gabès", "Médenine", "Autre"],
+  "places": [
+    {
+      "id": "crt",
+      "name": "Croissant-Rouge tunisien",
+      "type": "association",
+      "cities": ["*"],
+      "accepts": ["*"],
+      "url": "https://www.croissant-rouge.tn",
+      "phone": "+216 71 325 572",
+      "address": "19, Rue d'Angleterre, 1000 Tunis",
+      "how": "Appelez ou écrivez au siège (ou au comité régional de votre gouvernorat) pour savoir où déposer les vêtements.",
+      "best_for": "vêtements chauds et d'hiver, vêtements d'enfants, pièces en bon état ; distribue aux familles démunies, surtout en zones rurales",
+      "source": "https://www.croissant-rouge.tn (contact, 21 comités régionaux) ; La Presse, 10/10/2026 : caravane d'aide avec vêtements d'hiver",
+      "verified_on": "2026-10-23"
+    },
+    {
+      "id": "neighbourhood",
+      "name": "Mosquée ou association de quartier",
+      "type": "community",
+      "cities": ["*"],
+      "accepts": ["*"],
+      "url": null,
+      "phone": null,
+      "address": null,
+      "how": "Renseignez-vous auprès de la mosquée ou de l'association de votre quartier : beaucoup font des collectes avant le Ramadan, l'Aïd et l'hiver.",
+      "best_for": "vêtements du quotidien, tenues de fête pour l'Aïd, vêtements d'enfants",
+      "source": "pratique courante (pas de lien unique)",
+      "verified_on": null
+    },
+    {
+      "id": "municipality",
+      "name": "Campagne de solidarité de la municipalité",
+      "type": "collection",
+      "cities": ["*"],
+      "accepts": ["*"],
+      "url": null,
+      "phone": null,
+      "address": null,
+      "how": "Demandez à votre municipalité si une campagne de collecte est en cours (souvent en hiver).",
+      "best_for": "vêtements chauds, manteaux, couvertures",
+      "source": "pratique courante (pas de lien unique)",
+      "verified_on": null
+    },
+    {
+      "id": "close_ones",
+      "name": "Un proche",
+      "type": "personal",
+      "cities": ["*"],
+      "accepts": ["*"],
+      "url": null,
+      "phone": null,
+      "address": null,
+      "how": "Proposez-la à quelqu'un de votre entourage qui porte la même taille.",
+      "best_for": "pièces en très bon état, chaussures et accessoires, tenues habillées",
+      "source": null,
+      "verified_on": null
+    }
+  ]
+}

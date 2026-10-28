@@ -191,3 +191,28 @@ async def test_service_end_to_end_with_fake_models(db, monkeypatch):
     assert (await service.delete_item(u, first.garment.item_id)).deleted
     with pytest.raises(ItemNotFoundError):
         await service.get_item(u, first.garment.item_id)
+
+
+async def test_embeddings_bulk_read(db, monkeypatch):
+    new_user, _ = db
+    u = new_user()
+    monkeypatch.setattr(service, "_analyse", lambda data, full=True: fake_analysis())
+    first = await service.classify(ClassifyRequest(user_id=u, image=png_b64()))
+    pending = await service.classify(ClassifyRequest(user_id=u, image=png_b64()))     # duplicate -> pending
+    assert pending.pending
+    out = await service.embeddings(u)
+    assert list(out) == [first.garment.item_id] and len(out[first.garment.item_id]) == EMBEDDING_DIM
+    assert await service.embeddings(u, ["nope"]) == {}
+
+
+async def test_donate_with_pgvector(db, monkeypatch):
+    from modules.m01_wardrobe.contract import DonateRequest, DonationPlace
+
+    new_user, _ = db
+    u = new_user()
+    monkeypatch.setattr(service, "_analyse", lambda data, full=True: fake_analysis())
+    item = (await service.classify(ClassifyRequest(user_id=u, image=png_b64()))).garment
+    out = await service.donate_item(u, item.item_id, DonateRequest(place=DonationPlace.friend))
+    assert out.status == "donated" and out.donation_place == "friend" and out.donated_at is not None
+    assert (await service.items(ItemsRequest(user_id=u))).total == 0
+    assert (await service.items(ItemsRequest(user_id=u, status=ItemStatus.donated))).total == 1
