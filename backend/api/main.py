@@ -17,6 +17,15 @@ import modules
 from .routes import agents, auth, beta1, bo_demo, chat, health
 
 app = FastAPI(title="DressMe API", version="0.2.0")
+
+
+@app.exception_handler(NotImplementedError)
+async def _not_built(request, exc):  # a module whose real code is not written yet (no mock in the app)
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(status_code=501, content={
+        "detail": "not available yet: this module's real code is still to come from its owner",
+        "available": False, "path": request.url.path})
 # Local development: the Flutter web app (flutter run -d chrome) runs on another localhost port.
 app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                    allow_methods=["*"], allow_headers=["*"])
