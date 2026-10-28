@@ -60,6 +60,14 @@ SLOPE = 1.6  # z-score -> sigmoid slope
 
 class AttributeScorer:
     def __init__(self, path: Path = artifacts.PROMPTS):
+        self.self_calibrate = not Path(path).exists()
+        if self.self_calibrate:  # no Kaggle demo build: embed the poles now, calibrate on the user's own pieces
+            from . import encoder
+
+            self.lo = {a: encoder.embed_texts(POLES[a][0]) for a in ATTRS}
+            self.hi = {a: encoder.embed_texts(POLES[a][1]) for a in ATTRS}
+            self.mu, self.sd, self.cat_mu, self.cat_sd = 0.0, 1.0, {}, {}
+            return
         d = np.load(path)
         self.lo = {a: d[f"{a}_lo"] for a in ATTRS}
         self.hi = {a: d[f"{a}_hi"] for a in ATTRS}
@@ -75,6 +83,9 @@ class AttributeScorer:
 
     def __call__(self, emb: np.ndarray, categories: list[str] | None = None) -> list[dict[str, float]]:
         raw = self.raw(emb)
+        if self.self_calibrate:  # relative to this wardrobe: warmest / most formal of YOUR pieces score high
+            z = (raw - raw.mean(0)) / (raw.std(0) + 0.02)
+            return [dict(zip(ATTRS, map(float, row), strict=True)) for row in 1 / (1 + np.exp(-SLOPE * z))]
         cats = categories or [""] * len(emb)
         glob = np.array([a not in PER_CATEGORY for a in ATTRS])
         mu = np.stack([np.where(glob, self.mu, self.cat_mu.get(_group(c), self.mu)) for c in cats])
