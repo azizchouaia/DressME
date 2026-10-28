@@ -1,5 +1,8 @@
 import 'package:go_router/go_router.dart';
 
+import 'home_screen.dart';
+import 'shell.dart';
+
 import '../core/design/design_gallery_screen.dart';
 
 import '../features/bo1_recommendations/ui/bo1_recommendations_screen.dart';
@@ -15,8 +18,12 @@ import '../features/bo8_assistant/ui/bo8_assistant_screen.dart';
 import '../features/bo9_try_on/ui/bo9_try_on_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/bo2_time',
+  initialLocation: '/',
   routes: [
+    ShellRoute(
+      builder: (_, state, child) => AppShell(location: state.uri.path, child: child),
+      routes: [
+    GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
     GoRoute(path: '/bo1_recommendations', builder: (_, __) => const RecommendationsScreen()),
     GoRoute(path: '/bo2_time', builder: (_, __) => const OutfitOfDayScreen()),
     GoRoute(path: '/bo3_sustainability', builder: (_, __) => const InventoryScreen()),
@@ -37,5 +44,7 @@ final router = GoRouter(
     GoRoute(path: '/bo8_assistant', builder: (_, __) => const ChatScreen()),
     GoRoute(path: '/design', builder: (_, __) => const DesignGalleryScreen()),
     GoRoute(path: '/bo9_try_on', builder: (_, __) => const TryOnScreen()),
+      ],
+    ),
   ],
 );
