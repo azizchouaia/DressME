@@ -71,7 +71,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<void> _checkAll() => Future.wait([for (final b in boEntries) _check(b)]);
+  /// One BO after the other: the first calls load AI models (FashionCLIP...), so a burst of
+  /// parallel calls makes the single dev server look down.
+  Future<void> _checkAll() async {
+    for (final b in boEntries) {
+      await _check(b);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

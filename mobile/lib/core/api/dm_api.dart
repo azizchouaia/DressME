@@ -27,8 +27,8 @@ class DmApi {
       : base = baseUrl ?? apiBaseUrl(),
         _dio = Dio(BaseOptions(
           baseUrl: baseUrl ?? apiBaseUrl(),
-          connectTimeout: const Duration(seconds: 8),
-          receiveTimeout: const Duration(seconds: 180), // LLM / 3D calls can be slow
+          connectTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 240), // LLM / 3D calls and the first model load can be slow
         )) {
     _dio.interceptors.add(InterceptorsWrapper(onRequest: (o, h) {
       final t = DemoUsers.token;
@@ -72,6 +72,9 @@ class DmApi {
 /// A readable message from any API error (server down, 4xx/5xx detail).
 String apiError(Object e) {
   if (e is DioException) {
+    if (e.type == DioExceptionType.receiveTimeout) {
+      return 'The server is busy (first call loads the AI models). Try again in a minute.';
+    }
     if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
       return 'The server is not answering. Start it: cd backend → python -m uvicorn api.main:app --port 8000';
     }
