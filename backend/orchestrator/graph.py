@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import uuid
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
@@ -80,6 +82,39 @@ def _rescue_text_call(reply, tools, messages):
                                               "type": "tool_call"}], id=getattr(reply, "id", None))
 
 
+_TYPES = ["t-shirt", "shirt", "sweater", "blouse", "jeans", "chinos", "trousers", "skirt", "sneakers", "loafers",
+          "boots", "sandals", "jacket", "coat", "blazer", "dress", "jebba"]
+_COLOURS = ["white", "black", "grey", "navy", "beige", "brown", "camel", "blue", "olive", "red", "pink", "green",
+            "burgundy", "mustard"]
+_RULES = [  # (tool, words): a clear request goes straight to its agent, the LLM only for the rest
+    ("smartbuy", r"\b(should i (buy|get)|worth (it|buying)|buy (it|this|a|an)|ach[eè]ter|nechri|n?chri)\b"),
+    ("localshop", r"\b(find .* (in|at) (a )?(shop|store)|where (can|to) (i )?buy|in a shop|local shops?|boutique|magasin)\b"),
+    ("challenges", r"\b(challenges?|d[ée]fis?)\b"),
+    ("wardrobe", r"\b(show|list|what('s| is) in) my (wardrobe|closet|clothes)\b|\bgarde-robe\b"),
+    ("stylist", r"\b(what (should|do|can) i wear|outfit|tenue|n?elbes|look for (today|tomorrow))\b"),
+]
+
+
+def route_by_rules(text: str, tool_names: set, attachment: dict | None = None) -> dict | None:
+    """Deterministic routing for clear requests (the 8B local model often mis-routes or writes the call)."""
+    low = (text or "").lower()
+    for name, rx in _RULES:
+        if name not in tool_names or not re.search(rx, low):
+            continue
+        if name == "smartbuy":
+            typ = next((t for t in _TYPES if re.search(rf"\b{re.escape(t)}s?\b", low)), None)
+            col = next((k for k in _COLOURS if re.search(rf"\b{k}\b", low)), None)
+            if not typ and not (attachment or {}).get("image"):
+                continue  # nothing to judge: let the LLM ask
+            args: dict = {"probe_image": (attachment or {}).get("probe") or f"custom:{typ}:{col or 'black'}"}
+            price = re.search(r"(\d+(?:[.,]\d+)?)\s*(tnd|dt|dinars?)", low)
+            if price:
+                args["price_tnd"] = float(price.group(1).replace(",", "."))
+            return {"name": name, "args": args}
+        return {"name": name, "args": {"action": "chat", "message": text, "payload": {"message": text}}}
+    return None
+
+
 def build_graph(model=None, tools=None, checkpointer=None):
     """Compile the graph. Tests pass a scripted model and a stand-in tool."""
 
@@ -101,6 +136,15 @@ def build_graph(model=None, tools=None, checkpointer=None):
         return {}
 
     async def planner(state: ChatState):
+        if not int(state.get("tool_calls") or 0) and not state.get("answering") and model is None:
+            last = state["messages"][-1]
+            if isinstance(last, HumanMessage):
+                text = last.content if isinstance(last.content, str) else str(last.content)
+                hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"))
+                if hit:
+                    log.info("rule route -> %s", hit["name"])
+                    return {"messages": [AIMessage(content="", tool_calls=[{**hit, "id": f"call_{uuid.uuid4().hex[:8]}",
+                                                                            "type": "tool_call"}])]}
         system = (
             f"{SYSTEM_PROMPT}\n"
             f"session_id: {state.get('session_id', '')}\n"

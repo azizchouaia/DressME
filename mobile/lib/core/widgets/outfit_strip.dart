@@ -31,7 +31,14 @@ List<List<String>> outfitIdsIn(Object? data) {
     if (depth > 4 || v == null) return;
     if (v is Map) {
       final ids = v['item_ids'] ?? v['items'];
-      if (ids is List && ids.isNotEmpty && ids.every((e) => e is String)) out.add([for (final e in ids) '$e']);
+      // ids as strings, or pieces as {id | item_id, name} (the stylist's outfits)
+      if (ids is List && ids.isNotEmpty) {
+        final flat = [
+          for (final e in ids)
+            if (e is String) e else if (e is Map && (e['id'] ?? e['item_id']) != null) '${e['id'] ?? e['item_id']}'
+        ];
+        if (flat.length == ids.length) out.add(flat);
+      }
       for (final k in const ['outfits', 'result', 'data', 'outfit', 'looks']) {
         visit(v[k], depth + 1);
       }
