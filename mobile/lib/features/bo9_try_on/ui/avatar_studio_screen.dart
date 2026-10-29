@@ -177,7 +177,7 @@ class _AvatarStudioScreenState extends ConsumerState<AvatarStudioScreen> {
   Widget build(BuildContext context) {
     final gender = ref.watch(authProvider).user?.gender;
     final s = sex ?? (gender == 'male' ? 'male' : 'female');
-    final url = '${apiBaseUrl()}/viewer/index.html?mesh=/presets/${s}_average.glb';
+    final url = '${apiBaseUrl()}/viewer/index.html?mesh=/presets/${s}_average.glb&v=50';
     return Scaffold(
       backgroundColor: const Color(0xFFF6F4F0), // Nadhir's studio background
       body: Column(children: [
