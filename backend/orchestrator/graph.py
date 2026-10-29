@@ -136,7 +136,7 @@ def build_graph(model=None, tools=None, checkpointer=None):
         return {}
 
     async def planner(state: ChatState):
-        if not int(state.get("tool_calls") or 0) and not state.get("answering") and model is None:
+        if not int(state.get("tool_calls") or 0) and not state.get("answering") and tools is None:
             last = state["messages"][-1]
             if isinstance(last, HumanMessage):
                 text = last.content if isinstance(last.content, str) else str(last.content)

@@ -26,10 +26,11 @@ def graph():
 
 def brain():
     """The planner/writer LLM: LLM_PROVIDER from infra/.env when it is set up, else the team's local Ollama model."""
+    import os
+
     from shared.config import settings
 
-    if settings.llm_provider in ("anthropic", "openai") and not settings.llm_api_key:
-        import os
+    if settings.llm_provider in ("anthropic", "openai", "groq") and not (settings.llm_api_key or os.environ.get("GROQ_API_KEY")):
 
         from langchain_ollama import ChatOllama
 
