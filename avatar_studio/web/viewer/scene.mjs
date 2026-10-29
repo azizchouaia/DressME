@@ -48,6 +48,63 @@ let skinChoice = 'light'
 let buildBase = ''
 let buildRequest = 0
 
+// DressMe integration: pieces of the user's wardrobe (M1) painted on the body, region by region
+// (dominant SMPL-X bone of each vertex). Sent by the app: postMessage({type: 'outfit', pieces: {...}}).
+let outfit = {}
+const REGIONS = {
+  top: ['spine1', 'spine2', 'spine3', 'left_collar', 'right_collar', 'left_shoulder', 'right_shoulder'],
+  sleeves: ['left_elbow', 'right_elbow'],
+  hips: ['pelvis'],
+  thighs: ['left_hip', 'right_hip'],
+  shins: ['left_knee', 'right_knee'],
+  feet: ['left_ankle', 'right_ankle', 'left_foot', 'right_foot'],
+}
+
+function boneRegions(mesh) {
+  if (mesh.userData.dmRegions) return mesh.userData.dmRegions
+  const skinIndex = mesh.geometry.attributes.skinIndex
+  const skinWeight = mesh.geometry.attributes.skinWeight
+  const bones = mesh.skeleton?.bones || []
+  const regionOfBone = bones.map((bone) => Object.keys(REGIONS).find((r) => REGIONS[r].includes(bone.name)) || '')
+  const out = new Array(mesh.geometry.attributes.position.count).fill('')
+  if (skinIndex && skinWeight) {
+    for (let index = 0; index < out.length; index += 1) {
+      let best = -1
+      let weight = 0
+      for (let channel = 0; channel < 4; channel += 1) {
+        const w = skinWeight.getComponent(index, channel)
+        if (w > weight) { weight = w; best = skinIndex.getComponent(index, channel) }
+      }
+      out[index] = best >= 0 ? regionOfBone[best] || '' : ''
+    }
+  }
+  mesh.userData.dmRegions = out
+  return out
+}
+
+function outfitColor(region) {
+  const p = outfit
+  const c = (piece) => (piece?.color ? new THREE.Color(piece.color) : null)
+  if (!region) return null
+  if (region === 'feet') return c(p.shoes)
+  const upper = p.outer || p.top || p.dress
+  if (region === 'top') return c(upper)
+  if (region === 'sleeves') {
+    const piece = p.outer || p.top || p.dress
+    return piece && piece.long !== false ? c(piece) : null
+  }
+  if (region === 'hips') return c(p.dress) || c(p.bottom)
+  if (region === 'thighs') {
+    if (p.dress) return c(p.dress)
+    return c(p.bottom)
+  }
+  if (region === 'shins') {
+    const piece = p.dress?.long ? p.dress : p.bottom
+    return piece && piece.long !== false ? c(piece) : null
+  }
+  return null
+}
+
 const hairColors = {
   black: '#1a120e',
   brown: '#5c3a24',
@@ -806,6 +863,7 @@ function paintColors(mesh = rig?.mesh) {
     colors = new THREE.BufferAttribute(new Float32Array(position.count * 3), 3)
     mesh.geometry.setAttribute('color', colors)
   }
+  const regions = Object.keys(outfit).length ? boneRegions(mesh) : null
   for (let index = 0; index < position.count; index += 1) {
     point.fromBufferAttribute(position, index)
     let color = skin
@@ -824,6 +882,10 @@ function paintColors(mesh = rig?.mesh) {
         else if (offset.z > -0.002 && spread < 0.009) color = iris
         else color = sclera
       })
+    }
+    if (regions) {
+      const dressed = outfitColor(regions[index])
+      if (dressed) color = dressed
     }
     colors.setXYZ(index, color.r, color.g, color.b)
   }
@@ -1162,6 +1224,12 @@ function onMessage(event) {
     } catch {
       return
     }
+  }
+  if (data && data.type === 'outfit') {
+    outfit = data.pieces || {}
+    paintColors()
+    render()
+    return
   }
   if (!data || data.type !== 'scene') return
   showMesh(data.url || '', Number(data.height) || 1)

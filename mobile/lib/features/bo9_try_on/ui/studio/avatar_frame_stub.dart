@@ -3,9 +3,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Phones / desktop: the Three.js viewer opens in the browser.
 class AvatarFrame extends StatelessWidget {
-  const AvatarFrame({super.key, required this.url});
+  const AvatarFrame({super.key, required this.url, this.outfit = const {}});
 
   final String url;
+  final Map<String, dynamic> outfit;
 
   @override
   Widget build(BuildContext context) => Center(
