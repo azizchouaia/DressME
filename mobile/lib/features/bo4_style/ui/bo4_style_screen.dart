@@ -29,6 +29,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
   List<Json> items = [];
   Set<String> dupIds = {};
   final newIds = <String>{};
+  var laundryIds = <String>{};
   final doors = GlobalKey<WardrobeDoorsState>();
   String? category;
   String? season;
@@ -56,6 +57,10 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
     try {
       final data = await m1.items(category: category, season: season);
       final dups = await m1.duplicateIds();
+      var washing = <String>{};
+      try {
+        washing = await m1.inLaundry(); // M3
+      } catch (_) {}
       int bag = bagCount;
       try {
         bag = jsonList((await m1.items(status: 'donated'))['items']).length;
@@ -65,6 +70,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
         items = jsonList(data['items']);
         mocked = data['mocked'] == true;
         dupIds = dups;
+        laundryIds = washing;
         bagCount = bag;
         loading = false;
       });
@@ -319,6 +325,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
                       m1: m1,
                       newIds: newIds,
                       dupIds: dupIds,
+                      laundryIds: laundryIds,
                       onTap: _open,
                     ),
                   ),
@@ -358,13 +365,14 @@ class _Drop extends StatelessWidget {
 
 /// One section of the closet: hanging rails for clothes, shelves (2 per shelf) for accessories and shoes.
 class _Closet extends StatelessWidget {
-  const _Closet({super.key, required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, required this.onTap});
+  const _Closet({super.key, required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, this.laundryIds = const {}, required this.onTap});
 
   final String bay;
   final List<Json> items;
   final M1 m1;
   final Set<String> newIds;
   final Set<String> dupIds;
+  final Set<String> laundryIds;
   final void Function(Json) onTap;
 
   Widget _piece(Json it, {required bool hanging}) {
@@ -390,6 +398,16 @@ class _Closet extends StatelessWidget {
                 const Positioned(top: 4, left: 4, child: newBadge)
               else if (dupIds.contains(id))
                 const Positioned(top: 4, left: 4, child: dupBadge),
+              if (laundryIds.contains(id))
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: DmColors.sandDark, shape: BoxShape.circle),
+                    child: const Icon(Icons.local_laundry_service_outlined, size: 14, color: DmColors.bronze),
+                  ),
+                ),
             ]),
             const SizedBox(height: 4),
             Text(pieceTitle(it), style: DmText.itemName, maxLines: 1, overflow: TextOverflow.ellipsis),

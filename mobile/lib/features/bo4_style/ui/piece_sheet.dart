@@ -76,11 +76,42 @@ class _PieceSheetState extends State<PieceSheet> {
   late bool dup = widget.isDup;
   List<(Json, Json?)>? similar; // (neighbour, its item)
   String? similarError;
+  String? laundry; // M3 status: available / laundry / lent (null = loading)
+  bool laundryBusy = false;
 
   @override
   void initState() {
     super.initState();
     _loadSimilar();
+    _loadLaundry();
+  }
+
+  Future<void> _loadLaundry() async {
+    try {
+      final s = await widget.m1.laundryStatus('${item['item_id']}');
+      if (mounted) setState(() => laundry = s);
+    } catch (_) {
+      if (mounted) setState(() => laundry = 'available');
+    }
+  }
+
+  Future<void> _toggleLaundry() async {
+    final id = '${item['item_id']}';
+    final going = laundry != 'laundry';
+    setState(() => laundryBusy = true);
+    try {
+      going ? await widget.m1.toLaundry(id) : await widget.m1.backFromLaundry(id);
+      setState(() => laundry = going ? 'laundry' : 'available');
+      widget.onChanged();
+      if (mounted) {
+        dmToast(context, going
+            ? '"${pieceTitle(item)}" is in the laundry: no outfit will use it until it is back.'
+            : '"${pieceTitle(item)}" is back in your closet.');
+      }
+    } catch (e) {
+      if (mounted) dmToast(context, 'Could not update the laundry: ${apiError(e)}');
+    }
+    if (mounted) setState(() => laundryBusy = false);
   }
 
   Future<void> _loadSimilar() async {
@@ -179,6 +210,7 @@ class _PieceSheetState extends State<PieceSheet> {
         Wrap(spacing: 6, runSpacing: 6, children: [
           if (widget.isNew) newBadge,
           if (dup) const Badge2('Possible duplicate', color: DmColors.warning, bg: DmColors.warningBg),
+          if (laundry == 'laundry') const Badge2('In the laundry', color: DmColors.bronze, bg: DmColors.sandDark),
           if (conf != null && conf < confidenceThreshold) const Badge2('To confirm', color: DmColors.warning, bg: DmColors.warningBg),
           if (it['local_tag'] != null) const Badge2('Tunisian piece', color: DmColors.eco, bg: DmColors.ecoBg),
         ]),
@@ -204,12 +236,31 @@ class _PieceSheetState extends State<PieceSheet> {
         ])),
         _section('Similar pieces', _similar()),
         const SizedBox(height: 16),
+        // everyday actions, for every piece
+        Row(children: [
+          Expanded(
+            child: DmButton(
+              laundry == 'laundry' ? 'Back from the laundry' : 'Send to the laundry',
+              kind: laundry == 'laundry' ? DmButtonKind.gold : DmButtonKind.outline,
+              icon: laundry == 'laundry' ? Icons.checkroom_rounded : Icons.local_laundry_service_outlined,
+              onPressed: laundry == null || laundryBusy ? null : _toggleLaundry,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DmButton('Give it away', kind: dup ? DmButtonKind.gold : DmButtonKind.outline,
+                icon: Icons.volunteer_activism_outlined, onPressed: _give),
+          ),
+        ]),
+        if (laundry == 'laundry') ...[
+          const SizedBox(height: 6),
+          const Text('In the laundry: outfits skip it until you bring it back.', style: DmText.caption),
+        ],
         if (dup) ...[
-          DmButton('Give this piece away', kind: DmButtonKind.gold, icon: Icons.volunteer_activism_outlined, onPressed: _give),
           const SizedBox(height: 6),
           const Text('You own a very close piece: this one can make someone else happy.', style: DmText.caption),
-          const SizedBox(height: 10),
         ],
+        const SizedBox(height: 10),
         DmButton('Remove from the wardrobe', kind: DmButtonKind.outline, icon: Icons.delete_outline_rounded, onPressed: _remove),
       ]),
     );

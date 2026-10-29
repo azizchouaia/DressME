@@ -88,6 +88,22 @@ class M1 {
   Future<Json> delete(String id) => api.delete(_item(id), query: {'user_id': user});
   Future<Json> update(String id, Json changes) => api.patch('${_item(id)}?$_q', changes);
   Future<Json> donationIdeas(String id, String? city) => api.post('${_item(id)}/donation-suggestions?$_q', {'city': city});
+  // laundry lives in M3 (wear log, BO2/BO3): status available / laundry / lent
+  Future<String> laundryStatus(String id) async {
+    final r = await api.post('/m03/states', {'user_id': user, 'payload': {'item_ids': [id]}});
+    final items = jsonList((r['result'] as Map?)?['items']);
+    return '${items.where((x) => x['item_id'] == id).firstOrNull?['status'] ?? 'available'}';
+  }
+
+  Future<Set<String>> inLaundry() async {
+    final r = await api.post('/m03/states', {'user_id': user, 'payload': <String, dynamic>{}});
+    return {for (final x in jsonList((r['result'] as Map?)?['items'])) if (x['status'] == 'laundry') '${x['item_id']}'};
+  }
+
+  Future<Json> toLaundry(String id) =>
+      api.post('/m03/status', {'user_id': user, 'payload': {'item_ids': [id], 'status': 'laundry'}});
+  Future<Json> backFromLaundry(String id) =>
+      api.post('/m03/laundry_done', {'user_id': user, 'payload': {'item_ids': [id]}});
   Future<Json> donate(String id, String? place) => api.post('${_item(id)}/donate?$_q', {'place': place});
   Future<Json> extract(String dataUrl, String kind, String itemId) =>
       api.post('/m01/documents/extract', {'user_id': user, 'image': dataUrl, 'kind': kind, 'item_id': itemId});
