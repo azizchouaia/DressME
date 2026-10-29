@@ -207,7 +207,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       const SizedBox(height: 12),
                       TextFormField(controller: _city, decoration: _field('City', Icons.location_on_outlined)),
                       const SizedBox(height: 14),
-                      Text('I SHOP FOR', style: DmText.eyebrow),
+                      const Text('I SHOP FOR', style: DmText.eyebrow),
                       const SizedBox(height: 8),
                       Row(children: [
                         _genderCard('female', 'Woman', Icons.woman_rounded),
@@ -250,10 +250,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(children: [
-              const Expanded(child: Divider(color: DmColors.border)),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text('or', style: DmText.caption)),
-              const Expanded(child: Divider(color: DmColors.border)),
+            const Row(children: [
+              Expanded(child: Divider(color: DmColors.border)),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('or', style: DmText.caption)),
+              Expanded(child: Divider(color: DmColors.border)),
             ]),
             const SizedBox(height: 12),
             OutlinedButton.icon(
