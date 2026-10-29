@@ -18,6 +18,7 @@ import '../features/bo6_boutique/ui/bo6_help_screen.dart';
 import '../features/bo6_local_market/ui/bo6_local_market_screen.dart';
 import '../features/bo7_sharing/ui/bo7_sharing_screen.dart';
 import '../features/bo8_assistant/ui/bo8_assistant_screen.dart';
+import '../features/bo9_try_on/ui/avatar_studio_screen.dart';
 import '../features/bo9_try_on/ui/bo9_try_on_screen.dart';
 
 final router = GoRouter(
@@ -56,6 +57,7 @@ final router = GoRouter(
     GoRoute(path: '/bo7_sharing', builder: (_, __) => const FeedScreen()),
     GoRoute(path: '/bo8_assistant', builder: (_, __) => const ChatScreen()),
     GoRoute(path: '/design', builder: (_, __) => const DesignGalleryScreen()),
+    GoRoute(path: '/bo9_avatar', builder: (_, __) => const AvatarStudioScreen()),
     GoRoute(path: '/bo9_try_on', builder: (_, __) => const TryOnScreen()),
       ],
     ),

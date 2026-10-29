@@ -36,6 +36,16 @@ app.include_router(beta1.router)
 app.include_router(agents.router)
 app.include_router(bo_demo.router)
 
+# BO9 (Nadhir): the SMPL-X avatar studio (avatar_studio/web). The viewer loads its bodies from the site root
+# (/presets/<sex>_<build>.glb, /prototypes/<sex>.jpg), so these folders are served at the root.
+_STUDIO = Path(__file__).resolve().parents[2] / "avatar_studio" / "web"
+if _STUDIO.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
+    for _name in ("viewer", "presets", "prototypes", "users"):
+        if (_STUDIO / _name).is_dir():
+            app.mount(f"/{_name}", StaticFiles(directory=_STUDIO / _name, html=True), name=f"bo9_{_name}")
+
 for m in sorted(pkgutil.iter_modules(modules.__path__), key=lambda m: m.name):
     try:
         mod = importlib.import_module(f"modules.{m.name}.router")

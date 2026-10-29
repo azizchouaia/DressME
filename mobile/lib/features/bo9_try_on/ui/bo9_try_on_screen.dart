@@ -1,6 +1,7 @@
 // Owner: BO9 — try it on: a faceless 3D avatar with your measurements wearing your pieces (M9). Integration screen.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/dm_api.dart';
@@ -56,6 +57,21 @@ class _TryOnScreenState extends ConsumerState<TryOnScreen> {
         icon: const Icon(Icons.view_in_ar_rounded, color: Colors.white),
       ),
       children: [
+        DmCard(
+          onTap: () => context.go('/bo9_avatar'),
+          child: const Row(children: [
+            Icon(Icons.view_in_ar_outlined, color: DmColors.bronze),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('My 3D avatar', style: DmText.cardTitle),
+                Text("Nadhir's SMPL-X studio: build your body (thin → heavy), details, photos.", style: DmText.caption),
+              ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: DmColors.muted),
+          ]),
+        ),
+        const SizedBox(height: 12),
         DmCard(
           big: true,
           padding: const EdgeInsets.all(18),

@@ -41,6 +41,8 @@ final boEntries = <BoEntry>[
       (a) => a.get('/m15/challenges', query: {'user_id': DemoUsers.wardrobe})),
   BoEntry('BO8', 'Assistant', 'Nadhir', '/bo8_assistant', Icons.chat_bubble_outline_rounded, 'Orchestrator · M8 · M19 · M20',
       (a) => a.get('/chat/agents')),
+  BoEntry('BO9', 'My 3D avatar', 'Nadhir', '/bo9_avatar', Icons.view_in_ar_outlined, 'SMPL-X studio',
+      (a) => a.get('/viewer/index.html')),
   BoEntry('BO9', 'Try it on', 'Nadhir', '/bo9_try_on', Icons.accessibility_new_rounded, 'M9',
       (a) => a.get('/m09/options')),
 ];
