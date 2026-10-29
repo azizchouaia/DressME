@@ -1,0 +1,40 @@
+{
+  "_comment": "Style archetypes of M5. Replaceable by a bigger list (e.g. clustering output) without code changes: every style needs id, family and description; families need a label. vector_source: text (FashionCLIP text encoder on description) or images (mean of the FashionCLIP embeddings of `examples`, image URLs or data URLs).",
+  "families": {
+    "casual":      {"label": "Casual",      "colour": "#5B8DB8"},
+    "chic":        {"label": "Chic",        "colour": "#B58B5A"},
+    "elegant":     {"label": "Elegant",     "colour": "#2F3A56"},
+    "bohemian":    {"label": "Bohemian",    "colour": "#C77D4F"},
+    "street":      {"label": "Street",      "colour": "#5E5E5E"},
+    "sport":       {"label": "Sport",       "colour": "#2E9E6A"},
+    "romantic":    {"label": "Romantic",    "colour": "#D98AA5"},
+    "traditional": {"label": "Traditional", "colour": "#B8862F"},
+    "party":       {"label": "Party",       "colour": "#7A3E9D"}
+  },
+  "styles": [
+    {"id": "casual", "family": "casual", "label": "Casual", "vector_source": "text",
+     "description": "a relaxed casual everyday outfit, t-shirt, jeans and sneakers"},
+    {"id": "casual_chic", "family": "chic", "label": "Casual chic", "vector_source": "text",
+     "description": "a casual chic outfit, neat blouse or knit, straight trousers, loafers, polished but relaxed"},
+    {"id": "smart_casual", "family": "chic", "label": "Smart casual", "vector_source": "text",
+     "description": "a smart casual outfit, chinos, button-down shirt, light blazer and leather shoes"},
+    {"id": "classic", "family": "elegant", "label": "Classic", "vector_source": "text",
+     "description": "a classic elegant office outfit, tailored blazer, trousers, neutral colours"},
+    {"id": "minimalist", "family": "elegant", "label": "Minimalist", "vector_source": "text",
+     "description": "a minimalist outfit with clean lines, plain monochrome pieces in black, white and grey"},
+    {"id": "bohemian", "family": "bohemian", "label": "Bohemian", "vector_source": "text",
+     "description": "a bohemian outfit, flowing floral maxi dress, fringes, earthy tones, sandals"},
+    {"id": "streetwear", "family": "street", "label": "Streetwear", "vector_source": "text",
+     "description": "a streetwear outfit, oversized hoodie, graphic print, cargo pants and chunky sneakers"},
+    {"id": "sport", "family": "sport", "label": "Sport", "vector_source": "text",
+     "description": "a sporty athletic outfit, track jacket, leggings or joggers and running shoes"},
+    {"id": "romantic", "family": "romantic", "label": "Romantic", "vector_source": "text",
+     "description": "a romantic feminine outfit, soft pastel colours, lace, ruffles and a flowy skirt"},
+    {"id": "vintage", "family": "romantic", "label": "Vintage", "vector_source": "text",
+     "description": "a vintage retro outfit, high-waisted pieces, polka dots, seventies patterns"},
+    {"id": "traditional", "family": "traditional", "label": "Traditional", "vector_source": "text",
+     "description": "a traditional Tunisian outfit, embroidered jebba or blouza, kachabia, handmade fabric"},
+    {"id": "party", "family": "party", "label": "Party", "vector_source": "text",
+     "description": "a party evening outfit, sequins, shiny satin dress, high heels"}
+  ]
+}

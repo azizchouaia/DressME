@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon style · DressMe</title>
+  <meta name="description" content="Démo du module M5 : profil de style adaptatif appris des swipes (bandit contextuel).">
+  <link rel="icon" href="/m05/ui/looks/look_classic.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/m05/ui/styles.css">
+  <script type="module" src="/m05/ui/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__mark">DressMe</span>
+      <span class="brand__sep" aria-hidden="true"></span>
+      <span class="brand__sub">Mon style</span>
+    </div>
+    <form class="userbar" id="userbar" autocomplete="off">
+      <label class="field field--inline">
+        <span class="field__label">Utilisateur</span>
+        <input id="user-id" name="user" value="usr_demo" spellcheck="false" required>
+      </label>
+      <button class="btn btn--ghost btn--sm" type="submit">Ouvrir</button>
+      <button class="btn btn--ghost btn--sm" type="button" id="reset">Réinitialiser le profil</button>
+      <a class="link" href="/m01/ui" target="_blank" rel="noopener">Garde-robe (M1) ↗</a>
+    </form>
+  </header>
+
+  <main class="layout">
+    <section class="intro">
+      <p class="eyebrow">Module M5 · Adaptive style profile</p>
+      <h1>Votre style, <em>appris</em> swipe après swipe.</h1>
+      <p class="intro__lead">Aucune question&nbsp;: 10 cartes à swiper dès l'ouverture, puis 10 tenues par jour classées par proximité avec votre goût (Rocchio), dont 2 cartes «&nbsp;Découverte&nbsp;».
+        Tout est calculé côté serveur&nbsp;: l'écran ne fait qu'afficher les cartes et envoyer les swipes en arrière-plan.</p>
+    </section>
+
+    <div class="stage">
+      <!-- the "phone": one screen at a time -->
+      <section class="phone" aria-live="polite">
+        <div class="phone__steps" id="steps" aria-hidden="true"></div>
+        <div class="phone__screen" id="screen"></div>
+      </section>
+
+      <!-- what M5 learnt -->
+      <aside class="panel" id="panel" aria-label="Profil appris">
+        <div class="panel__head">
+          <h2>Ce que M5 a appris</h2>
+          <span class="badge" id="badge-feedback">0 retour</span>
+        </div>
+        <div id="panel-empty" class="panel__empty">Pas encore de profil pour cet utilisateur. Il se construit dès les premiers swipes.</div>
+        <div id="panel-body" hidden>
+          <h3 class="panel__title">Familles de style</h3>
+          <div class="bars" id="families"></div>
+          <h3 class="panel__title">Styles dominants</h3>
+          <div class="chips" id="top-styles"></div>
+          <h3 class="panel__title">Règles les plus fortes</h3>
+          <ul class="rules" id="rules-pos"></ul>
+          <ul class="rules rules--neg" id="rules-neg"></ul>
+          <h3 class="panel__title">Profil</h3>
+          <dl class="facts" id="facts"></dl>
+        </div>
+        <p class="panel__meta" id="meta"></p>
+      </aside>
+    </div>
+  </main>
+
+  <!-- style coach agent (POST /m05/agent/chat) -->
+  <button class="coach-fab" id="coach-open" type="button" aria-controls="coach" aria-expanded="false" hidden>✦ Coach de style</button>
+  <section class="coach" id="coach" aria-label="Coach de style" hidden>
+    <header class="coach__head">
+      <div>
+        <h2>Coach de style</h2>
+        <p class="coach__sub" id="coach-model">Agent M5 · LLM local</p>
+      </div>
+      <div class="coach__actions">
+        <button class="btn btn--ghost btn--sm" id="coach-new" type="button">Nouvelle conversation</button>
+        <button class="coach__close" id="coach-close" type="button" aria-label="Fermer">×</button>
+      </div>
+    </header>
+    <div class="coach__log" id="coach-log" aria-live="polite">
+      <p class="coach__hint">Demandez par exemple&nbsp;: «&nbsp;Pourquoi tu me montres du streetwear&nbsp;? Je veux plus classique.&nbsp;» ou «&nbsp;Une tenue pour le travail demain, 15&nbsp;°C.&nbsp;»</p>
+    </div>
+    <form class="coach__form" id="coach-form" autocomplete="off">
+      <input id="coach-input" placeholder="Écrivez en français, anglais ou arabe…" maxlength="2000" required>
+      <button class="btn btn--sm" type="submit">Envoyer</button>
+    </form>
+  </section>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>
