@@ -18,8 +18,9 @@ const _slides = [
 Future<void> showTourIfNeeded(BuildContext context) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_key) == true || !context.mounted) return;
+    if (prefs.getBool(_key) == true) return;
     await prefs.setBool(_key, true);
+    if (!context.mounted) return;
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,

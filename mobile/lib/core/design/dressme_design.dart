@@ -1,6 +1,7 @@
 // DressMe design system: Flutter translation of the design prototype in docs/design/
 // (colours, radii and text styles taken from the prototype's Tailwind classes).
 // Use it in a screen with `Theme(data: dressMeTheme(), child: ...)` and the Dm* constants.
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// Colours of the prototype, by role. The hex value in each comment is the Tailwind class used there.
