@@ -118,6 +118,15 @@ ThemeData dressMeTheme() {
   final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(DmRadius.card));
   return ThemeData(
+    // pushed screens (piece form, sheets...) zoom in softly on every platform
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
+    }),
     useMaterial3: true,
     colorScheme: scheme,
     fontFamily: DmFonts.sans,

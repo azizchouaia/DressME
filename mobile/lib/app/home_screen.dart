@@ -8,6 +8,7 @@ import '../core/auth/auth.dart';
 import '../core/design/dressme_design.dart';
 import '../core/widgets/dm_widgets.dart';
 import 'today_card.dart';
+import 'tour.dart';
 
 class BoEntry {
   const BoEntry(this.code, this.title, this.owner, this.route, this.icon, this.modules, this.check);
@@ -90,6 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _loadPieces();
+    WidgetsBinding.instance.addPostFrameCallback((_) => showTourIfNeeded(context));
   }
 
   Future<void> _loadPieces() async {

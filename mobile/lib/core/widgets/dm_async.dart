@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../api/dm_api.dart';
 import '../design/dressme_design.dart';
 import 'dm_widgets.dart';
+import 'dm_motion.dart';
 
 /// Standard BO page: dark hero on top, centred content (max 620 px) below.
 class DmPage extends StatelessWidget {
@@ -55,11 +56,20 @@ class _DmLoadState extends State<DmLoad> {
     return FutureBuilder<Json>(
       future: _future,
       builder: (context, snap) {
+        final Widget body;
         if (snap.connectionState != ConnectionState.done) {
-          return const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()));
+          body = const DmSkeleton(key: ValueKey('loading')); // the shape of what comes, not a spinner
+        } else if (snap.hasError) {
+          body = DmError(apiError(snap.error!), onRetry: _reload);
+        } else {
+          body = KeyedSubtree(key: const ValueKey('data'), child: widget.builder(snap.data!, _reload));
         }
-        if (snap.hasError) return DmError(apiError(snap.error!), onRetry: _reload);
-        return widget.builder(snap.data!, _reload);
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: dmEase,
+          layoutBuilder: (current, previous) => Stack(alignment: Alignment.topCenter, children: [...previous, if (current != null) current]),
+          child: body,
+        );
       },
     );
   }

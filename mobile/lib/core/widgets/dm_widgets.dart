@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../design/dressme_design.dart';
+import 'dm_motion.dart';
 
 /// Dark top band of a screen (home hero style): eyebrow, serif title, optional content under it.
 class DmHero extends StatelessWidget {
@@ -58,7 +59,7 @@ class DmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(big ? DmRadius.hero : DmRadius.card);
-    return Container(
+    final card = Container(
       decoration: BoxDecoration(
         color: DmColors.surface,
         borderRadius: radius,
@@ -69,9 +70,11 @@ class DmCard extends StatelessWidget {
       ),
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(borderRadius: radius, onTap: onTap, child: Padding(padding: padding, child: child)),
+        child: InkWell(borderRadius: radius, onTap: withHaptic(onTap), child: Padding(padding: padding, child: child)),
       ),
     );
+    // every card fades in softly; tappable cards also shrink under the finger
+    return DmAppear(child: onTap == null ? card : DmPressable(onTap: onTap, child: card));
   }
 }
 
@@ -100,9 +103,10 @@ class DmChoiceChip extends StatelessWidget {
       button: true,
       selected: selected,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: withHaptic(onTap),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 220),
+          curve: dmEase,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: bg,
@@ -136,16 +140,19 @@ class DmButton extends StatelessWidget {
         : Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 16), const SizedBox(width: 6), Text(label)]);
     switch (kind) {
       case DmButtonKind.dark:
-        return FilledButton(onPressed: onPressed, child: text);
+        return DmPressable(onTap: onPressed, child: FilledButton(onPressed: withHaptic(onPressed), child: text));
       case DmButtonKind.gold:
-        return FilledButton(
-          onPressed: onPressed,
-          style: FilledButton.styleFrom(
-              backgroundColor: DmColors.gold, foregroundColor: DmColors.inkDeep, shape: shape, padding: pad, textStyle: DmText.button),
-          child: text,
+        return DmPressable(
+          onTap: onPressed,
+          child: FilledButton(
+            onPressed: withHaptic(onPressed),
+            style: FilledButton.styleFrom(
+                backgroundColor: DmColors.gold, foregroundColor: DmColors.inkDeep, shape: shape, padding: pad, textStyle: DmText.button),
+            child: text,
+          ),
         );
       case DmButtonKind.outline:
-        return OutlinedButton(onPressed: onPressed, child: text);
+        return DmPressable(onTap: onPressed, child: OutlinedButton(onPressed: withHaptic(onPressed), child: text));
     }
   }
 }
@@ -217,11 +224,17 @@ class DmEmptyState extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(color: DmColors.sandDark, shape: BoxShape.circle),
-          child: Icon(icon, color: DmColors.bronzeDark),
+        DmFloat(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [DmColors.sandDark, DmColors.sand]),
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: DmColors.gold.withValues(alpha: .25), blurRadius: 18, offset: const Offset(0, 6))],
+            ),
+            child: Icon(icon, color: DmColors.bronzeDark, size: 28),
+          ),
         ),
         const SizedBox(height: 14),
         Text(title, style: DmText.cardTitle, textAlign: TextAlign.center),

@@ -12,6 +12,7 @@ import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../../../core/widgets/outfit_strip.dart' show outfitIdsIn, routeForAction;
+import '../../../core/widgets/dm_motion.dart';
 import 'agent_cards.dart';
 
 class _Msg {
@@ -185,7 +186,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                   itemCount: _msgs.length + (_busy ? 1 : 0),
-                  itemBuilder: (_, i) => i == _msgs.length ? const _Typing() : _Bubble(msg: _msgs[i], onAction: _send),
+                  itemBuilder: (_, i) => i == _msgs.length
+                      ? const _Typing()
+                      : DmAppear(key: ValueKey(_msgs[i]), offset: 18, child: _Bubble(msg: _msgs[i], onAction: _send)),
                 ),
         ),
         SafeArea(
@@ -398,15 +401,53 @@ class _CardFacts extends StatelessWidget {
   }
 }
 
-class _Typing extends StatelessWidget {
+class _Typing extends StatefulWidget {
   const _Typing();
 
   @override
-  Widget build(BuildContext context) => const Align(
+  State<_Typing> createState() => _TypingState();
+}
+
+/// Three bouncing dots while the agents work.
+class _TypingState extends State<_Typing> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Align(
         alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: EdgeInsets.all(8),
-          child: Text('The assistant is thinking…', style: DmText.caption),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(DmRadius.card),
+            border: Border.all(color: DmColors.border),
+          ),
+          child: AnimatedBuilder(
+            animation: _c,
+            builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, children: [
+              for (var i = 0; i < 3; i++)
+                Transform.translate(
+                  offset: Offset(0, _bounce((_c.value - i * .2) % 1.0)),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: const BoxDecoration(color: DmColors.bar, shape: BoxShape.circle),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              const Text('The agents are working…', style: DmText.caption),
+            ]),
+          ),
         ),
       );
 }
+
+double _bounce(double p) => p < .5 ? -8 * p : -8 * (1 - p);
