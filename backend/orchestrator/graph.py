@@ -42,12 +42,25 @@ def _rescue_text_call(reply, tools, messages):
     import uuid
 
     text = (getattr(reply, "content", "") or "").strip()
-    if getattr(reply, "tool_calls", None) or '"name"' not in text:
+    if getattr(reply, "tool_calls", None):
         return reply
-    names = {getattr(t, "name", None) for t in tools or []}
+    names = {getattr(t, "name", None) for t in tools or []} - {None}
     m = re.search(r'"name"\s*:\s*"([^"]+)"', text)
     if not m or m.group(1) not in names:
-        return reply
+        # other shapes of a written call: stylist(action="chat", ...)  /  "the function to use is `stylist`"
+        alts = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
+        m = re.search(rf"\b({alts})\s*\(", text) if alts else None
+        if not m and alts and re.search(r"function|tool|call|action", text, re.I):
+            m = re.search(rf"`({alts})`", text)
+        if not m:
+            return reply
+        last_user = next((x.content for x in reversed(messages) if getattr(x, "type", "") == "human"), "")
+        a = re.search(r'action\s*[=:]\s*["\']([a-z_]+)["\']', text)
+        return AIMessage(content="", tool_calls=[{"name": m.group(1),
+                                                  "args": {"action": a.group(1) if a else "chat",
+                                                           "payload": {"message": last_user}},
+                                                  "id": f"call_{uuid.uuid4().hex[:8]}", "type": "tool_call"}],
+                         id=getattr(reply, "id", None))
     args: dict = {}
     start, end = text.find("{"), text.rfind("}")  # the JSON may be wrapped in prose or a ``` block
     text = text[start:end + 1] if 0 <= start < end else text
