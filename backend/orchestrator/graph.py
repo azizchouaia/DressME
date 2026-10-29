@@ -111,10 +111,20 @@ def build_graph(model=None, tools=None, checkpointer=None):
         session_id = state.get("session_id") or configurable.get("thread_id") or ""
         last = state["messages"][-1]
         calls = []
+        att = state.get("attachment") or {}
         for call in last.tool_calls:
             args = dict(call.get("args") or {})
             args.setdefault("user_id", user_id)
             args.setdefault("session_id", session_id)
+            if att.get("image"):  # the photo sent with the message goes to the agent that reads photos
+                if call["name"] == "smartbuy" and not args.get("answer"):
+                    args["probe_image"] = att.get("probe") or att["image"]
+                else:
+                    payload = dict(args.get("payload") or {})
+                    payload.setdefault("image", att["image"])
+                    if att.get("label"):
+                        payload.setdefault("query", att["label"])
+                    args["payload"] = payload
             calls.append({"name": call["name"], "args": args, "id": call["id"], "type": "tool_call"})
         return {"messages": [AIMessage(content=last.content or "", tool_calls=calls, id=last.id)]}
 
@@ -184,7 +194,7 @@ def build_graph(model=None, tools=None, checkpointer=None):
     return graph.compile(checkpointer=memory)
 
 
-async def run_turn(graph, *, user_id: str, session_id: str, message: str) -> dict:
+async def run_turn(graph, *, user_id: str, session_id: str, message: str, attachment: dict | None = None) -> dict:
     """One user message. The same session_id keeps the open question and the history."""
 
     config = {"configurable": {"thread_id": session_id}}
@@ -195,6 +205,8 @@ async def run_turn(graph, *, user_id: str, session_id: str, message: str) -> dic
             "messages": [HumanMessage(content=message)],
             "tool_calls": 0,
             "pending_question": None,
+            "cards": [],  # only this turn's agent results go back to the app
+            "attachment": attachment,
         },
         config,
     )

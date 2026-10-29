@@ -5,10 +5,13 @@ GET  /chat/agents    every agent's card (what the assistant can do)
 GET  /chat/status    is the LLM up, which agents are tools
 """
 
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+log = logging.getLogger("dressme.chat")
 _graph = None
 
 
@@ -40,7 +43,25 @@ def brain():
 class ChatIn(BaseModel):
     user_id: str = "usr_demo"
     session_id: str = "default"
-    message: str = Field(min_length=1)
+    message: str = ""
+    image: str | None = None  # photo of a piece (data URL): read by FashionCLIP, then given to the agent
+
+
+def _photo(image: str) -> dict:
+    """Photo -> what it shows (BO5 vision: FashionCLIP type + pixel colour), for routing and the agents."""
+    import base64
+
+    from modules.m06_smartbuy import vision
+
+    raw = image.split(",", 1)[1] if image.startswith("data:") else image
+    try:
+        g = vision.analyze(base64.b64decode(raw))
+        label = f"{g['colour']} {g['subcategory']}"
+        return {"image": image, "probe": f"custom:{g['subcategory']}:{g['colour']}", "label": label,
+                "subcategory": g["subcategory"], "colour": g["colour"]}
+    except Exception as e:  # noqa: BLE001 - vision model missing: the agents still get the photo
+        log.warning("photo not read: %s", e)
+        return {"image": image, "label": "piece of clothing"}
 
 
 class ChatOut(BaseModel):
@@ -50,6 +71,7 @@ class ChatOut(BaseModel):
     cards: list[dict] = []
     session_id: str
     last_agent: str | None = None
+    photo: dict | None = None  # what the photo was read as
 
 
 @router.post("/message", response_model=ChatOut)
@@ -58,7 +80,18 @@ async def message(inp: ChatIn):
     from orchestrator.graph import run_turn
 
     try:
-        out = await run_turn(graph(), user_id=inp.user_id, session_id=inp.session_id, message=inp.message)
+        attachment = _photo(inp.image) if inp.image else None
+        message = inp.message.strip()
+        if attachment:
+            message = (message or "What do you think of this piece?") + f"\n[The user sent a photo of a {attachment['label']}.]"
+        if not message:
+            raise HTTPException(422, "write a message or send a photo")
+        out = await run_turn(graph(), user_id=inp.user_id, session_id=inp.session_id, message=message,
+                             attachment=attachment)
+        if attachment:
+            out["photo"] = {k: attachment.get(k) for k in ("label", "subcategory", "colour")}
+    except HTTPException:
+        raise
     except Exception as e:  # noqa: BLE001 - LLM down / misconfigured: say it clearly
         raise HTTPException(503, f"assistant unavailable: {type(e).__name__}: {e}. "
                                  "Is Ollama running with the model in LLM_MODEL (default llama3.1:8b)?") from e

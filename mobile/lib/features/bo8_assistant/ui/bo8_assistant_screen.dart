@@ -1,21 +1,30 @@
 // Owner: BO8 (Nadhir) — the assistant: ONE chat, the orchestrator picks the agent (POST /chat/message).
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
-import '../../../core/widgets/outfit_strip.dart';
+import '../../../core/widgets/outfit_strip.dart' show outfitIdsIn, routeForAction;
+import 'agent_cards.dart';
 
 class _Msg {
-  _Msg.user(this.text)
+  _Msg.user(this.text, {this.photo})
       : mine = true,
+        photoLabel = null,
         agent = null,
         actions = const [],
         cards = const [],
         isQuestion = false;
-  _Msg.bot(this.text, {this.agent, this.actions = const [], this.cards = const [], this.isQuestion = false}) : mine = false;
+  _Msg.bot(this.text, {this.agent, this.actions = const [], this.cards = const [], this.isQuestion = false, this.photoLabel})
+      : mine = false,
+        photo = null;
 
   final String text;
   final bool mine;
@@ -23,6 +32,8 @@ class _Msg {
   final List<Json> actions;
   final List<Json> cards;
   final bool isQuestion;
+  final Uint8List? photo; // the user's photo
+  final String? photoLabel; // what the assistant read in it
 }
 
 const _examples = [
@@ -47,20 +58,65 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _msgs = <_Msg>[];
   late String _session = 'app-${DateTime.now().millisecondsSinceEpoch}';
   bool _busy = false;
+  Uint8List? _photo; // attached, sent with the next message
+  final _speech = SpeechToText();
+  bool _listening = false;
+  bool _speechReady = false;
 
   @override
   void dispose() {
+    _speech.stop();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
+  Future<void> _pickPhoto(ImageSource source) async {
+    final f = await ImagePicker().pickImage(source: source, maxWidth: 900, imageQuality: 85);
+    if (f == null) return;
+    final bytes = await f.readAsBytes();
+    setState(() => _photo = bytes);
+  }
+
+  /// Voice: the browser / phone speech recognition writes the words in the box, sent when you stop.
+  Future<void> _mic() async {
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+    _speechReady = _speechReady ||
+        await _speech.initialize(onStatus: (s) {
+          if ((s == 'done' || s == 'notListening') && mounted) setState(() => _listening = false);
+        }, onError: (_) {
+          if (mounted) setState(() => _listening = false);
+        });
+    if (!_speechReady) {
+      if (mounted) dmToast(context, 'Voice is not available in this browser (try Chrome) or the microphone is blocked.');
+      return;
+    }
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (r) {
+        setState(() => _input.text = r.recognizedWords);
+        if (r.finalResult && r.recognizedWords.trim().isNotEmpty) {
+          setState(() => _listening = false);
+          _send(r.recognizedWords);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+    );
+  }
+
   Future<void> _send(String text) async {
     final t = text.trim();
-    if (t.isEmpty || _busy) return;
+    final photo = _photo;
+    if ((t.isEmpty && photo == null) || _busy) return;
     _input.clear();
     setState(() {
-      _msgs.add(_Msg.user(t));
+      _msgs.add(_Msg.user(t.isEmpty ? 'What do you think of this piece?' : t, photo: photo));
+      _photo = null;
       _busy = true;
     });
     _down();
@@ -69,14 +125,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         'user_id': DemoUsers.wardrobe,
         'session_id': _session,
         'message': t,
+        if (photo != null) 'image': 'data:image/jpeg;base64,${base64Encode(photo)}',
       });
       final question = r['question'] as String?;
+      final seen = (r['photo'] as Map?)?['label'];
       setState(() => _msgs.add(_Msg.bot(
             question ?? '${r['reply'] ?? ''}',
             agent: r['last_agent'] as String?,
             actions: jsonList(r['next_actions']),
             cards: jsonList(r['cards']),
             isQuestion: question != null,
+            photoLabel: seen == null ? null : '$seen',
           )));
     } catch (e) {
       setState(() => _msgs.add(_Msg.bot('⚠ ${apiError(e)}')));
@@ -115,7 +174,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   const DmEmptyState(
                     icon: Icons.chat_bubble_outline_rounded,
                     title: 'Ask me anything about your clothes',
-                    message: 'I pick the right agent: stylist, smart buy, local shops, wardrobe, try-on, challenges…',
+                    message: 'Write, speak 🎤 or send a photo 📷. I pick the right agent: stylist, smart buy, local shops, wardrobe, try-on, challenges…',
                   ),
                   const SizedBox(height: 12),
                   Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: [
@@ -133,21 +192,71 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-            child: Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _input,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: _send,
-                  decoration: const InputDecoration(hintText: 'Write in English, Français or Tounsi…'),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (_photo != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Stack(clipBehavior: Clip.none, children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(_photo!, width: 72, height: 72, fit: BoxFit.cover)),
+                    Positioned(
+                      right: -8,
+                      top: -8,
+                      child: IconButton.filled(
+                        iconSize: 14,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        padding: EdgeInsets.zero,
+                        style: IconButton.styleFrom(backgroundColor: DmColors.inkDeep),
+                        onPressed: () => setState(() => _photo = null),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ),
+                  ]),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: _busy ? null : () => _send(_input.text),
-                icon: const Icon(Icons.send_rounded),
-                style: IconButton.styleFrom(backgroundColor: DmColors.inkDeep),
-              ),
+              Row(children: [
+                PopupMenuButton<ImageSource>(
+                  tooltip: 'Send a photo of a piece',
+                  icon: const Icon(Icons.add_a_photo_outlined, color: DmColors.bronze),
+                  onSelected: _pickPhoto,
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: ImageSource.camera, child: Text('Take a photo')),
+                    PopupMenuItem(value: ImageSource.gallery, child: Text('From the gallery')),
+                  ],
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _send,
+                    decoration: InputDecoration(
+                      hintText: _listening
+                          ? 'Listening… speak now'
+                          : _photo != null
+                              ? 'Ask about this piece (or just send)…'
+                              : 'Write, speak or send a photo…',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: _listening ? [BoxShadow(color: DmColors.gold.withValues(alpha: .6), blurRadius: 16, spreadRadius: 2)] : const [],
+                  ),
+                  child: IconButton.filled(
+                    tooltip: _listening ? 'Stop' : 'Speak',
+                    onPressed: _busy ? null : _mic,
+                    icon: Icon(_listening ? Icons.stop_rounded : Icons.mic_none_rounded),
+                    style: IconButton.styleFrom(backgroundColor: _listening ? DmColors.gold : DmColors.sandDark, foregroundColor: DmColors.inkDeep),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton.filled(
+                  onPressed: _busy ? null : () => _send(_input.text),
+                  icon: const Icon(Icons.send_rounded),
+                  style: IconButton.styleFrom(backgroundColor: DmColors.inkDeep),
+                ),
+              ]),
             ]),
           ),
         ),
@@ -226,8 +335,19 @@ class _Bubble extends StatelessWidget {
               Text('via ${msg.agent}'.toUpperCase(), style: DmText.eyebrow),
               const SizedBox(height: 4),
             ],
+            if (msg.photo != null) ...[
+              ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(msg.photo!, height: 140, fit: BoxFit.cover)),
+              const SizedBox(height: 6),
+            ],
+            if (msg.photoLabel != null) ...[
+              DmPill('📷 I see: ${msg.photoLabel}'),
+              const SizedBox(height: 6),
+            ],
             Text(msg.text, style: DmText.body.copyWith(color: mine ? Colors.white : DmColors.text, fontSize: 14)),
-            for (final c in msg.cards.take(2)) _CardFacts(card: c),
+            for (final c in msg.cards.take(3)) ...[
+              _CardFacts(card: c),
+              Consumer(builder: (_, ref, __) => AgentCardView(card: c, api: ref.read(dmApiProvider))),
+            ],
             if (msg.actions.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
@@ -270,22 +390,10 @@ class _CardFacts extends StatelessWidget {
       if ((card['result'] as Map?)?['items'] is List) '${((card['result'] as Map)['items'] as List).length} pieces',
       if (card['challenges'] is List) '${(card['challenges'] as List).length} challenges',
     ];
-    final outfits = outfitIdsIn(card);
-    if (pills.isEmpty && outfits.isEmpty) return const SizedBox.shrink();
+    if (pills.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (pills.isNotEmpty) Wrap(spacing: 6, runSpacing: 6, children: [for (final p in pills) DmPill(p)]),
-        // the outfit itself, with the user's pieces and "See it on me" (BO9)
-        for (final ids in outfits.take(1)) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: DmColors.page, borderRadius: BorderRadius.circular(DmRadius.card)),
-            child: OutfitStrip(ids: ids, size: 56),
-          ),
-        ],
-      ]),
+      child: Wrap(spacing: 6, runSpacing: 6, children: [for (final p in pills) DmPill(p)]),
     );
   }
 }
