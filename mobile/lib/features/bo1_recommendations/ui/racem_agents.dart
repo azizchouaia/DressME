@@ -284,10 +284,27 @@ class _ResultCard extends StatelessWidget {
       big: true,
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text('${result['agent'] ?? ''}.${result['action'] ?? ''}', style: DmText.cardTitle)),
-          if (result['seconds'] != null) Text('${result['seconds']} s · no LLM (button)', style: DmText.caption),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(color: DmColors.sandDark, borderRadius: BorderRadius.circular(12)),
+            child: Icon(_iconFor('${result['agent']}'), size: 20, color: DmColors.bronze),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(result['button'] != null ? '${result['button']}' : _human('${result['action'] ?? ''}'), style: DmText.title),
+              Text('${_agentName('${result['agent'] ?? ''}')} · ${_human('${result['action'] ?? ''}')}', style: DmText.caption),
+            ]),
+          ),
+          if (result['seconds'] != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: DmColors.sand, borderRadius: BorderRadius.circular(DmRadius.pill)),
+              child: Text('${result['seconds']} s', style: DmText.caption.copyWith(fontWeight: FontWeight.w700)),
+            ),
         ]),
+        const SizedBox(height: 8),
         if (result['error'] != null) Text('${result['error']}', style: DmText.body.copyWith(color: DmColors.warning)),
         if (result['question'] != null) Text('${result['question']}', style: DmText.body),
         if (data['item_ids'] is List && (data['item_ids'] as List).isNotEmpty) ...[
@@ -307,16 +324,10 @@ class _ResultCard extends StatelessWidget {
           _pieces([for (final n in data['after'] as List) idOf('$n') ?? '$n'], [for (final n in data['after'] as List) '$n'], catalog, api),
         ],
         if (kv.isNotEmpty) ...[
-          const Divider(height: 20),
-          for (final e in kv)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                SizedBox(width: 130, child: Text(e.key.replaceAll('_', ' '), style: DmText.caption.copyWith(fontWeight: FontWeight.w700))),
-                Expanded(child: Text(_short(e.value), style: DmText.body)),
-              ]),
-            ),
-        ],
+          const SizedBox(height: 10),
+          _Facts(entries: kv),
+        ] else if (outs.isEmpty && result['error'] == null && result['question'] == null && data['item_ids'] == null)
+          const _Empty('Nothing to show yet.'),
       ]),
     );
   }
@@ -328,6 +339,150 @@ String _short(Object? v) {
     return s.length > 220 ? '${s.substring(0, 220)}…' : s;
   }
   return '$v';
+}
+
+
+String _human(String key) {
+  final s = key.split(':').last.split('.').last.replaceAll('_', ' ').trim();
+  return s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+}
+
+String _agentName(String agent) => _human(agent.split(':').last.split('.').first);
+
+IconData _iconFor(String agent) {
+  final a = agent.toLowerCase();
+  if (a.contains('laundry')) return Icons.local_laundry_service_outlined;
+  if (a.contains('capsule')) return Icons.inventory_2_outlined;
+  if (a.contains('travel')) return Icons.luggage_outlined;
+  if (a.contains('forgotten') || a.contains('rotation')) return Icons.history_rounded;
+  if (a.contains('style') || a.contains('palette')) return Icons.palette_outlined;
+  if (a.contains('gap')) return Icons.add_box_outlined;
+  if (a.contains('shop')) return Icons.storefront_outlined;
+  if (a.contains('event')) return Icons.event_outlined;
+  if (a.contains('declutter')) return Icons.volunteer_activism_outlined;
+  return Icons.auto_awesome_outlined;
+}
+
+class _Empty extends StatelessWidget {
+  const _Empty(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(color: DmColors.sand, borderRadius: BorderRadius.circular(DmRadius.small)),
+        child: Row(children: [
+          const Icon(Icons.check_circle_outline_rounded, size: 18, color: DmColors.success),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: DmText.body)),
+        ]),
+      );
+}
+
+/// Key facts, readable: numbers as big tiles, maps of numbers as bars, lists as chips, empty values as
+/// a friendly line instead of "[]".
+class _Facts extends StatelessWidget {
+  const _Facts({required this.entries});
+
+  final List<MapEntry<String, dynamic>> entries;
+
+  static const _emptyText = {
+    'unavailable': 'Nothing in the laundry: every piece is available.',
+    'reminders': 'No reminder.',
+    'pieces': 'No piece.',
+    'events': 'No event coming.',
+    'suggestions': 'No suggestion right now.',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final nums = entries.where((e) => e.value is num).toList();
+    final maps = entries.where((e) => e.value is Map && (e.value as Map).isNotEmpty).toList();
+    final empties = entries.where((e) => e.value == null || (e.value is List && (e.value as List).isEmpty) || (e.value is Map && (e.value as Map).isEmpty) || (e.value is String && (e.value as String).isEmpty)).toList();
+    final lists = entries.where((e) => e.value is List && (e.value as List).isNotEmpty).toList();
+    final texts = entries.where((e) => e.value is String && (e.value as String).isNotEmpty || e.value is bool).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (nums.isNotEmpty || texts.isNotEmpty)
+        Wrap(spacing: 10, runSpacing: 10, children: [
+          for (final e in nums) _tile(_human(e.key), _num(e.value as num)),
+          for (final e in texts) _tile(_human(e.key), e.value is bool ? (e.value == true ? 'Yes' : 'No') : _human('${e.value}')),
+        ]),
+      for (final e in maps) ...[
+        const SizedBox(height: 14),
+        Text(_human(e.key).toUpperCase(), style: DmText.eyebrow),
+        const SizedBox(height: 6),
+        _map(e.value as Map),
+      ],
+      for (final e in lists) ...[
+        const SizedBox(height: 14),
+        Text('${_human(e.key).toUpperCase()} · ${(e.value as List).length}', style: DmText.eyebrow),
+        const SizedBox(height: 6),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final v in (e.value as List).take(12)) Chip(label: Text(_label(v), style: DmText.caption), visualDensity: VisualDensity.compact),
+        ]),
+      ],
+      for (final e in empties) _Empty(_emptyText[e.key] ?? '${_human(e.key)}: none.'),
+    ]);
+  }
+
+  static String _num(num v) => v is double && v <= 1 && v > 0 ? '${(v * 100).round()} %' : (v is double ? v.toStringAsFixed(1) : '$v');
+
+  static String _label(Object? v) {
+    if (v is Map) {
+      for (final k in const ['name', 'title', 'label', 'piece', 'item', 'city', 'shop']) {
+        if (v[k] != null) return '${v[k]}';
+      }
+      return v.values.take(2).join(' · ');
+    }
+    return '$v';
+  }
+
+  Widget _tile(String label, String value) => Container(
+        constraints: const BoxConstraints(minWidth: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: DmColors.page,
+          borderRadius: BorderRadius.circular(DmRadius.card),
+          border: Border.all(color: DmColors.border),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(value, style: DmText.title.copyWith(fontSize: 22)),
+          Text(label, style: DmText.caption),
+        ]),
+      );
+
+  Widget _map(Map m) {
+    final allNum = m.values.every((v) => v is num);
+    if (!allNum) {
+      return Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final e in m.entries) Chip(label: Text('${_human('${e.key}')}: ${_short(e.value)}', style: DmText.caption)),
+      ]);
+    }
+    final maxV = m.values.fold<num>(0, (a, v) => (v as num) > a ? v : a);
+    return Column(children: [
+      for (final e in m.entries)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(children: [
+            SizedBox(width: 90, child: Text(_human('${e.key}'), style: DmText.caption)),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: maxV == 0 ? 0 : (e.value as num) / maxV,
+                  minHeight: 8,
+                  backgroundColor: DmColors.border,
+                  valueColor: const AlwaysStoppedAnimation(DmColors.gold),
+                ),
+              ),
+            ),
+            SizedBox(width: 40, child: Text('${e.value}', textAlign: TextAlign.right, style: DmText.body.copyWith(fontWeight: FontWeight.w700))),
+          ]),
+        ),
+    ]);
+  }
 }
 
 /// "Workflow · who calls whom": button -> BO agent -> idea agent -> tools, from the agent steps.
