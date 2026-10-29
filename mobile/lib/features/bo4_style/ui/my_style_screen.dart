@@ -7,6 +7,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
@@ -541,10 +542,15 @@ class _CardView extends StatelessWidget {
   Widget _img(String src) {
     final url = state.api.media(src);
     if (url.toLowerCase().contains('.svg')) {
-      // drawn reference look (SVG): shown as a soft illustration tile
+      // drawn reference look (Amine's fashion illustration, looks_svg.py)
       return Container(
         color: DmColors.sand,
-        child: const Center(child: Icon(Icons.checkroom_rounded, size: 72, color: DmColors.bar)),
+        padding: const EdgeInsets.all(8),
+        child: SvgPicture.network(
+          url,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => const Center(child: Icon(Icons.checkroom_rounded, size: 72, color: DmColors.bar)),
+        ),
       );
     }
     return Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined));
