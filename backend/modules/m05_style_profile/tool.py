@@ -2,7 +2,7 @@ from langchain_core.tools import StructuredTool
 
 from shared.agent_card import AgentCall, describe
 
-from .agent import Agent
+from .orch_agent import Agent
 from .identity import CARD
 
 _agent = Agent()

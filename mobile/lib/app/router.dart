@@ -11,6 +11,7 @@ import '../features/bo1_recommendations/ui/bo1_recommendations_screen.dart';
 import '../features/bo2_time/ui/bo2_time_screen.dart';
 import '../features/bo3_sustainability/ui/bo3_sustainability_screen.dart';
 import '../features/bo4_style/ui/bo4_style_screen.dart';
+import '../features/bo4_style/ui/my_style_screen.dart';
 import '../features/bo5_smart_buy/ui/bo5_smart_buy_screen.dart';
 import '../features/bo6_boutique/ui/bo6_boutique_screen.dart';
 import '../features/bo6_boutique/ui/bo6_help_screen.dart';
@@ -39,6 +40,7 @@ final router = GoRouter(
     GoRoute(path: '/bo2_time', builder: (_, __) => const OutfitOfDayScreen()),
     GoRoute(path: '/bo3_sustainability', builder: (_, __) => const InventoryScreen()),
     GoRoute(path: '/bo4_style', builder: (_, __) => const StyleProfileScreen()),
+    GoRoute(path: '/my_style', builder: (_, __) => const MyStyleScreen()),
     GoRoute(path: '/bo5_smart_buy', builder: (_, __) => const SmartBuyScreen()),
     GoRoute(path: '/bo6_local_market', builder: (_, __) => const LocalMarketScreen()),
     GoRoute(

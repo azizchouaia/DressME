@@ -15,7 +15,7 @@ class _Tab {
 
 const _tabs = [
   _Tab('Home', Icons.home_outlined, '/'),
-  _Tab('Wardrobe', Icons.checkroom, '/bo4_style', ['/bo3_sustainability']),
+  _Tab('Wardrobe', Icons.checkroom, '/bo4_style', ['/bo3_sustainability', '/my_style']),
   _Tab('Outfits', Icons.auto_awesome, '/bo1_recommendations', ['/bo2_time', '/bo9_try_on']),
   _Tab('Shop', Icons.shopping_bag_outlined, '/bo5_smart_buy', ['/bo6_local_market', '/bo6_boutique']),
   _Tab('Assistant', Icons.chat_bubble_outline_rounded, '/bo8_assistant'),
@@ -24,6 +24,7 @@ const _tabs = [
 
 const _more = [
   ('BO2 · Ready in one tap', '/bo2_time', Icons.wb_sunny_outlined),
+  ('BO4 · My style (swipe)', '/my_style', Icons.style_outlined),
   ('BO3 · Wear what you own', '/bo3_sustainability', Icons.eco_outlined),
   ('BO6 · Local shops', '/bo6_local_market', Icons.storefront_outlined),
   ('BO6 · Boutique', '/bo6_boutique', Icons.store_mall_directory_outlined),

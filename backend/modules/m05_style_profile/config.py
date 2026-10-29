@@ -111,6 +111,8 @@ def get_config() -> M05Config:
         cfg.ranking = ranking.strip().lower()
     if store := os.environ.get("M05_STORE"):
         cfg.storage = store.strip().lower()
+    if source := os.environ.get("M05_M02_SOURCE"):  # integration: "module" = the real M2 on the user's M1 items
+        cfg.m02.source = source.strip().lower()
     for key in ("provider", "model", "base_url"):
         if value := os.environ.get(f"M05_AGENT_{key.upper()}"):
             setattr(cfg.agent, key, value.strip())

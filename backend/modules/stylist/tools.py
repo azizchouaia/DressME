@@ -144,6 +144,10 @@ class Toolbox:
         }
         if self.cat["m2_items"]:
             p["items"] = self.cat["m2_items"]
+        from shared.style_taste import taste_vector
+
+        if taste := taste_vector(self.user):  # M5 (BO4): the taste learnt from the user's swipes
+            p["options"]["style_vector"] = taste
         return p
 
     async def t_day_context(self, a: dict) -> dict:

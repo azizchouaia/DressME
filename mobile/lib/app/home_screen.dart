@@ -29,6 +29,8 @@ final boEntries = <BoEntry>[
       (a) => a.call('/m03/stats', userId: DemoUsers.outfits)),
   BoEntry('BO4', 'My wardrobe & style', 'Amine', '/bo4_style', Icons.checkroom, 'M1 · M5',
       (a) => a.post('/m01/items', {'user_id': DemoUsers.wardrobe})),
+  BoEntry('BO4', 'My style · swipe & learn', 'Amine', '/my_style', Icons.style_outlined, 'M5 · M2',
+      (a) => a.get('/m05/styles')),
   BoEntry('BO5', 'Smart Buy', 'Aziz', '/bo5_smart_buy', Icons.shopping_bag_outlined, 'M6 · M13 · M18',
       (a) => a.get('/m06/meta')),
   BoEntry('BO6', 'Local shops', 'Kenza', '/bo6_local_market', Icons.storefront_outlined, 'M7 · M14',
@@ -211,7 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Row(children: [
                     _action("Today's outfit", 'Ready in one tap', Icons.wb_sunny_outlined, '/bo2_time', dark: true),
                     const SizedBox(width: 12),
-                    _action('Add a piece', 'Photo → wardrobe', Icons.photo_camera_outlined, '/bo4_style'),
+                    _action('My style', 'Swipe, it learns your taste', Icons.style_outlined, '/my_style'),
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
