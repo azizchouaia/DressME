@@ -5,6 +5,8 @@ ESPRIT 2026 · Team of 6
 DressMe digitises the user's clothes and uses a team of AI agents to recommend outfits,
 judge new purchases, find local Tunisian pieces and show looks on a faceless 3D avatar.
 
+> **Run the full app (integration branch): see [RUN.md](RUN.md)** — install, configure, run, demo, fixes.
+
 ## Repository layout
 
 The work is split by **business objective (BO)** in two parts:
