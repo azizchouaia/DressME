@@ -90,7 +90,10 @@ String formatTnd(double value) {
 }
 
 class LocalMarketScreen extends ConsumerStatefulWidget {
-  const LocalMarketScreen({super.key});
+  const LocalMarketScreen({super.key, this.initialQuery});
+
+  /// a search handed over by another screen (Smart Buy "find it cheaper")
+  final String? initialQuery;
 
   @override
   ConsumerState<LocalMarketScreen> createState() => _LocalMarketScreenState();
@@ -106,6 +109,13 @@ class _LocalMarketScreenState extends ConsumerState<LocalMarketScreen> {
     _query.dispose();
     _budget.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final q = widget.initialQuery;
+    if (q != null && q.trim().isNotEmpty) WidgetsBinding.instance.addPostFrameCallback((_) => _search(q));
   }
 
   void _search([String? text]) {
@@ -1080,6 +1090,23 @@ class _ProductSheet extends ConsumerWidget {
 
   void _smartBuy(BuildContext context) {
     final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    router.go(Uri(path: '/bo5_smart_buy', queryParameters: {
+      'type': product.subcategory,
+      if (product.color != null) 'colour': product.color!,
+      if (product.priceTnd != null) 'price': product.priceTnd!.round().toString(),
+    }).toString());
+  }
+
+  void _seeOnMe(BuildContext context) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    router.go('/bo9_avatar?try=${Uri.encodeComponent('${product.subcategory}|${product.color ?? ''}')}');
+  }
+
+  // ignore: unused_element
+  void _smartBuyInfo(BuildContext context) {
+    final router = GoRouter.of(context);
     showDialog<void>(
       context: context,
       builder: (dialog) => AlertDialog(
@@ -1282,8 +1309,14 @@ class _ProductSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
+            icon: const Icon(Icons.view_in_ar_outlined, size: 18),
+            label: const Text('See it on me with my wardrobe'),
+            onPressed: () => _seeOnMe(context),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             icon: const Icon(Icons.accessibility_new, size: 18),
-            label: const Text('Try it on my avatar (3D try-on)'),
+            label: const Text('3D model of this piece (M9)'),
             onPressed: () => _tryOn(context, ref),
           ),
         ],

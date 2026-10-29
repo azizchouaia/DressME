@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/dm_api.dart';
 import '../design/dressme_design.dart';
+import '../../features/bo7_sharing/ui/share_look.dart';
 
 /// The user's pieces (id -> {name, image}) from /bo/catalog, loaded once per user.
 final _catalogs = <String, Future<Map<String, Json>>>{};
@@ -94,8 +95,34 @@ class OutfitStrip extends ConsumerWidget {
               icon: const Icon(Icons.view_in_ar_outlined, size: 18),
               label: const Text('See it on me'),
             ),
+          if (tryOn && ids.isNotEmpty) ShareLookButton(ids: ids),
         ]);
       },
     );
   }
+}
+
+/// Where a "next action" of an agent (its card's handoff: {tool, action, label, args}) opens in the app.
+/// null = keep it in the chat (e.g. the stylist answers there).
+String? routeForAction(Map a, {List<String> outfit = const []}) {
+  final args = (a['args'] as Map?) ?? const {};
+  String q(Map<String, Object?> p) => Uri(queryParameters: {
+        for (final e in p.entries)
+          if (e.value != null && '${e.value}'.isNotEmpty) e.key: '${e.value}'
+      }).query;
+  switch ('${a['tool'] ?? a['action'] ?? ''}') {
+    case 'smartbuy' || 'judge' || 'should_i_buy':
+      return '/bo5_smart_buy?${q({'type': args['subcategory'] ?? args['type'], 'colour': args['colour'] ?? args['color'], 'price': args['price_tnd'] ?? args['price']})}';
+    case 'localshop' || 'local_shops' || 'find_in_shops':
+      return '/bo6_local_market?${q({'q': args['query'] ?? [args['colour'] ?? args['color'], args['subcategory']].whereType<Object>().join(' ')})}';
+    case 'share' || 'challenges':
+      return '/bo7_sharing';
+    case 'taste' || 'profile':
+      return '/my_style';
+    case 'tryon' || 'try_on':
+      return outfit.isEmpty ? '/bo9_avatar' : '/bo9_avatar?wear=${Uri.encodeComponent(outfit.join(','))}';
+    case 'wardrobe':
+      return '/bo4_style';
+  }
+  return null;
 }

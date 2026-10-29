@@ -12,6 +12,7 @@ import '../../../core/api/dm_api.dart' show DemoUsers;
 import '../../../core/auth/auth.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
+import '../../../core/widgets/outfit_strip.dart' show routeForAction;
 import '../data/bo5_smart_buy_repository.dart';
 import '../logic/bo5_smart_buy_provider.dart';
 
@@ -27,17 +28,22 @@ const _critical = Color(0xFFA2453A); // SKIP (not in the kit: verdict colour of 
 Color _hex(String h) => Color(int.parse('FF${h.replaceFirst('#', '')}', radix: 16));
 
 class SmartBuyScreen extends ConsumerStatefulWidget {
-  const SmartBuyScreen({super.key});
+  const SmartBuyScreen({super.key, this.type, this.colour, this.price});
+
+  /// a piece handed over by another screen (BO6 local shop, assistant): pre-filled
+  final String? type;
+  final String? colour;
+  final String? price;
 
   @override
   ConsumerState<SmartBuyScreen> createState() => _SmartBuyScreenState();
 }
 
 class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
-  final _price = TextEditingController(text: '120');
+  late final _price = TextEditingController(text: widget.price ?? '120');
   final _fitText = TextEditingController();
-  String _type = 'blazer';
-  String _colour = 'navy';
+  late String _type = widget.type ?? 'blazer';
+  late String _colour = widget.colour ?? 'navy';
   String? _brand;
   String get _user => DemoUsers.wardrobe; // the signed-in user: their real wardrobe (M1) and wear log (M3)
   String _lang = 'en';
@@ -174,6 +180,10 @@ class _SmartBuyScreenState extends ConsumerState<SmartBuyScreen> {
   }
 
   Widget _pieceCard(SmartBuyMeta m) {
+    if (!m.types.containsKey(_type) && m.types.isNotEmpty) {
+      _type = m.types.keys.firstWhere((t) => _type.toLowerCase().contains(t) || t.contains(_type.toLowerCase()),
+          orElse: () => m.types.keys.first);
+    }
     final colours = m.types[_type] ?? const <String>[];
     if (!colours.contains(_colour) && colours.isNotEmpty) _colour = colours.first;
     return DmCard(
@@ -327,7 +337,12 @@ class _ResultView extends ConsumerWidget {
         case 'open_shop' when a.args['url'] != null:
           await launchUrl(Uri.parse('${a.args['url']}'), mode: LaunchMode.externalApplication);
         default:
-          dmToast(context, 'Coming soon: ${a.tool ?? ''} through the assistant');
+          final route = routeForAction({'tool': a.tool, 'action': a.action, 'args': {...a.args, 'subcategory': r.subcategory, 'colour': r.colour}});
+          if (route != null) {
+            context.go(route);
+          } else {
+            dmToast(context, 'Ask the assistant: ${a.tool ?? a.action}');
+          }
       }
     }
 
@@ -352,6 +367,11 @@ class _ResultView extends ConsumerWidget {
           Text(r.explanation, style: DmText.body.copyWith(fontSize: 14, color: DmColors.text)),
           const SizedBox(height: 4),
           Text(r.explanationByAi ? 'Written by the local AI from the facts below' : 'Template text (local AI off)', style: DmText.caption),
+          if (r.verdict != 'buy' && r.subcategory != null) ...[
+            const SizedBox(height: 12),
+            DmButton('Find it cheaper in local shops', kind: DmButtonKind.outline, icon: Icons.storefront_outlined,
+                onPressed: () => context.go('/bo6_local_market?q=${Uri.encodeComponent([r.colour, r.subcategory].whereType<String>().join(' '))}')),
+          ],
           if (r.subcategory != null && r.colour != null) ...[
             const SizedBox(height: 12),
             DmButton('Try it on with my wardrobe', kind: DmButtonKind.outline, icon: Icons.view_in_ar_outlined,

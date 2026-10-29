@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/widgets/outfit_strip.dart';
+import '../../bo7_sharing/ui/share_look.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
 
@@ -316,14 +317,14 @@ class _ResultCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text('${k == 0 ? 'proposed' : 'alternative'}${o.$3 != null ? ' · ${(o.$3! * 100).round()} %' : ''}', style: DmText.caption),
           _pieces(o.$1, o.$2, catalog, api),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
+          Wrap(spacing: 4, children: [
+            TextButton.icon(
               onPressed: () => seeOnMe(context, o.$1),
               icon: const Icon(Icons.view_in_ar_outlined, size: 18),
               label: const Text('See it on me'),
             ),
-          ),
+            ShareLookButton(ids: o.$1),
+          ]),
         ],
         if (data['before'] is List && data['after'] is List) ...[
           const SizedBox(height: 8),

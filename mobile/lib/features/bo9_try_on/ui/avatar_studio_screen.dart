@@ -10,6 +10,7 @@ import '../../../core/api/dm_api.dart';
 import '../../../core/auth/auth.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../bo4_style/data/m1_wardrobe.dart';
+import '../../bo7_sharing/ui/share_look.dart';
 import 'studio/avatar_frame.dart';
 
 /// Which slot of the body a wardrobe piece takes.
@@ -251,6 +252,15 @@ class _AvatarStudioScreenState extends ConsumerState<AvatarStudioScreen> {
                   ),
                 ]),
               ),
+              if (worn.values.any((p) => !'${p['item_id']}'.startsWith('try:')))
+                IconButton(
+                  tooltip: 'Share this look',
+                  onPressed: () => shareLook(context, ref,
+                      [for (final p in worn.values) if (!'${p['item_id']}'.startsWith('try:')) '${p['item_id']}'],
+                      title: 'My look', kind: 'outfit'),
+                  icon: const Icon(Icons.ios_share_rounded, color: Colors.white),
+                ),
+              const SizedBox(width: 6),
               SegmentedButton<String>(
                 style: SegmentedButton.styleFrom(
                   backgroundColor: Colors.white10,

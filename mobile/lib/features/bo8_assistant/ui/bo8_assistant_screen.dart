@@ -1,6 +1,7 @@
 // Owner: BO8 (Nadhir) — the assistant: ONE chat, the orchestrator picks the agent (POST /chat/message).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
@@ -231,7 +232,17 @@ class _Bubble extends StatelessWidget {
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 for (final a in msg.actions)
-                  if (a['label'] != null) ActionChip(label: Text('${a['label']}'), onPressed: () => onAction('${a['label']}')),
+                  if (a['label'] != null)
+                    Builder(builder: (context) {
+                      // open the right screen (Smart Buy, local shops, avatar, sharing...) or ask in the chat
+                      final outfit = [for (final card in msg.cards) ...outfitIdsIn(card)].firstOrNull ?? const <String>[];
+                      final route = routeForAction(a, outfit: outfit);
+                      return ActionChip(
+                        avatar: Icon(route == null ? Icons.chat_bubble_outline : Icons.arrow_forward_rounded, size: 16),
+                        label: Text('${a['label']}'),
+                        onPressed: () => route == null ? onAction('${a['label']}') : context.go(route),
+                      );
+                    }),
               ]),
             ],
           ]),

@@ -6,6 +6,9 @@ import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_async.dart';
 import '../../../core/widgets/dm_widgets.dart';
+import '../../../core/widgets/outfit_strip.dart';
+import '../../bo4_style/data/m1_wardrobe.dart';
+import '../../bo4_style/ui/piece_sheet.dart' show DonateDialog;
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -24,6 +27,53 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       await _api.call('/m03/laundry_done', userId: DemoUsers.outfits, payload: {'item_ids': ids});
       if (mounted) {
         dmToast(context, 'Back in the closet');
+        setState(() => _run++);
+      }
+    } catch (e) {
+      if (mounted) dmToast(context, apiError(e));
+    }
+  }
+
+  /// BO3 -> BO1: an outfit built around a forgotten piece (M2 complete, the piece pinned).
+  Future<void> _outfitWith(String id) async {
+    try {
+      final r = await _api.call('/m02/complete', userId: DemoUsers.outfits, payload: {'pinned_item_ids': [id]});
+      final outs = outfitIdsIn(r);
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (_) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('AN OUTFIT AROUND IT', style: DmText.eyebrow),
+            const SizedBox(height: 4),
+            const Text('Wear it again', style: DmText.title),
+            const SizedBox(height: 12),
+            if (outs.isEmpty)
+              const Text('No outfit found with this piece and your wardrobe.', style: DmText.body)
+            else
+              OutfitStrip(ids: outs.first, size: 72),
+          ]),
+        ),
+      );
+    } catch (e) {
+      if (mounted) dmToast(context, apiError(e));
+    }
+  }
+
+  /// BO3 -> BO4: give a duplicate away (Amine's donation flow: places in your city, the give-away bag).
+  Future<void> _giveAway(String id) async {
+    final m1 = M1(_api, DemoUsers.wardrobe);
+    try {
+      final item = await m1.item(id);
+      if (!mounted) return;
+      final place = await showDialog<(bool, String?)>(context: context, builder: (_) => DonateDialog(m1: m1, item: item));
+      if (place == null || !place.$1) return;
+      await m1.donate(id, place.$2);
+      resetUserCatalog();
+      if (mounted) {
+        dmToast(context, 'In your give-away bag.');
         setState(() => _run++);
       }
     } catch (e) {
@@ -91,7 +141,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     child: Row(children: [
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('${it['item_id']}', style: DmText.cardTitle),
+                          OutfitStrip(ids: ['${it['item_id']}'], size: 40, tryOn: false),
                           Text('worn ${it['wear_count'] ?? 0}× · last ${it['last_worn'] ?? 'never'}', style: DmText.body),
                         ]),
                       ),
@@ -116,10 +166,32 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: DmCard(
-                    child: Row(children: [
-                      const Icon(Icons.history_rounded, color: DmColors.warning),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text('${it['item_id']} · not worn for ${it['days_since_worn']} days', style: DmText.body)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        OutfitStrip(ids: ['${it['item_id']}'], size: 48, tryOn: false),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(it['days_since_worn'] == null ? 'never worn' : 'not worn for ${it['days_since_worn']} days',
+                              style: DmText.body),
+                        ),
+                      ]),
+                      Wrap(spacing: 4, children: [
+                        TextButton.icon(
+                          onPressed: () => _outfitWith('${it['item_id']}'),
+                          icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                          label: const Text('Build an outfit with it'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => seeOnMe(context, ['${it['item_id']}']),
+                          icon: const Icon(Icons.view_in_ar_outlined, size: 18),
+                          label: const Text('See it on me'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => _giveAway('${it['item_id']}'),
+                          icon: const Icon(Icons.volunteer_activism_outlined, size: 18),
+                          label: const Text('Give it away'),
+                        ),
+                      ]),
                     ]),
                   ),
                 ),
@@ -139,7 +211,23 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               for (final g in groups)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: DmCard(child: Text(g is List ? 'Look alike: ${g.join('  ≈  ')}' : '$g', style: DmText.body)),
+                  child: DmCard(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('These look alike', style: DmText.cardTitle),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 12, runSpacing: 8, children: [
+                        for (final id in _dupIds(g))
+                          Column(mainAxisSize: MainAxisSize.min, children: [
+                            OutfitStrip(ids: [id], size: 56, tryOn: false),
+                            TextButton.icon(
+                              onPressed: () => _giveAway(id),
+                              icon: const Icon(Icons.volunteer_activism_outlined, size: 16),
+                              label: const Text('Give away'),
+                            ),
+                          ]),
+                      ]),
+                    ]),
+                  ),
                 ),
             ]);
           },
@@ -147,6 +235,16 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       ],
     );
   }
+}
+
+/// ids of a duplicate group ([ids], {item_ids: [...]}, {items: [{item_id}]}).
+List<String> _dupIds(Object? g) {
+  if (g is List) return [for (final x in g) x is Map ? '${x['item_id']}' : '$x'];
+  if (g is Map) {
+    final v = g['item_ids'] ?? g['items'] ?? g['members'];
+    if (v is List) return [for (final x in v) x is Map ? '${x['item_id']}' : '$x'];
+  }
+  return const [];
 }
 
 class _Stat extends StatelessWidget {

@@ -43,8 +43,16 @@ final router = GoRouter(
     GoRoute(path: '/bo3_sustainability', builder: (_, __) => const InventoryScreen()),
     GoRoute(path: '/bo4_style', builder: (_, __) => const StyleProfileScreen()),
     GoRoute(path: '/my_style', builder: (_, __) => const MyStyleScreen()),
-    GoRoute(path: '/bo5_smart_buy', builder: (_, __) => const SmartBuyScreen()),
-    GoRoute(path: '/bo6_local_market', builder: (_, __) => const LocalMarketScreen()),
+    GoRoute(
+        path: '/bo5_smart_buy',
+        builder: (_, s) => SmartBuyScreen(
+            key: ValueKey(s.uri.query),
+            type: s.uri.queryParameters['type'],
+            colour: s.uri.queryParameters['colour'],
+            price: s.uri.queryParameters['price'])),
+    GoRoute(
+        path: '/bo6_local_market',
+        builder: (_, s) => LocalMarketScreen(key: ValueKey(s.uri.query), initialQuery: s.uri.queryParameters['q'])),
     GoRoute(
         path: '/bo6_boutique',
         builder: (_, state) => BoutiqueScreen(

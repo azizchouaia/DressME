@@ -13,6 +13,7 @@ import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../../../core/widgets/outfit_strip.dart';
+import '../../bo7_sharing/ui/share_look.dart';
 
 const _occasions = {'work': 'Work', 'uni': 'University', 'casual': 'Casual', 'event': 'Event', 'sport': 'Sport'};
 
@@ -523,6 +524,8 @@ class _DeckState extends State<_Deck> with SingleTickerProviderStateMixin {
               icon: const Icon(Icons.view_in_ar_outlined, size: 18),
               label: const Text('See it on me'),
             ),
+          if (top['kind'] == 'outfit' && (top['item_ids'] as List? ?? const []).isNotEmpty)
+            ShareLookButton(ids: [for (final i in top['item_ids'] as List) '$i']),
         ]),
         if (why != null)
           Container(
