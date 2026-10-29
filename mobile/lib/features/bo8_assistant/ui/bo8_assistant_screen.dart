@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
+import '../../../core/widgets/outfit_strip.dart';
 
 class _Msg {
   _Msg.user(this.text)
@@ -258,10 +259,22 @@ class _CardFacts extends StatelessWidget {
       if ((card['result'] as Map?)?['items'] is List) '${((card['result'] as Map)['items'] as List).length} pieces',
       if (card['challenges'] is List) '${(card['challenges'] as List).length} challenges',
     ];
-    if (pills.isEmpty) return const SizedBox.shrink();
+    final outfits = outfitIdsIn(card);
+    if (pills.isEmpty && outfits.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Wrap(spacing: 6, runSpacing: 6, children: [for (final p in pills) DmPill(p)]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (pills.isNotEmpty) Wrap(spacing: 6, runSpacing: 6, children: [for (final p in pills) DmPill(p)]),
+        // the outfit itself, with the user's pieces and "See it on me" (BO9)
+        for (final ids in outfits.take(1)) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: DmColors.page, borderRadius: BorderRadius.circular(DmRadius.card)),
+            child: OutfitStrip(ids: ids, size: 56),
+          ),
+        ],
+      ]),
     );
   }
 }

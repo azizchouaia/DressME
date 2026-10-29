@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -351,6 +352,11 @@ class _ResultView extends ConsumerWidget {
           Text(r.explanation, style: DmText.body.copyWith(fontSize: 14, color: DmColors.text)),
           const SizedBox(height: 4),
           Text(r.explanationByAi ? 'Written by the local AI from the facts below' : 'Template text (local AI off)', style: DmText.caption),
+          if (r.subcategory != null && r.colour != null) ...[
+            const SizedBox(height: 12),
+            DmButton('Try it on with my wardrobe', kind: DmButtonKind.outline, icon: Icons.view_in_ar_outlined,
+                onPressed: () => context.go('/bo9_avatar?try=${Uri.encodeComponent('${r.subcategory}|${r.colour}')}')),
+          ],
           if (r.verdict == 'think' && r.subcategory != null && lastPrice != null) ...[
             const SizedBox(height: 12),
             DmButton('Watch the price for me', kind: DmButtonKind.outline, icon: Icons.notifications_active_outlined, onPressed: watchPrice),

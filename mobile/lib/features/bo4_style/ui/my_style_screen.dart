@@ -12,6 +12,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
 import '../../../core/widgets/dm_widgets.dart';
+import '../../../core/widgets/outfit_strip.dart';
 
 const _occasions = {'work': 'Work', 'uni': 'University', 'casual': 'Casual', 'event': 'Event', 'sport': 'Sport'};
 
@@ -514,7 +515,15 @@ class _DeckState extends State<_Deck> with SingleTickerProviderStateMixin {
       ]),
       if (!widget.onboarding && top != null) ...[
         const SizedBox(height: 10),
-        TextButton.icon(onPressed: _why, icon: const Icon(Icons.help_outline_rounded, size: 18), label: const Text('Why this outfit?')),
+        Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+          TextButton.icon(onPressed: _why, icon: const Icon(Icons.help_outline_rounded, size: 18), label: const Text('Why this outfit?')),
+          if (top['kind'] == 'outfit' && (top['item_ids'] as List? ?? const []).isNotEmpty)
+            TextButton.icon(
+              onPressed: () => seeOnMe(context, [for (final i in top['item_ids'] as List) '$i']),
+              icon: const Icon(Icons.view_in_ar_outlined, size: 18),
+              label: const Text('See it on me'),
+            ),
+        ]),
         if (why != null)
           Container(
             padding: const EdgeInsets.all(12),

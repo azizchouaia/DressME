@@ -29,6 +29,41 @@ bool _long(Json it) {
       s.contains('skirt') || s.contains('summer dress'));
 }
 
+const _palette = {
+  'black': '#1C1B1A', 'charcoal': '#3B3B3B', 'grey': '#8E8E8E', 'white': '#F7F7F5', 'cream': '#EFE6D2',
+  'beige': '#D8C3A5', 'khaki': '#B5A27A', 'camel': '#C19A6B', 'tan': '#A57C52', 'brown': '#6F4E37',
+  'navy': '#1F2A44', 'blue': '#2F5DA8', 'denim': '#4A6A8F', 'teal': '#2A7F7F', 'green': '#3E7D4F',
+  'olive': '#6B6B3A', 'mint': '#A8D5BA', 'yellow': '#E8C547', 'mustard': '#C9A227', 'orange': '#E07B39',
+  'red': '#B3261E', 'burgundy': '#6D1A2B', 'pink': '#E8A0B4', 'purple': '#6A4C93', 'lavender': '#B8A9D9',
+  'gold': '#C4A35A', 'silver': '#BFC1C2',
+}; // M1 colour names (m01_wardrobe/config.yaml)
+
+/// A piece from Smart Buy ("blazer|navy") as a wardrobe-like item.
+Json? _virtualPiece(String? spec) {
+  if (spec == null || !spec.contains('|')) return null;
+  final parts = spec.split('|');
+  final sub = parts[0];
+  final colour = parts[1];
+  final s = sub.toLowerCase();
+  final cat = RegExp('sneaker|loafer|boot|sandal|heel|shoe').hasMatch(s)
+      ? 'shoes'
+      : RegExp('jean|chino|trouser|pant|short|skirt').hasMatch(s)
+          ? 'bottom'
+          : RegExp('dress|jebba|kaftan').hasMatch(s)
+              ? 'dress'
+              : RegExp('jacket|blazer|coat|parka|cardigan').hasMatch(s)
+                  ? 'outerwear'
+                  : 'top';
+  return {
+    'item_id': 'try:$spec',
+    'category': cat,
+    'subcategory': '$sub (new)',
+    'colors': [
+      {'hex': _palette[colour.toLowerCase()] ?? '#8E8E8E', 'name': colour}
+    ],
+  };
+}
+
 String _hex(Json it) {
   final c = jsonList(it['colors']);
   final h = c.isEmpty ? null : c.first['hex'];
@@ -36,7 +71,13 @@ String _hex(Json it) {
 }
 
 class AvatarStudioScreen extends ConsumerStatefulWidget {
-  const AvatarStudioScreen({super.key});
+  const AvatarStudioScreen({super.key, this.wear = const [], this.tryPiece});
+
+  /// item ids to put on at open ("See it on me" from an outfit anywhere in the app)
+  final List<String> wear;
+
+  /// a piece the user does not own yet, "subcategory|colour" (Smart Buy, BO5): tried with the wardrobe
+  final String? tryPiece;
 
   @override
   ConsumerState<AvatarStudioScreen> createState() => _AvatarStudioScreenState();
@@ -61,6 +102,12 @@ class _AvatarStudioScreenState extends ConsumerState<AvatarStudioScreen> {
       final r = await api.post('/m01/items', {'user_id': DemoUsers.wardrobe});
       final res = r['result'] is Map ? (r['result'] as Map).cast<String, dynamic>() : r;
       setState(() => pieces = jsonList(res['items']).where((it) => _slotOf(it) != null).toList());
+      final extra = _virtualPiece(widget.tryPiece);
+      if (extra != null) _toggle(extra);
+      for (final id in widget.wear) {
+        final it = pieces!.where((p) => p['item_id'] == id).firstOrNull;
+        if (it != null && worn[_slotOf(it)]?['item_id'] != id) _toggle(it);
+      }
     } catch (e) {
       setState(() => error = apiError(e));
     }

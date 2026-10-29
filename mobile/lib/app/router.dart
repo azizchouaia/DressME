@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth.dart';
@@ -57,7 +58,12 @@ final router = GoRouter(
     GoRoute(path: '/bo7_sharing', builder: (_, __) => const FeedScreen()),
     GoRoute(path: '/bo8_assistant', builder: (_, __) => const ChatScreen()),
     GoRoute(path: '/design', builder: (_, __) => const DesignGalleryScreen()),
-    GoRoute(path: '/bo9_avatar', builder: (_, __) => const AvatarStudioScreen()),
+    GoRoute(
+        path: '/bo9_avatar',
+        builder: (_, state) => AvatarStudioScreen(
+            key: ValueKey(state.uri.query),
+            tryPiece: state.uri.queryParameters['try'],
+            wear: (state.uri.queryParameters['wear'] ?? '').split(',').where((s) => s.isNotEmpty).toList())),
     GoRoute(path: '/bo9_try_on', builder: (_, __) => const TryOnScreen()),
       ],
     ),

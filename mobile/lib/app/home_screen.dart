@@ -7,6 +7,7 @@ import '../core/api/dm_api.dart';
 import '../core/auth/auth.dart';
 import '../core/design/dressme_design.dart';
 import '../core/widgets/dm_widgets.dart';
+import 'today_card.dart';
 
 class BoEntry {
   const BoEntry(this.code, this.title, this.owner, this.route, this.icon, this.modules, this.check);
@@ -209,6 +210,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ]),
                     ),
                     const SizedBox(height: 18),
+                  ],
+                  if (ready) ...[
+                    const TodayCard(),
+                    const SizedBox(height: 22),
                   ],
                   const Text('WHAT DO YOU NEED?', style: DmText.eyebrow),
                   const SizedBox(height: 10),
