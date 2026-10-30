@@ -66,16 +66,29 @@
         font: 13px "Segoe UI", system-ui, sans-serif;
         box-shadow: 0 4px 16px rgba(20, 20, 20, 0.08);
       }
-      .build-bar {
+      .dock {
         position: absolute;
         z-index: 3;
-        top: calc(64px + env(safe-area-inset-top));
-        left: 16px;
+        top: calc(12px + env(safe-area-inset-top));
         right: 16px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: min(320px, calc(100% - 32px));
+        pointer-events: none;
+      }
+      .build-bar {
+        position: relative;
+        flex: 0 1 auto;
+        width: auto;
+        max-height: 46vh;
+        overflow: auto;
         padding: 12px 14px 10px;
         border-radius: 20px;
         background: rgba(255, 255, 255, 0.96);
         box-shadow: 0 8px 24px rgba(20, 20, 20, 0.08);
+        pointer-events: auto;
       }
       .icon-row {
         display: flex;
@@ -107,19 +120,38 @@
         stroke-linecap: round;
         stroke-linejoin: round;
       }
-      .sheet {
-        position: absolute;
-        z-index: 3;
-        left: 12px;
-        right: 12px;
-        bottom: calc(12px + env(safe-area-inset-bottom));
+      .pose-row {
         display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .pose-row button {
+        border: 0;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: var(--fill);
+        color: var(--ink);
+        font: 12px "Segoe UI", system-ui, sans-serif;
+      }
+      .pose-row button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+      .sheet {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex: 1 1 auto;
         flex-direction: column;
-        max-height: min(42vh, 380px);
+        width: auto;
+        min-height: 0;
+        max-height: none;
         padding: 8px 16px 12px;
         border-radius: 24px;
         background: rgba(255, 255, 255, 0.96);
         box-shadow: 0 10px 30px rgba(20, 20, 20, 0.12);
+        pointer-events: auto;
       }
       .sheet[hidden] { display: none; }
       .handle {
@@ -312,13 +344,17 @@
         color: #b3261e;
         font: 14px system-ui, sans-serif;
       }
-      @media (min-width: 800px) {
-        .build-bar, .sheet {
-          left: 50%;
-          right: auto;
-          width: min(420px, calc(100% - 32px));
-          transform: translateX(-50%);
+      @media (max-width: 720px) {
+        .dock {
+          top: auto;
+          right: 12px;
+          bottom: calc(12px + env(safe-area-inset-bottom));
+          left: 12px;
+          width: auto;
+          max-height: 78vh;
+          flex-direction: column-reverse;
         }
+        .sheet { max-height: 38vh; }
       }
     </style>
   </head>
@@ -331,6 +367,7 @@
       </div>
       <button id="reset" type="button" hidden>Reset view</button>
     </header>
+    <div class="dock">
     <div class="build-bar">
       <label class="hero"><span>Build <b data-readout="build">Average</b></span><input data-shape="build" type="range" min="-100" max="100" value="0" /></label>
       <div class="icon-row">
@@ -340,6 +377,37 @@
         <button type="button" data-panel="photo-panel" aria-label="Avatar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5c1.4-3 3.7-4.5 6.5-4.5s5.1 1.5 6.5 4.5"/></svg>
         </button>
+        <button type="button" data-panel="move-panel" aria-label="Pose">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5v6.2c0 .8-.4 1.6-1.1 2.1L4 15.2M16 4.5v6.2c0 .8.4 1.6 1.1 2.1L20 15.2M12 3.2v8.2M9.2 20.5l2.8-4.2 2.8 4.2"/></svg>
+        </button>
+      </div>
+      <div class="pose-row">
+        <button type="button" data-preset="front" class="active">Front</button>
+        <button type="button" data-preset="glance">Glance</button>
+        <button type="button" data-preset="casual">Casual</button>
+      </div>
+      <div class="pose-row">
+        <button type="button" data-wear="hat" class="active">Hat</button>
+        <button type="button" data-wear="shoes">Shoes</button>
+        <button type="button" data-wear="bag">Bag</button>
+        <button type="button" data-panel="photo-panel">Photos</button>
+      </div>
+      <div class="pose-row">
+        <button type="button" data-extra="glasses">Glasses</button>
+        <button type="button" data-extra="earrings">Earrings</button>
+        <button type="button" data-extra="ring">Ring</button>
+        <button type="button" data-extra="necklace">Necklace</button>
+        <button type="button" data-extra="scarf">Scarf</button>
+        <button type="button" data-extra="hair-short">Short</button>
+        <button type="button" data-extra="hair-bun">Bun</button>
+        <button type="button" data-extra="hair-braid">Braid</button>
+      </div>
+      <div class="pose-row">
+        <button type="button" data-shoe="flat">Flat</button>
+        <button type="button" data-shoe="sneaker">Sneaker</button>
+        <button type="button" data-shoe="heel">Heel</button>
+        <button type="button" data-sock="thin">Thin socks</button>
+        <button type="button" data-sock="thick">Thick socks</button>
       </div>
     </div>
     <aside class="sheet" hidden>
@@ -359,7 +427,7 @@
               <button type="button" data-skin="brown">Brown</button>
               <button type="button" data-skin="deep">Deep</button>
             </div>
-            <label><span>Shine <b data-readout="shine">20</b></span><input data-shape="shine" type="range" min="0" max="100" value="20" /></label>
+            <label><span>Shine <b data-readout="shine">48</b></span><input data-shape="shine" type="range" min="0" max="100" value="48" /></label>
             <span class="hint">Hair</span>
             <div class="sex chips">
               <button type="button" data-hair="black">Black</button>
@@ -414,11 +482,9 @@
       </div>
       <div id="move-panel" class="panel" hidden>
         <div class="sex chips" id="pose-presets">
-          <button type="button" data-preset="tpose" class="active">T-pose</button>
-          <button type="button" data-preset="stand">Standing</button>
-          <button type="button" data-preset="hips">Hands on hips</button>
-          <button type="button" data-preset="step">Step</button>
-          <button type="button" data-preset="wave">Wave</button>
+          <button type="button" data-preset="front" class="active">Front</button>
+          <button type="button" data-preset="glance">Glance</button>
+          <button type="button" data-preset="casual">Casual</button>
         </div>
         <div class="scroll">
           <input data-pose="armInL" type="range" min="-90" max="90" value="0" hidden />
@@ -427,8 +493,8 @@
             <summary>Arms</summary>
             <label>Left arm <input data-pose="armL" type="range" min="-80" max="90" value="0" /></label>
             <label>Right arm <input data-pose="armR" type="range" min="-80" max="90" value="0" /></label>
-            <label>Left elbow <input data-pose="elbowL" type="range" min="0" max="130" value="0" /></label>
-            <label>Right elbow <input data-pose="elbowR" type="range" min="0" max="130" value="0" /></label>
+            <label>Left elbow <input data-pose="elbowL" type="range" min="0" max="140" value="0" /></label>
+            <label>Right elbow <input data-pose="elbowR" type="range" min="0" max="140" value="0" /></label>
             <label>Left wrist <input data-pose="wristL" type="range" min="-50" max="50" value="0" /></label>
             <label>Right wrist <input data-pose="wristR" type="range" min="-50" max="50" value="0" /></label>
             <label>Left wrist twist <input data-pose="wristTwistL" type="range" min="-70" max="70" value="0" /></label>
@@ -483,6 +549,17 @@
           <div id="photo-list"></div>
           <input id="person-name" type="text" placeholder="Name" />
           <button id="person-create" class="action" type="button">Build from photos</button>
+          <details open>
+            <summary>Clothes</summary>
+            <label class="shot"><span>Clothes photo</span><input id="clothes-photo" type="file" accept="image/*" /></label>
+            <p class="hint">The photo is sent to the ReMU server on this PC. SiTH is the builder used for the shirt, shorts, and vest. The line under the photos shows each step.</p>
+            <div class="sex" id="cloth-builder">
+              <button type="button" class="active" data-builder="sith">SiTH</button>
+              <button type="button" data-builder="up2you">UP2You</button>
+            </div>
+            <button id="clothes-from-photo" class="action" type="button">Render with ReMU</button>
+            <button id="clothes-motion" class="ghost" type="button">Cloth motion</button>
+          </details>
           <button id="proto-female" class="ghost" type="button">Female prototype</button>
           <button id="proto-male" class="ghost" type="button">Male prototype</button>
           <details>
@@ -499,6 +576,7 @@
         </div>
       </div>
     </aside>
+    </div>
     <p id="error" hidden></p>
     <script type="importmap">
       {
@@ -508,6 +586,6 @@
         }
       }
     </script>
-    <script type="module" src="./scene.mjs?v=49"></script>
+    <script type="module" src="./scene.mjs?v=99"></script>
   </body>
 </html>

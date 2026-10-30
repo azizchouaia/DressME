@@ -10,10 +10,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 renderer.setClearColor(0x000000, 0)
 
 const scene = new THREE.Scene()
-scene.add(new THREE.HemisphereLight(0xfff8f2, 0xb7aea4, 0.85))
-const key = new THREE.DirectionalLight(0xfff6ee, 1.05)
-key.position.set(2.4, 4, 3)
+scene.add(new THREE.HemisphereLight(0xfff7ef, 0xe4d5c6, 1.25))
+const key = new THREE.DirectionalLight(0xfffaf6, 1.7)
+key.position.set(2.2, 4.2, 3.4)
 scene.add(key)
+const fill = new THREE.DirectionalLight(0xffe8d2, 0.55)
+fill.position.set(-2.6, 2.2, 2.2)
+scene.add(fill)
 
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 30)
 camera.position.set(0, 0.95, 5.4)
@@ -49,32 +52,30 @@ let buildBase = ''
 let buildRequest = 0
 
 const hairColors = {
-  black: '#1a120e',
-  brown: '#5c3a24',
-  red: '#8d3b24',
-  blonde: '#d7b56a',
+  black: '#2a1c16',
+  brown: '#7a4a2a',
+  red: '#c45a32',
+  blonde: '#e8c56e',
 }
 const skinColors = {
-  fair: '#f6d7c8',
-  light: '#b9aea3',
-  warm: '#d2a07a',
-  tan: '#a56b45',
-  brown: '#6b4032',
-  deep: '#3e271e',
+  fair: '#ffd8c6',
+  light: '#f3c2a4',
+  warm: '#e8a56e',
+  tan: '#c98456',
+  brown: '#8d5a3c',
+  deep: '#5c3828',
 }
 const eyeColors = {
-  hazel: '#8a6a3b',
-  black: '#1c140f',
-  green: '#3d6b45',
-  blue: '#3d6f9a',
+  hazel: '#a67c3d',
+  black: '#2a211c',
+  green: '#4e8a58',
+  blue: '#4c86b8',
 }
 
 const posePresets = {
-  tpose: {},
-  stand: { armL: -75, armR: -75, elbowL: 8, elbowR: 8 },
-  hips: { armL: -36, armR: -36, elbowL: 100, elbowR: 100, armInL: 48, armInR: 48 },
-  step: { armL: -80, armR: -45, legL: 32, legR: -10, kneeL: 22, elbowR: 12 },
-  wave: { armL: 62, armR: -75, elbowL: 28, elbowR: 8 },
+  front: { armL: -68, armR: -68, elbowL: 22, elbowR: 22, armInL: 10, armInR: 10, outL: 7, outR: 7, wristL: 8, wristR: 8 },
+  glance: { armL: -72, armR: -66, elbowL: 18, elbowR: 28, armInL: 6, armInR: 14, outL: 4, outR: 10, legL: 10, legR: -6, kneeR: 8, head: 32, neck: 8 },
+  casual: { armL: -58, armR: -58, elbowL: 42, elbowR: 42, armInL: 18, armInR: 18, outL: 8, outR: 8, wristL: 6, wristR: 6 },
 }
 
 function resize() {
@@ -83,14 +84,22 @@ function resize() {
   const pixelWidth = Math.floor(width * renderer.getPixelRatio())
   const pixelHeight = Math.floor(height * renderer.getPixelRatio())
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) renderer.setSize(width, height, false)
-  const bar = document.querySelector('.build-bar')
-  const sheet = document.querySelector('.sheet')
-  const top = bar ? bar.getBoundingClientRect().bottom : 0
-  const bottom = sheet && !sheet.hidden ? Math.max(0, height - sheet.getBoundingClientRect().top) : 0
-  const freeCenter = top + (height - top - bottom) / 2
-  const shift = height / 2 - freeCenter
+  const blocks = [document.querySelector('.build-bar'), document.querySelector('.sheet')]
+    .filter((node) => node && !node.hidden)
+  let left = 0
+  let right = width
+  let top = 0
+  let bottom = height
+  blocks.forEach((node) => {
+    const rect = node.getBoundingClientRect()
+    const across = rect.left < width * 0.62 && rect.right > width * 0.38
+    if (across && rect.top > height * 0.45) bottom = Math.min(bottom, rect.top)
+    else if (rect.left > width * 0.45) right = Math.min(right, rect.left - 12)
+  })
+  const freeCenterX = left + Math.max(1, right - left) / 2
+  const freeCenterY = top + Math.max(1, bottom - top) / 2
   camera.aspect = width / height
-  camera.setViewOffset(width, height, 0, -shift * 0.2, width, height)
+  camera.setViewOffset(width, height, width / 2 - freeCenterX, height / 2 - freeCenterY, width, height)
   camera.updateProjectionMatrix()
 }
 
@@ -579,7 +588,7 @@ function resetShapeSliders() {
   const heightSlider = document.querySelector('[data-shape="height"]')
   if (heightSlider) heightSlider.value = String(Math.round(restHeight * 100))
   const shine = document.querySelector('[data-shape="shine"]')
-  if (shine) shine.value = '20'
+  if (shine) shine.value = '48'
   for (const name of [...shapeMorphs, 'build', 'shoulderSlope', 'pelvisTilt']) {
     const slider = document.querySelector(`[data-shape="${name}"]`)
     if (slider) slider.value = '0'
@@ -808,6 +817,7 @@ function paintColors(mesh = rig?.mesh) {
     }
     colors.setXYZ(index, color.r, color.g, color.b)
   }
+  if (activeSock === 'thin') tintThinSocks(mesh, colors)
   colors.needsUpdate = true
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
   materials.forEach((material) => {
@@ -844,6 +854,8 @@ function applyShape() {
   rig.root.updateMatrixWorld(true)
   const box = new THREE.Box3().setFromObject(rig.mesh)
   rig.root.position.y = -box.min.y / (group.scale.y || 1)
+  fitAccessories()
+  fitFootwear()
 }
 
 function applyPose() {
@@ -857,16 +869,23 @@ function applyPose() {
     pose.pelvis?.rotation.set(tilt, 0, 0)
     pose.left_shoulder?.rotation.set(0, degrees('armInL'), degrees('armL') + slope)
     pose.right_shoulder?.rotation.set(0, -degrees('armInR'), -(degrees('armR') + slope))
-    pose.left_elbow?.rotation.set(degrees('elbowL'), 0, 0)
-    pose.right_elbow?.rotation.set(degrees('elbowR'), 0, 0)
+    pose.left_elbow?.rotation.set(0, -degrees('elbowL'), 0)
+    pose.right_elbow?.rotation.set(0, degrees('elbowR'), 0)
     pose.left_wrist?.rotation.set(degrees('wristL'), degrees('wristTwistL'), 0)
     pose.right_wrist?.rotation.set(degrees('wristR'), -degrees('wristTwistR'), 0)
     pose.left_hip?.rotation.set(degrees('legL') - tilt, 0, degrees('outL'))
     pose.right_hip?.rotation.set(degrees('legR') - tilt, 0, -degrees('outR'))
     pose.left_knee?.rotation.set(degrees('kneeL'), 0, 0)
     pose.right_knee?.rotation.set(degrees('kneeR'), 0, 0)
-    pose.left_ankle?.rotation.set(degrees('ankleL'), 0, 0)
-    pose.right_ankle?.rotation.set(degrees('ankleR'), 0, 0)
+    const planted = activeShoe ? (footPreset[activeShoe] * Math.PI) / 180 : null
+    if (activeShoe) {
+      for (const name of ['ankleL', 'ankleR']) {
+        const input = document.querySelector(`[data-pose="${name}"]`)
+        if (input) input.value = String(footPreset[activeShoe])
+      }
+    }
+    pose.left_ankle?.rotation.set(planted ?? degrees('ankleL'), 0, 0)
+    pose.right_ankle?.rotation.set(planted ?? degrees('ankleR'), 0, 0)
     pose.spine1?.rotation.set(degrees('spine') * 0.4, 0, 0)
     pose.spine2?.rotation.set(degrees('spine'), 0, 0)
     pose.spine3?.rotation.set(degrees('spine') * 0.45, 0, 0)
@@ -888,9 +907,9 @@ function applyPose() {
     }
   } else {
     rig.upperArmL.rotation.set(0, 0, Math.PI / 2 + degrees('armL'))
-    rig.forearmL.rotation.set(degrees('elbowL'), 0, 0)
+    rig.forearmL.rotation.set(0, -degrees('elbowL'), 0)
     rig.upperArmR.rotation.set(0, 0, -Math.PI / 2 - degrees('armR'))
-    rig.forearmR.rotation.set(degrees('elbowR'), 0, 0)
+    rig.forearmR.rotation.set(0, degrees('elbowR'), 0)
     rig.lowerLegL.rotation.set(degrees('kneeL'), 0, 0)
     rig.lowerLegR.rotation.set(degrees('kneeR'), 0, 0)
     rig.spine.rotation.set(degrees('spine'), 0, 0)
@@ -899,12 +918,1043 @@ function applyPose() {
   applyShape()
 }
 
+const clothSkin = new THREE.Vector3()
+let clothTimer = 0
+let clothBuilder = 'sith'
+
+function garmentMeshes() {
+  const meshes = []
+  group.traverse((child) => {
+    if (child.isSkinnedMesh && child.userData.garment) meshes.push(child)
+  })
+  return meshes
+}
+
+function stepCloth(dt) {
+  const damp = Math.pow(0.84, dt * 60)
+  const spring = 1 - Math.pow(0.78, dt * 60)
+  let energy = 0
+  for (const mesh of garmentMeshes()) {
+    if (mesh.userData.rigid) continue
+    const bind = mesh.userData.bindPos
+    const shown = mesh.userData.clothPos
+    const vel = mesh.userData.clothVel
+    const pos = mesh.geometry.attributes.position
+    if (!bind || !shown || !vel) continue
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let index = 1; index < bind.length; index += 3) {
+      minY = Math.min(minY, bind[index])
+      maxY = Math.max(maxY, bind[index])
+    }
+    const span = Math.max(maxY - minY, 1e-4)
+    pos.array.set(bind)
+    mesh.material.skinning = true
+    mesh.skeleton.update()
+    for (let index = 0; index < pos.count; index += 1) {
+      mesh.boneTransform(index, clothSkin)
+      const offset = index * 3
+      const hem = 1 - (bind[offset + 1] - minY) / span
+      const follow = spring * (0.35 + 0.65 * (1 - hem))
+      const drag = damp * (0.9 + 0.1 * hem)
+      vel[offset] = vel[offset] * drag + (clothSkin.x - shown[offset]) * follow
+      vel[offset + 1] = vel[offset + 1] * drag + (clothSkin.y - shown[offset + 1]) * follow - hem * 0.00035
+      vel[offset + 2] = vel[offset + 2] * drag + (clothSkin.z - shown[offset + 2]) * follow
+      shown[offset] += vel[offset]
+      shown[offset + 1] += vel[offset + 1]
+      shown[offset + 2] += vel[offset + 2]
+      energy += vel[offset] * vel[offset] + vel[offset + 1] * vel[offset + 1] + vel[offset + 2] * vel[offset + 2]
+    }
+    pos.array.set(shown)
+    pos.needsUpdate = true
+    mesh.material.skinning = false
+  }
+  return energy
+}
+
+function settleCloth() {
+  if (clothTimer) cancelAnimationFrame(clothTimer)
+  let last = performance.now()
+  const tick = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000)
+    last = now
+    const energy = stepCloth(dt)
+    render()
+    clothTimer = energy > 0.0008 ? requestAnimationFrame(tick) : 0
+  }
+  clothTimer = requestAnimationFrame(tick)
+}
+
 function render() {
   resize()
   controls.update()
   if (rig?.root) rig.root.updateMatrixWorld(true)
   else if (rig?.mesh) rig.mesh.updateMatrixWorld(true)
   renderer.render(scene, camera)
+}
+
+const garmentFiles = [
+  ['/garments/shirt.glb', 0xc5c8cc, ''],
+  ['/garments/shorts.glb', 0x2c3140, ''],
+  ['/garments/vest.glb', 0x1a1c22, ''],
+  ['/garments/hat.glb', 0x1a1a1a, 'hat'],
+  ['/garments/shoes.glb', 0xf3f0ea, 'shoes'],
+  ['/garments/bag.glb', 0xc4a574, 'bag'],
+]
+const worn = { hat: true, shoes: false, bag: false }
+let activeShoe = null
+let activeSock = null
+const footPreset = { flat: 0, sneaker: 12, heel: 32 }
+const shoeMeshes = {}
+let thickSock = null
+const accessories = []
+const springBones = []
+let springTimer = 0
+
+function jointRest(name) {
+  const bones = rig?.mesh?.skeleton?.bones
+  if (!bones) return null
+  const index = bones.findIndex((bone) => bone.name === name)
+  if (index < 0) return null
+  return new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(rig.mesh.skeleton.boneInverses[index]).invert())
+}
+
+function morphedAt(index, target) {
+  const position = rig.mesh.geometry.attributes.position
+  target.fromBufferAttribute(position, index)
+  const morphs = rig.mesh.geometry.morphAttributes.position || []
+  const influences = rig.mesh.morphTargetInfluences || []
+  for (let morph = 0; morph < morphs.length; morph += 1) {
+    const weight = influences[morph] || 0
+    if (!weight) continue
+    target.x += morphs[morph].getX(index) * weight
+    target.y += morphs[morph].getY(index) * weight
+    target.z += morphs[morph].getZ(index) * weight
+  }
+  return target
+}
+
+function vertexNear(target) {
+  const position = rig.mesh.geometry.attributes.position
+  const point = new THREE.Vector3()
+  let best = 0
+  let bestDistance = Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    point.fromBufferAttribute(position, index)
+    const distance = point.distanceToSquared(target)
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = index
+    }
+  }
+  return best
+}
+
+function earVertex(sign) {
+  const head = jointRest('head')
+  const position = rig.mesh.geometry.attributes.position
+  const point = new THREE.Vector3()
+  let best = 0
+  let bestSide = sign > 0 ? -Infinity : Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    point.fromBufferAttribute(position, index)
+    if (Math.abs(point.y - (head.y + 0.02)) > 0.04) continue
+    if (Math.abs(point.z - head.z) > 0.035) continue
+    const farther = sign > 0 ? point.x > bestSide : point.x < bestSide
+    if (farther) {
+      bestSide = point.x
+      best = index
+    }
+  }
+  return best
+}
+
+function trackAccessory(object, name, anchor, boneName, extra = new THREE.Vector3()) {
+  object.userData.extra = name
+  object.userData.anchor = anchor
+  object.userData.boneName = boneName
+  object.userData.extraOffset = extra
+  object.visible = false
+  object.traverse((child) => {
+    child.frustumCulled = false
+    child.castShadow = true
+  })
+  accessories.push(object)
+  return object
+}
+
+let footwearCache = null
+let restFoot = null
+let knitMap = null
+let knitNormal = null
+
+function footIndices(side) {
+  ensureFootwearCache()
+  return footwearCache[side]
+}
+
+function sockIndices(side) {
+  ensureFootwearCache()
+  return side ? footwearCache.sock[side] : footwearCache.sock.all
+}
+
+function ensureFootwearCache() {
+  if (footwearCache?.mesh === rig.mesh) return
+  const mesh = rig.mesh
+  const position = mesh.geometry.attributes.position
+  footwearCache = { mesh, left: [], right: [], sock: { left: [], right: [], all: [] } }
+  for (const side of ['left', 'right']) {
+    const ankleWeight = boneWeights(mesh, [`${side}_ankle`])
+    const footWeight = boneWeights(mesh, [`${side}_foot`])
+    const kneeWeight = boneWeights(mesh, [`${side}_knee`])
+    const ankle = jointRest(`${side}_ankle`)
+    for (let index = 0; index < position.count; index += 1) {
+      const y = position.getY(index)
+      const footish = ankleWeight[index] + footWeight[index]
+      if (footish > 0.5 && (!ankle || y <= ankle.y + 0.02)) footwearCache[side].push(index)
+      if (footish > 0.18 || (kneeWeight[index] > 0.22 && ankle && y < ankle.y + 0.16)) {
+        footwearCache.sock[side].push(index)
+        footwearCache.sock.all.push(index)
+      }
+    }
+  }
+}
+
+function toeBone(side) {
+  const bones = rig.mesh.skeleton.bones
+  for (const name of [`${side}_toe`, `${side}_toes`, `${side}_foot`]) {
+    const index = bones.findIndex((bone) => bone.name === name)
+    if (index >= 0) return index
+  }
+  return -1
+}
+
+function addBox(parts, min, max) {
+  const size = max.clone().sub(min)
+  if (size.x < 1e-4 || size.y < 1e-4 || size.z < 1e-4) return
+  const geometry = new THREE.BoxGeometry(size.x, size.y, size.z)
+  geometry.translate((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2)
+  parts.push(geometry)
+}
+
+function mergeParts(parts) {
+  let count = 0
+  let indexCount = 0
+  for (const geometry of parts) {
+    count += geometry.attributes.position.count
+    indexCount += geometry.index.count
+  }
+  const position = new Float32Array(count * 3)
+  const normal = new Float32Array(count * 3)
+  const index = new Uint32Array(indexCount)
+  let vertex = 0
+  let offset = 0
+  for (const geometry of parts) {
+    position.set(geometry.attributes.position.array, vertex * 3)
+    normal.set(geometry.attributes.normal.array, vertex * 3)
+    const source = geometry.index.array
+    for (let i = 0; i < source.length; i += 1) index[offset + i] = source[i] + vertex
+    offset += source.length
+    vertex += geometry.attributes.position.count
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3))
+  geometry.setIndex(new THREE.Uint32BufferAttribute(index, 1))
+  return geometry
+}
+
+function withScaleMorphs(geometry, sides) {
+  const position = geometry.attributes.position
+  const uniform = new Float32Array(position.count * 3)
+  const width = new Float32Array(position.count * 3)
+  for (let index = 0; index < position.count; index += 1) {
+    const pivot = jointRest(`${sides[index]}_ankle`) || new THREE.Vector3()
+    const x = position.getX(index) - pivot.x
+    uniform[index * 3] = x
+    uniform[index * 3 + 1] = position.getY(index) - pivot.y
+    uniform[index * 3 + 2] = position.getZ(index) - pivot.z
+    width[index * 3] = x
+  }
+  geometry.morphAttributes.position = [
+    new THREE.Float32BufferAttribute(uniform, 3),
+    new THREE.Float32BufferAttribute(width, 3),
+  ]
+}
+
+function biasToe(geometry, sides) {
+  const position = geometry.attributes.position
+  const index = geometry.attributes.skinIndex
+  const weight = geometry.attributes.skinWeight
+  const range = { left: [Infinity, -Infinity], right: [Infinity, -Infinity] }
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const side = sides[vertex]
+    const z = position.getZ(vertex)
+    if (z < range[side][0]) range[side][0] = z
+    if (z > range[side][1]) range[side][1] = z
+  }
+  const bones = { left: toeBone('left'), right: toeBone('right') }
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const side = sides[vertex]
+    const span = range[side][1] - range[side][0] || 1
+    const along = (position.getZ(vertex) - range[side][0]) / span
+    if (along < 0.62 || bones[side] < 0) continue
+    let channel = -1
+    for (let slot = 0; slot < 4; slot += 1) if (index.getComponent(vertex, slot) === bones[side]) channel = slot
+    if (channel < 0) {
+      channel = 0
+      for (let slot = 1; slot < 4; slot += 1) if (weight.getComponent(vertex, slot) < weight.getComponent(vertex, channel)) channel = slot
+      index.setComponent(vertex, channel, bones[side])
+    }
+    weight.setComponent(vertex, channel, weight.getComponent(vertex, channel) + 0.12 + along * 0.18)
+    let sum = 0
+    for (let slot = 0; slot < 4; slot += 1) sum += weight.getComponent(vertex, slot)
+    for (let slot = 0; slot < 4; slot += 1) weight.setComponent(vertex, slot, weight.getComponent(vertex, slot) / (sum || 1))
+  }
+}
+
+function shoeGeometry(style) {
+  const parts = []
+  const sides = []
+  const position = rig.mesh.geometry.attributes.position
+  for (const side of ['left', 'right']) {
+    const indices = footIndices(side)
+    if (!indices.length) continue
+    const min = new THREE.Vector3(Infinity, Infinity, Infinity)
+    const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity)
+    const point = new THREE.Vector3()
+    for (const index of indices) {
+      point.fromBufferAttribute(position, index)
+      min.min(point)
+      max.max(point)
+    }
+    min.x -= 0.012
+    max.x += 0.012
+    min.z -= 0.008
+    max.z += 0.012
+    const boxes = []
+    const soleTop = min.y + (style === 'sneaker' ? 0.018 : 0.012)
+    if (style === 'heel') {
+      const split = min.z + (max.z - min.z) * 0.42
+      boxes.push([new THREE.Vector3(min.x, min.y - 0.062, min.z), new THREE.Vector3(max.x, soleTop, split)])
+      boxes.push([new THREE.Vector3(min.x, min.y, split - 0.012), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.012, max.z)])
+    } else if (style === 'sneaker') {
+      boxes.push([new THREE.Vector3(min.x, min.y - 0.01, min.z), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.04, max.z)])
+    } else {
+      boxes.push([new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.016, max.z)])
+    }
+    for (const [from, to] of boxes) {
+      const before = parts.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0)
+      addBox(parts, from, to)
+      const after = parts.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0)
+      for (let index = before; index < after; index += 1) sides.push(side)
+    }
+  }
+  if (!parts.length) return null
+  const geometry = mergeParts(parts)
+  parts.forEach((geometry) => geometry.dispose())
+  skinFromBody(geometry)
+  biasToe(geometry, sides)
+  withScaleMorphs(geometry, sides)
+  return geometry
+}
+
+function wearSkinned(geometry, material) {
+  const mesh = new THREE.SkinnedMesh(geometry, material)
+  mesh.frustumCulled = false
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  mesh.position.copy(rig.mesh.position)
+  mesh.quaternion.copy(rig.mesh.quaternion)
+  mesh.scale.copy(rig.mesh.scale)
+  mesh.morphTargetInfluences = [0, 0]
+  rig.mesh.parent.add(mesh)
+  mesh.bind(rig.mesh.skeleton, rig.mesh.bindMatrix)
+  return mesh
+}
+
+function ensureShoeHide() {
+  const geometry = rig.mesh.geometry
+  if (!geometry.getAttribute('shoeHide')) {
+    geometry.setAttribute('shoeHide', new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count), 1))
+  }
+  return geometry.getAttribute('shoeHide')
+}
+
+function installFootMask() {
+  ensureShoeHide()
+  const materials = Array.isArray(rig.mesh.material) ? rig.mesh.material : [rig.mesh.material]
+  materials.forEach((material) => {
+    if (!material || material.userData.footMask) return
+    material.userData.footMask = true
+    material.customProgramCacheKey = () => 'shoe-hide'
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float shoeHide;\nvarying float vShoeHide;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvShoeHide = shoeHide;')
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vShoeHide;')
+        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (vShoeHide > 0.5) discard;')
+    }
+    material.needsUpdate = true
+  })
+}
+
+function maskFeet(style) {
+  const hide = ensureShoeHide()
+  hide.array.fill(0)
+  if (style) {
+    const collar = style === 'sneaker' ? 1 : style === 'heel' ? 0.92 : 0.96
+    const point = new THREE.Vector3()
+    for (const side of ['left', 'right']) {
+      const indices = footIndices(side)
+      let minY = Infinity
+      let maxY = -Infinity
+      for (const index of indices) {
+        morphedAt(index, point)
+        if (point.y < minY) minY = point.y
+        if (point.y > maxY) maxY = point.y
+      }
+      const limit = minY + (maxY - minY) * collar
+      for (const index of indices) {
+        morphedAt(index, point)
+        if (point.y <= limit + 0.004) hide.setX(index, 1)
+      }
+    }
+  }
+  hide.needsUpdate = true
+  maskSock(style)
+}
+
+function maskSock(style) {
+  if (!thickSock) return
+  const hide = thickSock.geometry.getAttribute('sockHide')
+  const source = thickSock.userData.source
+  const shoe = ensureShoeHide()
+  for (let index = 0; index < hide.count; index += 1) hide.setX(index, style ? shoe.getX(source[index]) : 0)
+  hide.needsUpdate = true
+}
+
+function footSize(morphed) {
+  let length = 0
+  let width = 0
+  let count = 0
+  const point = new THREE.Vector3()
+  const position = rig.mesh.geometry.attributes.position
+  for (const side of ['left', 'right']) {
+    const indices = footIndices(side)
+    if (!indices.length) continue
+    let minX = Infinity
+    let maxX = -Infinity
+    let minZ = Infinity
+    let maxZ = -Infinity
+    for (const index of indices) {
+      if (morphed) morphedAt(index, point)
+      else point.fromBufferAttribute(position, index)
+      if (point.x < minX) minX = point.x
+      if (point.x > maxX) maxX = point.x
+      if (point.z < minZ) minZ = point.z
+      if (point.z > maxZ) maxZ = point.z
+    }
+    length += maxZ - minZ
+    width += maxX - minX
+    count += 1
+  }
+  return { length: length / (count || 1), width: width / (count || 1) }
+}
+
+function fitFootwear() {
+  if (!rig?.smplx || !restFoot) return
+  const current = footSize(true)
+  const lengthRatio = current.length / (restFoot.length || 1)
+  const widthRatio = current.width / (restFoot.width || 1)
+  const uniform = THREE.MathUtils.clamp(lengthRatio - 1, -0.45, 0.65)
+  const widthInfluence = THREE.MathUtils.clamp(widthRatio / Math.max(lengthRatio, 0.4) - 1, -0.6, 0.8)
+  for (const mesh of Object.values(shoeMeshes)) {
+    if (!mesh?.morphTargetInfluences) continue
+    mesh.morphTargetInfluences[0] = uniform
+    mesh.morphTargetInfluences[1] = widthInfluence
+  }
+  if (thickSock?.morphTargetInfluences) {
+    thickSock.morphTargetInfluences[0] = uniform
+    thickSock.morphTargetInfluences[1] = widthInfluence
+  }
+  maskFeet(activeShoe)
+}
+
+function tintThinSocks(mesh, colors) {
+  const tint = new THREE.Color('#f4f1ec')
+  const color = new THREE.Color()
+  for (const index of sockIndices()) {
+    color.setRGB(colors.getX(index), colors.getY(index), colors.getZ(index))
+    color.lerp(tint, 0.88)
+    colors.setXYZ(index, color.r, color.g, color.b)
+  }
+}
+
+function knitTextures() {
+  if (knitMap) return
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const context = canvas.getContext('2d')
+  context.fillStyle = '#f4f1ea'
+  context.fillRect(0, 0, 64, 64)
+  context.strokeStyle = '#d5cdc2'
+  context.lineWidth = 1
+  for (let y = 2; y < 64; y += 4) {
+    context.beginPath()
+    for (let x = 0; x <= 64; x += 2) context.lineTo(x, y + Math.sin((x + (y % 8)) * 0.5) * 1.1)
+    context.stroke()
+  }
+  knitMap = new THREE.CanvasTexture(canvas)
+  knitMap.wrapS = THREE.RepeatWrapping
+  knitMap.wrapT = THREE.RepeatWrapping
+  knitMap.repeat.set(8, 10)
+  const bump = document.createElement('canvas')
+  bump.width = 64
+  bump.height = 64
+  const bumpContext = bump.getContext('2d')
+  bumpContext.fillStyle = '#8080ff'
+  bumpContext.fillRect(0, 0, 64, 64)
+  for (let y = 0; y < 64; y += 4) {
+    bumpContext.fillStyle = y % 8 === 0 ? '#6a6aff' : '#9696ff'
+    bumpContext.fillRect(0, y, 64, 2)
+  }
+  knitNormal = new THREE.CanvasTexture(bump)
+  knitNormal.wrapS = THREE.RepeatWrapping
+  knitNormal.wrapT = THREE.RepeatWrapping
+  knitNormal.repeat.set(8, 10)
+}
+
+function discardSock(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float sockHide;\nvarying float vSockHide;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSockHide = sockHide;')
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vSockHide;')
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (vSockHide > 0.5) discard;')
+  }
+}
+
+function buildThickSock() {
+  const geometry = rig.mesh.geometry
+  const position = geometry.attributes.position
+  const normal = geometry.attributes.normal
+  const index = geometry.index
+  if (!index || !normal) return
+  const region = new Uint8Array(position.count)
+  const sourceSide = new Array(position.count)
+  for (const side of ['left', 'right']) {
+    for (const vertex of sockIndices(side)) {
+      region[vertex] = 1
+      sourceSide[vertex] = side
+    }
+  }
+  const map = new Int32Array(position.count).fill(-1)
+  const faces = []
+  for (let face = 0; face < index.count; face += 3) {
+    const a = index.getX(face)
+    const b = index.getX(face + 1)
+    const c = index.getX(face + 2)
+    if (region[a] && region[b] && region[c]) faces.push(a, b, c)
+  }
+  if (!faces.length) return
+  let cursor = 0
+  for (const vertex of faces) if (map[vertex] < 0) map[vertex] = cursor++
+  const positions = new Float32Array(cursor * 3)
+  const normals = new Float32Array(cursor * 3)
+  const uv = new Float32Array(cursor * 2)
+  const source = new Uint32Array(cursor)
+  const sides = new Array(cursor)
+  const point = new THREE.Vector3()
+  const direction = new THREE.Vector3()
+  let maxY = -Infinity
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const slot = map[vertex]
+    if (slot < 0) continue
+    point.fromBufferAttribute(position, vertex)
+    direction.fromBufferAttribute(normal, vertex)
+    if (direction.lengthSq() < 1e-8) direction.set(0, 1, 0)
+    direction.normalize()
+    point.addScaledVector(direction, 0.0035)
+    positions[slot * 3] = point.x
+    positions[slot * 3 + 1] = point.y
+    positions[slot * 3 + 2] = point.z
+    normals[slot * 3] = direction.x
+    normals[slot * 3 + 1] = direction.y
+    normals[slot * 3 + 2] = direction.z
+    source[slot] = vertex
+    sides[slot] = sourceSide[vertex] || (point.x >= 0 ? 'left' : 'right')
+    if (point.y > maxY) maxY = point.y
+  }
+  for (let slot = 0; slot < cursor; slot += 1) {
+    const y = positions[slot * 3 + 1]
+    if (y > maxY - 0.012) {
+      const extra = 0.004 * (1 - (maxY - y) / 0.012)
+      positions[slot * 3] += normals[slot * 3] * extra
+      positions[slot * 3 + 1] += extra * 0.35
+      positions[slot * 3 + 2] += normals[slot * 3 + 2] * extra
+    }
+    uv[slot * 2] = Math.atan2(positions[slot * 3], positions[slot * 3 + 2]) / (Math.PI * 2) + 0.5
+    uv[slot * 2 + 1] = positions[slot * 3 + 1] * 6
+  }
+  const shell = new THREE.BufferGeometry()
+  shell.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  shell.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+  shell.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  shell.setAttribute('sockHide', new THREE.Float32BufferAttribute(new Float32Array(cursor), 1))
+  shell.setIndex(new THREE.Uint32BufferAttribute(faces.map((vertex) => map[vertex]), 1))
+  skinFromBody(shell)
+  withScaleMorphs(shell, sides)
+  knitTextures()
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xf7f4ef,
+    map: knitMap,
+    normalMap: knitNormal,
+    roughness: 0.94,
+    side: THREE.DoubleSide,
+  })
+  discardSock(material)
+  thickSock = wearSkinned(shell, material)
+  thickSock.userData.source = source
+  thickSock.visible = activeSock === 'thick'
+}
+
+function buildFootwear() {
+  try {
+    for (const mesh of Object.values(shoeMeshes)) mesh.removeFromParent()
+    thickSock?.removeFromParent()
+    for (const key of Object.keys(shoeMeshes)) delete shoeMeshes[key]
+    thickSock = null
+    footwearCache = null
+    restFoot = null
+    if (!rig?.smplx) return
+    installFootMask()
+    restFoot = footSize(false)
+    const colors = { flat: 0x243056, sneaker: 0xe7e7e4, heel: 0x161616 }
+    for (const style of ['flat', 'sneaker', 'heel']) {
+      const geometry = shoeGeometry(style)
+      if (!geometry) continue
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[style],
+        roughness: style === 'sneaker' ? 0.74 : 0.52,
+        metalness: style === 'heel' ? 0.08 : 0,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      })
+      const mesh = wearSkinned(geometry, material)
+      mesh.renderOrder = 2
+      mesh.visible = activeShoe === style
+      shoeMeshes[style] = mesh
+    }
+    buildThickSock()
+    fitFootwear()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function fingerFit(boneName, childName) {
+  const origin = jointRest(boneName)
+  const child = rig.bones[childName]
+  if (!origin || !child) return null
+  const axis = child.position.clone()
+  const length = axis.length() || 1
+  axis.multiplyScalar(1 / length)
+  const weights = boneWeights(rig.mesh, [boneName])
+  const point = new THREE.Vector3()
+  const radii = []
+  const center = new THREE.Vector3()
+  for (let index = 0; index < weights.length; index += 1) {
+    if (weights[index] < 0.45) continue
+    morphedAt(index, point).sub(origin)
+    const along = point.dot(axis)
+    if (along < length * 0.3 || along > length * 0.8) continue
+    point.addScaledVector(axis, -along)
+    const radial = point.length()
+    if (radial < 0.004 || radial > 0.028) continue
+    radii.push(radial)
+    center.add(point)
+  }
+  if (!radii.length) return { radius: 0.012, center: new THREE.Vector3(), axis, length }
+  center.multiplyScalar(1 / radii.length)
+  radii.sort((a, b) => a - b)
+  return { radius: radii[Math.min(radii.length - 1, Math.floor(radii.length * 0.8))], center, axis, length }
+}
+
+function fitAccessories() {
+  if (!rig?.smplx || !accessories.length) return
+  const point = new THREE.Vector3()
+  const leftEar = accessories.find((item) => item.userData.extra === 'earrings' && item.userData.side === 'left')
+  const rightEar = accessories.find((item) => item.userData.extra === 'earrings' && item.userData.side === 'right')
+  let headScale = 1
+  if (leftEar && rightEar) {
+    const width = morphedAt(leftEar.userData.anchor, point).distanceTo(morphedAt(rightEar.userData.anchor, new THREE.Vector3()))
+    if (!leftEar.userData.restWidth) leftEar.userData.restWidth = width || 1
+    headScale = width / leftEar.userData.restWidth
+  }
+  const handScale = 1 + shapeNumber('hands') / 220
+  for (const item of accessories) {
+    if (item.userData.ring && item.userData.childBone) {
+      const fit = fingerFit(item.parent?.name, item.userData.childBone)
+      if (!fit) continue
+      item.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), fit.axis)
+      item.position.copy(fit.axis).multiplyScalar(fit.length * 0.55).add(fit.center)
+      item.scale.setScalar(fit.radius / (item.userData.hole || 0.0156))
+      continue
+    }
+    if (item.userData.anchor == null || !item.parent) continue
+    const rest = jointRest(item.userData.boneName)
+    if (!rest) continue
+    morphedAt(item.userData.anchor, point).sub(rest).add(item.userData.extraOffset)
+    item.position.copy(point)
+    const scale = item.userData.handScaled ? handScale : headScale
+    item.scale.setScalar(scale)
+  }
+}
+
+function skinFromBody(geometry) {
+  const bodyPosition = rig.mesh.geometry.attributes.position
+  const bodyJoints = rig.mesh.geometry.attributes.skinIndex
+  const bodyWeights = rig.mesh.geometry.attributes.skinWeight
+  const position = geometry.attributes.position
+  const index = new Uint16Array(position.count * 4)
+  const weight = new Float32Array(position.count * 4)
+  const point = new THREE.Vector3()
+  const bodyPoint = new THREE.Vector3()
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    point.fromBufferAttribute(position, vertex)
+    let nearest = 0
+    let nearestDistance = Infinity
+    for (let body = 0; body < bodyPosition.count; body += 1) {
+      bodyPoint.fromBufferAttribute(bodyPosition, body)
+      const distance = point.distanceToSquared(bodyPoint)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = body
+      }
+    }
+    for (let channel = 0; channel < 4; channel += 1) {
+      index[vertex * 4 + channel] = bodyJoints.getComponent(nearest, channel)
+      weight[vertex * 4 + channel] = bodyWeights.getComponent(nearest, channel)
+    }
+  }
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(index, 4))
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(weight, 4))
+}
+
+function makeSpring(parent, local, length) {
+  const bone = new THREE.Object3D()
+  bone.position.copy(local)
+  parent.add(bone)
+  const spring = { bone, length, tail: null, prev: null, extras: [] }
+  springBones.push(spring)
+  return spring
+}
+
+function stepSprings(dt) {
+  const settle = 1 - Math.pow(0.12, Math.max(dt, 0.001) * 60)
+  for (const spring of springBones) {
+    const parent = spring.bone.parent
+    if (!parent) continue
+    parent.updateWorldMatrix(true, false)
+    const origin = new THREE.Vector3()
+    spring.bone.getWorldPosition(origin)
+    const rest = parent.localToWorld(spring.bone.position.clone().add(new THREE.Vector3(0, -spring.length, 0)))
+    if (!spring.tail) {
+      spring.tail = rest.clone()
+      spring.prev = rest.clone()
+    }
+    const velocity = spring.tail.clone().sub(spring.prev).multiplyScalar(0.84)
+    spring.prev.copy(spring.tail)
+    spring.tail.add(velocity)
+    spring.tail.lerp(rest, settle)
+    const offset = spring.tail.clone().sub(origin)
+    if (offset.lengthSq() < 1e-8) continue
+    offset.setLength(spring.length)
+    spring.tail.copy(origin).add(offset)
+    const local = parent.worldToLocal(spring.tail.clone()).sub(spring.bone.position)
+    spring.bone.rotation.x = Math.atan2(local.z, Math.max(0.001, -local.y))
+    spring.bone.rotation.z = Math.atan2(-local.x, Math.max(0.001, -local.y))
+  }
+}
+
+function kickSprings() {
+  if (springTimer) return
+  let last = performance.now()
+  const tick = (now) => {
+    const live = springBones.some((spring) => spring.extras.some((item) => item.visible))
+    if (!live) {
+      springTimer = 0
+      return
+    }
+    const dt = Math.min(0.05, (now - last) / 1000)
+    last = now
+    stepSprings(dt)
+    render()
+    springTimer = requestAnimationFrame(tick)
+  }
+  springTimer = requestAnimationFrame(tick)
+}
+
+function paintHairExtras() {
+  const color = new THREE.Color(hairColors[hairChoice] || hairColors.brown)
+  for (const item of accessories) {
+    if (!item.userData.hair) continue
+    item.traverse((child) => {
+      if (child.material?.color) child.material.color.copy(color)
+    })
+  }
+}
+
+let humanAssets = null
+
+async function loadHumanAssets() {
+  if (humanAssets) return humanAssets
+  const [glasses, left, right, ring] = await Promise.all([
+    loader.loadAsync('/garments/makehuman/glasses.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/earring-left.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/earring-right.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/ring.glb?v=2'),
+  ])
+  humanAssets = { glasses, left, right, ring }
+  return humanAssets
+}
+
+function assetMesh(gltf, shift) {
+  let source = null
+  gltf.scene.traverse((child) => {
+    if (child.isMesh && !source) source = child
+  })
+  const mesh = source.clone()
+  mesh.geometry = source.geometry.clone()
+  if (shift) mesh.geometry.translate(shift.x, shift.y, shift.z)
+  mesh.material = source.material
+  if (mesh.material) mesh.material.side = THREE.DoubleSide
+  mesh.castShadow = true
+  mesh.frustumCulled = false
+  return mesh
+}
+
+async function buildAccessories() {
+  accessories.length = 0
+  springBones.length = 0
+  const assets = await loadHumanAssets().catch((error) => {
+    console.error(error)
+    return null
+  })
+  const headBone = rig.bones.head
+  const head = jointRest('head')
+  const neck = jointRest('neck')
+  if (!headBone || !head || !neck) return
+  const gold = new THREE.MeshStandardMaterial({ color: 0xc6a15a, roughness: 0.28, metalness: 0.7 })
+  const hairMat = new THREE.MeshStandardMaterial({ color: hairColors[hairChoice] || hairColors.brown, roughness: 0.72 })
+  const cloth = new THREE.MeshStandardMaterial({ color: 0x8e3b3b, roughness: 0.78, side: THREE.DoubleSide })
+
+  const eyes = jointRest('left_eye_smplhf') && jointRest('right_eye_smplhf')
+    ? jointRest('left_eye_smplhf').add(jointRest('right_eye_smplhf')).multiplyScalar(0.5)
+    : head.clone().add(new THREE.Vector3(0, 0.03, 0.07))
+  if (assets?.glasses) {
+    const glasses = assetMesh(assets.glasses, new THREE.Vector3(0, -0.00144, -0.05434))
+    headBone.add(trackAccessory(glasses, 'glasses', vertexNear(eyes), 'head', new THREE.Vector3(0, 0, 0.001)))
+  }
+
+  if (assets?.left && assets?.right) {
+    const left = assetMesh(assets.left)
+    left.userData.side = 'left'
+    headBone.add(trackAccessory(left, 'earrings', earVertex(1), 'head', new THREE.Vector3(0.0015, 0, 0)))
+    const right = assetMesh(assets.right)
+    right.userData.side = 'right'
+    headBone.add(trackAccessory(right, 'earrings', earVertex(-1), 'head', new THREE.Vector3(-0.0015, 0, 0)))
+  }
+
+  if (assets?.ring && rig.bones.left_ring1 && rig.bones.left_ring2) {
+    const ring = assetMesh(assets.ring)
+    ring.userData.ring = true
+    ring.userData.hole = 0.01555
+    ring.userData.childBone = 'left_ring2'
+    ring.userData.extra = 'ring'
+    ring.visible = false
+    rig.bones.left_ring1.add(ring)
+    accessories.push(ring)
+  }
+
+  const necklaceGeo = new THREE.TorusGeometry(0.064, 0.0055, 8, 28)
+  necklaceGeo.rotateX(Math.PI / 2)
+  necklaceGeo.translate(neck.x, neck.y - 0.01, neck.z)
+  skinFromBody(necklaceGeo)
+  const necklace = new THREE.SkinnedMesh(necklaceGeo, gold)
+  necklace.bind(rig.mesh.skeleton)
+  necklace.userData.extra = 'necklace'
+  necklace.userData.soft = true
+  necklace.visible = false
+  necklace.frustumCulled = false
+  rig.root.add(necklace)
+  accessories.push(necklace)
+  const pendantSpring = makeSpring(rig.bones.neck, new THREE.Vector3(0, -0.02, 0.055), 0.045)
+  const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 10), gold)
+  pendant.position.y = -0.045
+  pendant.userData.extra = 'necklace'
+  pendant.visible = false
+  pendantSpring.bone.add(pendant)
+  pendantSpring.extras.push(necklace, pendant)
+  accessories.push(pendant)
+
+  const scarfGeo = new THREE.TorusGeometry(0.082, 0.013, 6, 20)
+  scarfGeo.rotateX(Math.PI / 2)
+  scarfGeo.translate(neck.x, neck.y - 0.035, neck.z + 0.01)
+  skinFromBody(scarfGeo)
+  const scarf = new THREE.SkinnedMesh(scarfGeo, cloth)
+  scarf.bind(rig.mesh.skeleton)
+  scarf.userData.extra = 'scarf'
+  scarf.userData.soft = true
+  scarf.visible = false
+  scarf.frustumCulled = false
+  rig.root.add(scarf)
+  accessories.push(scarf)
+  const scarfSpring = makeSpring(rig.bones.neck, new THREE.Vector3(0.02, -0.04, 0.06), 0.08)
+  const scarfEnd = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.008), cloth)
+  scarfEnd.position.y = -0.08
+  scarfEnd.userData.extra = 'scarf'
+  scarfEnd.visible = false
+  scarfSpring.bone.add(scarfEnd)
+  scarfSpring.extras.push(scarf, scarfEnd)
+  accessories.push(scarfEnd)
+
+  const crown = vertexNear(head.clone().add(new THREE.Vector3(0, 0.12, 0)))
+  const short = new THREE.Mesh(new THREE.SphereGeometry(0.092, 18, 14), hairMat)
+  short.scale.set(1, 0.72, 0.82)
+  short.userData.hair = true
+  headBone.add(trackAccessory(short, 'hair-short', crown, 'head', new THREE.Vector3(0, -0.01, -0.012)))
+  const bun = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 12), hairMat.clone())
+  bun.userData.hair = true
+  headBone.add(trackAccessory(bun, 'hair-bun', crown, 'head', new THREE.Vector3(0, 0.01, -0.07)))
+  const braid = new THREE.Group()
+  braid.userData.hair = true
+  for (let knot = 0; knot < 5; knot += 1) {
+    const bead = new THREE.Mesh(new THREE.SphereGeometry(0.02 - knot * 0.002, 10, 8), hairMat.clone())
+    bead.position.set(0, -0.03 - knot * 0.034, -0.01 - knot * 0.008)
+    braid.add(bead)
+  }
+  headBone.add(trackAccessory(braid, 'hair-braid', crown, 'head', new THREE.Vector3(0, 0.02, -0.055)))
+  fitAccessories()
+  buildFootwear()
+}
+
+function coverHead(garment, body) {
+  const position = garment.geometry.attributes.position
+  const skin = body.geometry.attributes.position
+  let minY = Infinity
+  let maxY = -Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  let axisX = 0
+  let axisZ = 0
+  let axisCount = 0
+  for (let index = 0; index < position.count; index += 1) {
+    if (position.getY(index) > minY + 0.012) continue
+    axisX += position.getX(index)
+    axisZ += position.getZ(index)
+    axisCount += 1
+  }
+  if (!axisCount) return
+  axisX /= axisCount
+  axisZ /= axisCount
+  let crown = 0
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    if (y < minY + 0.03 || y > minY + 0.09) continue
+    crown = Math.max(crown, Math.hypot(position.getX(index) - axisX, position.getZ(index) - axisZ))
+  }
+  if (crown < 0.04) return
+  const bins = 72
+  const reach = new Array(bins).fill(0)
+  for (let index = 0; index < skin.count; index += 1) {
+    const y = skin.getY(index)
+    if (y < minY + 0.004 || y > maxY + 0.02) continue
+    const x = skin.getX(index) - axisX
+    const z = skin.getZ(index) - axisZ
+    const radius = Math.hypot(x, z)
+    if (radius > 0.2) continue
+    const bin = Math.round(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * bins) % bins
+    if (radius > reach[bin]) reach[bin] = radius
+  }
+  const spread = reach.slice()
+  for (let index = 0; index < bins; index += 1) {
+    reach[index] = Math.max(spread[index], spread[(index + bins - 1) % bins], spread[(index + 1) % bins])
+  }
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index) - axisX
+    const z = position.getZ(index) - axisZ
+    const bin = Math.round(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * bins) % bins
+    const factor = Math.min(1.12, Math.max(1, (reach[bin] + 0.006) / crown))
+    if (factor === 1) continue
+    position.setX(index, axisX + x * factor)
+    position.setZ(index, axisZ + z * factor)
+  }
+  const span = Math.max(0.05, maxY - minY)
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    const front = Math.min(1, Math.max(0, (position.getZ(index) - axisZ) / crown))
+    const along = 1 - (y - minY) / span
+    position.setY(index, y - 0.012 * front * along)
+  }
+  position.needsUpdate = true
+  garment.geometry.computeVertexNormals()
+}
+
+async function addGarments(root) {
+  const body = rig?.mesh
+  if (!body?.skeleton) return
+  const garmentLoader = new GLTFLoader()
+  for (const [url, color, wear] of garmentFiles) {
+    try {
+      const gltf = await garmentLoader.loadAsync(`${url}?v=85`)
+      const meshes = []
+      gltf.scene.traverse((child) => {
+        if (child.isSkinnedMesh) meshes.push(child)
+      })
+      for (const child of meshes) {
+        const map = child.material?.map || null
+        const normalMap = child.material?.normalMap || null
+        const hasColors = Boolean(child.geometry.attributes.color)
+        child.material = new THREE.MeshStandardMaterial({
+          color: map || hasColors ? 0xffffff : color,
+          map,
+          normalMap,
+          vertexColors: hasColors,
+          roughness: wear === 'bag' ? 0.45 : 0.72,
+          metalness: wear === 'bag' ? 0.08 : 0,
+          skinning: true,
+          side: THREE.DoubleSide,
+        })
+        child.frustumCulled = false
+        child.bind(body.skeleton, child.bindMatrix)
+        if (wear === 'hat') coverHead(child, body)
+        child.userData.garment = true
+        child.userData.wear = wear
+        child.userData.rigid = Boolean(wear)
+        child.visible = !wear || worn[wear] !== false
+        const bound = child.geometry.attributes.position.array
+        child.userData.bindPos = bound.slice()
+        child.userData.clothPos = bound.slice()
+        child.userData.clothVel = new Float32Array(bound.length)
+        root.add(child)
+      }
+    } catch (error) {
+      console.error(url, error)
+      showError(`${url}: ${error?.stack || error}`)
+    }
+  }
 }
 
 async function showMesh(url, height, options = {}) {
@@ -923,6 +1973,8 @@ async function showMesh(url, height, options = {}) {
   if (!options.keepBuild) buildBase = ''
   showError('')
   while (group.children.length) group.remove(group.children[0])
+  accessories.length = 0
+  springBones.length = 0
   rig = null
   skeletonHelper = null
   try {
@@ -953,6 +2005,8 @@ async function showMesh(url, height, options = {}) {
         if (material) material.vertexColors = true
       })
       paintColors(skinned)
+      if (String(url).includes('smplx_thin') || String(url).includes('smplx_body')) await addGarments(object)
+      await buildAccessories()
       skeletonHelper = new THREE.SkeletonHelper(skinned)
       skeletonHelper.visible = document.getElementById('skeleton')?.checked !== false
       group.add(skeletonHelper)
@@ -960,7 +2014,7 @@ async function showMesh(url, height, options = {}) {
       const box = new THREE.Box3().setFromObject(skinned)
       restHeight = Math.max(0.2, box.max.y - box.min.y)
       if (!options.keepShape) resetShapeSliders()
-      applyPose()
+      applyNamedPreset('front')
       resetButton.hidden = false
       render()
       return
@@ -1097,14 +2151,25 @@ async function useBuild(sex) {
   if (request !== buildRequest) return
   await attachBuildDeltas(sex, request)
 }
-document.getElementById('reset-pose')?.addEventListener('click', () => {
+function applyNamedPreset(name) {
+  const preset = posePresets[name] || {}
   applyingPreset = true
   document.querySelectorAll('[data-pose]').forEach((input) => {
     input.value = '0'
   })
-  document.querySelectorAll('[data-preset]').forEach((button) => button.classList.toggle('active', button.dataset.preset === 'tpose'))
+  Object.entries(preset).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-pose="${key}"]`)
+    if (input) input.value = String(value)
+  })
+  document.querySelectorAll('[data-preset]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.preset === name)
+  })
   applyingPreset = false
   applyPose()
+}
+
+document.getElementById('reset-pose')?.addEventListener('click', () => {
+  applyNamedPreset('front')
 })
 document.getElementById('reset-shape')?.addEventListener('click', () => {
   resetShapeSliders()
@@ -1120,6 +2185,7 @@ document.getElementById('person-create')?.addEventListener('click', () => {
 })
 
 const AVATAR_SERVICE = 'http://127.0.0.1:8766'
+const CLOTHES_SERVICE = 'http://127.0.0.1:8891'
 
 function renderPeople(people) {
   const root = document.getElementById('people')
@@ -1270,6 +2336,39 @@ document.querySelectorAll('[data-hair]').forEach((button) => {
     hairChoice = button.dataset.hair
     document.querySelectorAll('[data-hair]').forEach((item) => item.classList.toggle('active', item === button))
     paintColors()
+    paintHairExtras()
+    render()
+  })
+})
+document.querySelectorAll('[data-shoe]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.shoe
+    activeShoe = activeShoe === name ? null : name
+    document.querySelectorAll('[data-shoe]').forEach((item) => item.classList.toggle('active', item.dataset.shoe === activeShoe))
+    for (const [style, mesh] of Object.entries(shoeMeshes)) mesh.visible = style === activeShoe
+    applyPose()
+    render()
+  })
+})
+document.querySelectorAll('[data-sock]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.sock
+    activeSock = activeSock === name ? null : name
+    document.querySelectorAll('[data-sock]').forEach((item) => item.classList.toggle('active', item.dataset.sock === activeSock))
+    if (thickSock) thickSock.visible = activeSock === 'thick'
+    paintColors()
+    fitFootwear()
+    render()
+  })
+})
+document.querySelectorAll('[data-extra]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.extra
+    const items = accessories.filter((item) => item.userData.extra === name)
+    const show = items.some((item) => !item.visible)
+    items.forEach((item) => { item.visible = show })
+    button.classList.toggle('active', show)
+    if (show && items.some((item) => item.userData.soft || springBones.some((spring) => spring.extras.includes(item)))) kickSprings()
     render()
   })
 })
@@ -1278,6 +2377,17 @@ document.querySelectorAll('[data-eye]').forEach((button) => {
     eyeChoice = button.dataset.eye
     document.querySelectorAll('[data-eye]').forEach((item) => item.classList.toggle('active', item === button))
     paintColors()
+    render()
+  })
+})
+document.querySelectorAll('[data-wear]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.wear
+    worn[name] = !worn[name]
+    document.querySelectorAll(`[data-wear="${name}"]`).forEach((item) => item.classList.toggle('active', worn[name]))
+    group.traverse((child) => {
+      if (child.userData?.wear === name) child.visible = worn[name]
+    })
     render()
   })
 })
@@ -1292,14 +2402,77 @@ document.querySelectorAll('[data-preset]').forEach((button) => {
       const input = document.querySelector(`[data-pose="${name}"]`)
       if (input) input.value = String(value)
     })
-    document.querySelectorAll('[data-preset]').forEach((item) => item.classList.toggle('active', item === button))
+    document.querySelectorAll('[data-preset]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.preset === button.dataset.preset)
+    })
     applyingPreset = false
     applyPose()
-    render()
+    settleCloth()
   })
 })
+document.querySelectorAll('[data-builder]').forEach((button) => {
+  button.addEventListener('click', () => {
+    clothBuilder = button.dataset.builder
+    document.querySelectorAll('[data-builder]').forEach((item) => item.classList.toggle('active', item === button))
+  })
+})
+document.getElementById('clothes-motion')?.addEventListener('click', () => {
+  const sequence = ['front', 'glance', 'casual', 'front']
+  let frame = 0
+  const play = () => {
+    const name = sequence[Math.min(sequence.length - 1, Math.floor(frame / 18))]
+    const preset = posePresets[name] || {}
+    document.querySelectorAll('[data-pose]').forEach((input) => { input.value = '0' })
+    Object.entries(preset).forEach(([key, value]) => {
+      const input = document.querySelector(`[data-pose="${key}"]`)
+      if (input) input.value = String(value)
+    })
+    applyPose()
+    stepCloth(1 / 30)
+    render()
+    frame += 1
+    if (frame < sequence.length * 18) requestAnimationFrame(play)
+  }
+  play()
+})
+document.getElementById('clothes-photo')?.addEventListener('change', (event) => {
+  const file = event.target.files?.[0]
+  const fit = document.getElementById('fit')
+  if (file && fit) fit.textContent = `${file.name} is ready. Render with ReMU sends it to the clothes server.`
+})
+document.getElementById('clothes-from-photo')?.addEventListener('click', async () => {
+  const fit = document.getElementById('fit')
+  const clothes = document.getElementById('clothes-photo')?.files?.[0] || photoFiles[0]
+  if (!clothes) {
+    showError('Choose a clothes photo first.')
+    return
+  }
+  showError('')
+  if (fit) fit.textContent = `Sending ${clothes.name} to ReMU (${clothBuilder}).`
+  try {
+    const saved = await fetch(`${CLOTHES_SERVICE}/from-photo?builder=${encodeURIComponent(clothBuilder)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: clothes,
+    })
+    const detail = (await saved.text()).trim()
+    if (!saved.ok) throw new Error(detail || `Clothes service returned ${saved.status}`)
+    if (fit) fit.textContent = detail
+    const watch = async () => {
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        const status = await fetch(`${CLOTHES_SERVICE}/status`)
+        const text = (await status.text()).trim()
+        if (fit) fit.textContent = text
+        if (/stopped|ready|meshes are in/i.test(text)) break
+      }
+    }
+    watch().catch(() => {})
+  } catch (error) {
+    showError(error instanceof Error ? error.message : 'The clothes service is not running.')
+  }
+})
 function showPanel(id) {
-  if (id === 'move-panel') return
   const panel = document.getElementById(id)
   const sheet = document.querySelector('.sheet')
   const opening = Boolean(panel?.hidden)
