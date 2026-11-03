@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DressMe Studio</title>
+    <style>
+      :root {
+        --ink: #1b1a18;
+        --muted: #77726a;
+        --line: #e6e1d8;
+        --paper: #f6f3ee;
+        --card: #ffffff;
+        --accent: #1b1a18;
+        --good: #2f7a4b;
+        --bad: #b3412e;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; }
+      h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; }
+      h1 { font-size: 34px; }
+      h2 { font-size: 24px; }
+      p { line-height: 1.5; }
+      .muted { color: var(--muted); }
+      .brand { letter-spacing: 0.18em; font-size: 12px; color: var(--muted); text-transform: uppercase; }
+      button, .button {
+        font: inherit; border: 1px solid var(--ink); background: var(--ink); color: #fff;
+        border-radius: 999px; padding: 10px 20px; cursor: pointer;
+      }
+      button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+      button.small { padding: 6px 14px; font-size: 14px; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      input[type="text"], input[type="number"] {
+        font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+      }
+      label.field { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+      .screen { display: none; }
+      .screen.on { display: block; }
+      .center { max-width: 760px; margin: 0 auto; padding: 48px 24px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { background: #efebe4; color: var(--ink); border: 1px solid transparent; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+      .chip.on { background: var(--ink); color: #fff; }
+      .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .drop {
+        position: relative; display: grid; place-items: center; aspect-ratio: 3 / 4; border: 1.5px dashed #cfc8bb;
+        border-radius: 16px; background: #fbfaf7; cursor: pointer; overflow: hidden; text-align: center; color: var(--muted);
+      }
+      .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+      .drop b { display: block; color: var(--ink); font-weight: 600; }
+      .drop input { display: none; }
+      .tip { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+      .check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+      .error { color: var(--bad); min-height: 1.4em; margin: 12px 0 0; }
+      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .spread { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .stack > * + * { margin-top: 18px; }
+
+      .users { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+      .user { text-align: left; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+      .user .face { width: 54px; height: 54px; border-radius: 50%; margin-bottom: 12px; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+      .user.new { display: grid; place-items: center; border-style: dashed; color: var(--muted); }
+
+      .steps { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 10px; }
+      .steps li { display: flex; gap: 12px; align-items: center; color: var(--muted); }
+      .steps li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #cfc8bb; }
+      .steps li.done { color: var(--ink); }
+      .steps li.done::before { background: var(--good); border-color: var(--good); }
+      .steps li.now { color: var(--ink); font-weight: 600; }
+      .steps li.now::before { border-color: var(--ink); animation: pulse 1.2s infinite; }
+      @keyframes pulse { 50% { background: var(--ink); } }
+      pre.log { max-height: 220px; overflow: auto; background: #1f1e1b; color: #e8e3d8; padding: 12px; border-radius: 12px; font-size: 12px; white-space: pre-wrap; }
+
+      .home { display: grid; grid-template-columns: minmax(0, 1fr) 420px; height: 100vh; }
+      .stage { position: relative; background: #efebe4; }
+      .stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      .stage .label { position: absolute; left: 20px; top: 16px; z-index: 1; pointer-events: none; }
+      .stage .busy { position: absolute; left: 20px; bottom: 20px; z-index: 1; background: #fff; border-radius: 999px; padding: 8px 16px; font-size: 14px; display: none; }
+      .side { overflow-y: auto; border-left: 1px solid var(--line); background: var(--paper); padding: 24px; }
+      .tabs { display: flex; gap: 6px; margin: 18px 0; border-bottom: 1px solid var(--line); }
+      .tabs button { background: none; color: var(--muted); border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 12px; }
+      .tabs button.on { color: var(--ink); border-bottom-color: var(--ink); }
+      .tab { display: none; }
+      .tab.on { display: block; }
+      .outfits { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .outfit { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; padding: 0; color: var(--ink); text-align: left; }
+      .outfit.on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+      .outfit .thumb { aspect-ratio: 1; background: #f3f0ea center / contain no-repeat; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+      .outfit .name { padding: 10px 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+      .outfit .remove { border: 0; background: none; color: var(--muted); padding: 0 4px; font-size: 18px; line-height: 1; }
+      .outfit.add { display: grid; place-items: center; border-style: dashed; color: var(--muted); min-height: 140px; }
+      .draft { border: 1.5px solid var(--good); background: #f1f8f3; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+      .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .fact { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+      .fact b { display: block; font-size: 18px; }
+      .fact span { font-size: 12px; color: var(--muted); }
+      @media (max-width: 900px) {
+        .home { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
+        .side { border-left: 0; border-top: 1px solid var(--line); }
+        .grid2, .photos { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <section id="screen-users" class="screen">
+      <div class="center stack">
+        <div class="brand">DressMe</div>
+        <h1>Who is dressing up?</h1>
+        <div class="users" id="user-list"></div>
+      </div>
+    </section>
+
+    <section id="screen-create" class="screen">
+      <div class="center stack">
+        <div class="brand">DressMe</div>
+        <h1>Create your avatar</h1>
+        <p class="muted">Two photos and a few details. We build a 3D model of you with your face and skin tone, and the clothes you are wearing. You do this once; after that, new photos only add clothes.</p>
+        <form id="create-form" class="card stack">
+          <label class="field">Name<input type="text" name="name" placeholder="Your name" required /></label>
+          <div>
+            <div class="field">Gender</div>
+            <div class="chips" id="gender">
+              <button type="button" class="chip on" data-gender="male">Male</button>
+              <button type="button" class="chip" data-gender="female">Female</button>
+            </div>
+          </div>
+          <div class="grid2">
+            <label class="field">Height (cm)<input type="number" name="height" value="175" min="120" max="230" required /></label>
+            <label class="field">Weight (kg)<input type="number" name="weight" value="70" min="30" max="250" required /></label>
+          </div>
+          <div>
+            <div class="field">Shape</div>
+            <div class="chips" id="shape">
+              <button type="button" class="chip" data-shape="slim">Slim</button>
+              <button type="button" class="chip on" data-shape="average">Average</button>
+              <button type="button" class="chip" data-shape="athletic">Athletic</button>
+              <button type="button" class="chip" data-shape="heavy">Heavy</button>
+            </div>
+          </div>
+          <div class="photos" data-photos="create"></div>
+          <p class="tip">Full body, head to feet, standing straight with arms slightly away from the body. Plain background, good light.</p>
+          <label class="check"><input type="checkbox" name="mirror" /> The front photo is a mirror selfie</label>
+          <div class="row">
+            <button type="submit">Create my avatar</button>
+            <button type="button" class="ghost" id="create-cancel" hidden>Cancel</button>
+          </div>
+          <p class="error" id="create-error"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="screen-build" class="screen">
+      <div class="center">
+        <div class="card stack">
+          <div class="brand">DressMe</div>
+          <h2 id="build-title">Building your avatar</h2>
+          <p class="muted" id="build-note">This takes about 20 minutes on the GPU. You can leave this page open.</p>
+          <ul class="steps" id="build-steps"></ul>
+          <div class="spread">
+            <span class="muted" id="build-time"></span>
+            <button type="button" class="ghost small" id="build-log-toggle">Show details</button>
+          </div>
+          <pre class="log" id="build-log" hidden></pre>
+          <p class="error" id="build-error"></p>
+          <div class="row" id="build-retry" hidden><button type="button" class="ghost" id="build-back">Back</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-home" class="screen">
+      <div class="home">
+        <div class="stage">
+          <div class="label"><div class="brand">DressMe</div><h2 id="stage-title"></h2></div>
+          <iframe id="viewer" title="3D avatar"></iframe>
+          <div class="busy" id="stage-busy"></div>
+        </div>
+        <aside class="side">
+          <div class="spread">
+            <div>
+              <h2 id="home-name"></h2>
+              <div class="muted" id="home-meta"></div>
+            </div>
+            <button type="button" class="ghost small" id="switch-user">Switch</button>
+          </div>
+          <nav class="tabs">
+            <button type="button" data-tab="wardrobe" class="on">Wardrobe</button>
+            <button type="button" data-tab="me">My avatar</button>
+          </nav>
+
+          <div class="tab on" id="tab-wardrobe">
+            <div class="draft" id="draft" hidden>
+              <h3>New outfit ready</h3>
+              <p class="muted">It is on your avatar now. Save it to wear it again later.</p>
+              <div class="row">
+                <input type="text" id="draft-name" placeholder="Outfit name" />
+                <button type="button" id="draft-save">Save</button>
+                <button type="button" class="ghost" id="draft-discard">Discard</button>
+              </div>
+            </div>
+            <div class="outfits" id="outfit-list"></div>
+            <div class="stack" id="add-outfit" hidden style="margin-top:18px">
+              <h3>Add an outfit</h3>
+              <p class="muted">Front and back photos of you wearing the new clothes. They are rebuilt in 3D and put on this avatar, then you can save them here.</p>
+              <div class="photos" data-photos="outfit"></div>
+              <label class="check"><input type="checkbox" id="outfit-mirror" /> The front photo is a mirror selfie</label>
+              <button type="button" id="outfit-build">Build this outfit</button>
+              <p class="error" id="outfit-error"></p>
+            </div>
+          </div>
+
+          <div class="tab" id="tab-me">
+            <div class="stack">
+              <p class="muted">Change these any time. Height and shape update the 3D body on screen. Weight is kept with your profile and also slightly changes how full the body looks.</p>
+              <div class="grid2">
+                <label class="field">Height (cm)<input type="number" id="body-height" min="120" max="230" /></label>
+                <label class="field">Weight (kg)<input type="number" id="body-weight" min="30" max="250" /></label>
+              </div>
+              <div>
+                <div class="field">Shape</div>
+                <div class="chips" id="body-shape">
+                  <button type="button" data-body-shape="slim">Slim</button>
+                  <button type="button" data-body-shape="average">Average</button>
+                  <button type="button" data-body-shape="athletic">Athletic</button>
+                  <button type="button" data-body-shape="heavy">Heavy</button>
+                </div>
+              </div>
+              <p class="error" id="body-error"></p>
+              <label class="check"><input type="checkbox" id="show-skeleton" /> Show skeleton</label>
+              <button type="button" class="ghost" id="wear-body">View body only</button>
+              <div>
+                <h3>Hairstyle</h3>
+                <p class="muted">Picked from your photo. Choose another one if you like.</p>
+                <div class="chips" id="hair-list"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <template id="photo-slot">
+      <label class="drop"><input type="file" accept="image/*" capture="environment" /><span><b></b>Tap to choose a photo</span><img alt="" hidden /></label>
+    </template>
+
+    <script type="module" src="./studio.mjs?v=5"></script>
+  </body>
+</html>

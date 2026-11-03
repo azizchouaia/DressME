@@ -1,0 +1,9 @@
+omegaconf==2.3.0
+einops==0.7.0
+transformers==4.35.2
+huggingface-hub==0.20.3
+trimesh>=4.6
+rembg[cpu]
+imageio==2.33.1
+scikit-image
+Pillow>=10.1.0

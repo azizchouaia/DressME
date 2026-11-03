@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     storage_region: str = "auto"
 
     clothing_analyzer: Literal["local-heuristic"] = "local-heuristic"
+    garment_processor: Literal["unavailable", "triposr"] = "unavailable"
+    triposr_url: str = "http://127.0.0.1:8766"
+    triposr_timeout_seconds: int = 300
+
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
+    stylist_data: Path = REPO_ROOT / "storage" / "stylist"
 
     seed_demo_user: bool = True
     demo_email: str = "demo@smartwardrobe.app"

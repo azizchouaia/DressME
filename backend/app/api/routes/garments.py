@@ -16,8 +16,19 @@ router = APIRouter(prefix="/garments", tags=["garments"])
 def process_3d(item_id: UUID, db: DbSession, user: CurrentUser) -> Garment3DStatus:
     item = get_owned_item(db, user, item_id)
     result = get_garment_processor().submit(item)
+    item.status = result.status
+    if result.glb_url:
+        item.glb_url = result.glb_url
+    if result.category:
+        item.category = result.category
+    db.commit()
+    db.refresh(item)
     return Garment3DStatus(
-        item_id=item.id, status=item.status, glb_url=item.glb_url, message=result.message
+        item_id=item.id,
+        status=item.status,
+        glb_url=item.glb_url,
+        category=item.category,
+        message=result.message,
     )
 
 

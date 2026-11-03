@@ -1,9 +1,9 @@
 """Export a garment authored in Blender to a web-ready GLB.
 
-Run inside Blender (offline / server-side, never in the frontend):
+Run inside Blender (offline / server-side):
 
     blender garment.blend --background --python blender/scripts/export_garment.py -- \
-        --output frontend/public/models/garments/my_shirt.glb --max-faces 12000
+        --output models/garments/my_shirt.glb --max-faces 12000
 
 Conventions every garment must follow so it lines up with base_avatar.glb:
   * Y up (Blender Z up is converted by the exporter), meters, feet at origin.

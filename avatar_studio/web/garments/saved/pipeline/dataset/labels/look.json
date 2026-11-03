@@ -1,0 +1,16 @@
+{
+  "hair": "short03",
+  "hair_length": -0.779,
+  "hair_scores": {
+    "short04": 0.004,
+    "short02": 0.0,
+    "short03": 0.153,
+    "short01": 0.005,
+    "afro01": 0.003,
+    "bob01": 0.649,
+    "long01": 0.039,
+    "ponytail01": 0.108,
+    "braid01": 0.014,
+    "none": 0.015
+  }
+}

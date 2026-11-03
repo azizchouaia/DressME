@@ -67,4 +67,5 @@ class Garment3DStatus(BaseModel):
     item_id: UUID
     status: ClothingStatus
     glb_url: str | None
+    category: ClothingCategory | None = None
     message: str

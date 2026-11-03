@@ -148,9 +148,98 @@ def test_body_profile_drives_avatar(client: TestClient, auth_headers: dict[str, 
     )
     avatar = client.get("/api/v1/avatar", headers=auth_headers).json()
     assert avatar["preset"] == "broad"
-    assert avatar["scale"]["x"] > 1
+    assert avatar["scale"]["x"] == 1
     assert avatar["scale"]["y"] < 1
+    assert avatar["parameters"]["chest_ratio"] > 1
+    assert avatar["parameters"]["depth_ratio"] > 1
     assert avatar["base_model_url"].endswith("base_avatar.glb")
+    assert avatar["from_photo"] is False
+
+
+def test_process_3d_stays_unavailable_without_the_model(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    image = Image.new("RGB", (32, 32), (20, 40, 180))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    item = client.post(
+        "/api/v1/wardrobe/upload",
+        headers=auth_headers,
+        files={"image": ("swatch.png", buffer.getvalue(), "image/png")},
+    ).json()
+
+    response = client.post(f"/api/v1/garments/{item['id']}/process-3d", headers=auth_headers)
+    assert response.status_code == 202, response.text
+    body = response.json()
+    assert body["glb_url"] is None
+    assert "not available" in body["message"]
+
+
+def test_photo_preview_keeps_the_wearable_body(client: TestClient, auth_headers: dict[str, str]) -> None:
+    image = Image.new("RGB", (32, 32), (180, 140, 120))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    blocked = client.post(
+        "/api/v1/avatar/from-photo",
+        headers=auth_headers,
+        files={"image": ("person.png", buffer.getvalue(), "image/png")},
+    )
+    assert blocked.status_code == 503
+
+    from app.db.session import SessionLocal
+    from app.models.user import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "ada@example.com").one()
+        user.body_profile.avatar_glb_url = "/media/avatars/ada/body.glb"
+        db.commit()
+    finally:
+        db.close()
+
+    avatar = client.get("/api/v1/avatar", headers=auth_headers).json()
+    assert avatar["base_model_url"].endswith("body.glb")
+    assert avatar["photo_model_url"].endswith("body.glb")
+    assert avatar["from_photo"] is True
+
+    cleared = client.delete("/api/v1/avatar/from-photo", headers=auth_headers)
+    assert cleared.status_code == 200
+    assert cleared.json()["from_photo"] is False
+    assert cleared.json()["photo_model_url"] is None
+
+
+def test_models_and_viewer_are_served(client: TestClient) -> None:
+    viewer = client.get("/viewer/")
+    assert viewer.status_code == 200
+    assert "canvas" in viewer.text
+
+    model = client.get("/models/avatar/base_avatar.glb")
+    assert model.status_code == 200
+    assert model.content.startswith(b"glTF")
+
+
+def test_stylist_builds_an_outfit_from_the_wardrobe(client: TestClient, auth_headers: dict[str, str], monkeypatch) -> None:
+    import numpy as np
+
+    class StandIn:
+        def embed_text(self, text: str):
+            vector = np.ones(4, dtype=np.float32)
+            return vector / np.linalg.norm(vector)
+
+        def embed_image(self, data: bytes):
+            return self.embed_text("image")
+
+    monkeypatch.setattr("app.api.routes.stylist.build_embedder", lambda: StandIn())
+    assert client.post("/api/v1/stylist/chat", data={"message": "what should I wear"}).status_code == 401
+    response = client.post(
+        "/api/v1/stylist/chat",
+        headers=auth_headers,
+        data={"message": "what should I wear", "weather": "rainy", "season": "autumn", "occasion": "office"},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert "wear" in body["reply"].lower() or body["outfit"]
+    assert {piece["slot"] for piece in body["outfit"]} >= {"top", "bottom"}
 
 
 def test_garment_3d_status(client: TestClient, auth_headers: dict[str, str]) -> None:

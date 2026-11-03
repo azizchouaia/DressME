@@ -10,6 +10,10 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_tmp / 'test.db'}"
 os.environ["STORAGE_LOCAL_ROOT"] = str(_tmp / "storage")
 os.environ["SEED_DEMO_USER"] = "true"
 os.environ["ENVIRONMENT"] = "test"
+os.environ["STYLIST_DATA"] = str(_tmp / "stylist")
+os.environ["LLM_BASE_URL"] = ""
+os.environ["LLM_API_KEY"] = ""
+os.environ["LLM_MODEL"] = ""
 
 from fastapi.testclient import TestClient  # noqa: E402
 

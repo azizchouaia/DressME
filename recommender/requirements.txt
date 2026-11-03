@@ -1,0 +1,6 @@
+# Torch is installed separately so pip does not replace the CUDA build with the CPU wheel:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+transformers
+pillow
+numpy
+psycopg[binary]

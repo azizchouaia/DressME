@@ -1,0 +1,10 @@
+{
+  "name": "maya",
+  "mesh": "/avatars/maya/avatar.glb",
+  "skin": "#a57355",
+  "hair": "#16120f",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "afro01"
+  }
+}

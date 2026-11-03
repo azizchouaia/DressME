@@ -1,4 +1,4 @@
-"""Starter wardrobe linked to the sample GLB garments shipped with the frontend."""
+"""Starter wardrobe linked to the sample GLB garments served from /models."""
 
 from uuid import UUID
 

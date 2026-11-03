@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.router import api_router
-from app.core.config import get_settings
+from app.core.config import REPO_ROOT, get_settings
 from app.db.seed import ensure_demo_user
 from app.db.session import SessionLocal
 
@@ -29,13 +29,16 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Flutter web runs on its own localhost port. Mobile apps are not subject to CORS.
+    cors_kwargs: dict[str, object] = {
+        "allow_origins": settings.cors_origins,
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+    if settings.environment == "development":
+        cors_kwargs["allow_origin_regex"] = r"https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    app.add_middleware(CORSMiddleware, **cors_kwargs)
     app.include_router(api_router, prefix=settings.api_prefix)
 
     if settings.storage_backend == "local":
@@ -45,6 +48,14 @@ def create_app() -> FastAPI:
             StaticFiles(directory=settings.storage_local_root),
             name="media",
         )
+
+    models_dir = REPO_ROOT / "models"
+    models_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/models", StaticFiles(directory=models_dir), name="models")
+
+    viewer_dir = REPO_ROOT / "viewer"
+    if viewer_dir.is_dir():
+        app.mount("/viewer", StaticFiles(directory=viewer_dir, html=True), name="viewer")
 
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:

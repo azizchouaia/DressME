@@ -5,15 +5,19 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 const canvas = document.getElementById('c')
 const errorNode = document.getElementById('error')
 const resetButton = document.getElementById('reset')
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true })
+const EMBED = new URLSearchParams(location.search).get('embed') === '1'
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: !EMBED })
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-renderer.setClearColor(0x000000, 0)
+renderer.setClearColor(EMBED ? 0xefebe4 : 0x000000, EMBED ? 1 : 0)
 
 const scene = new THREE.Scene()
-scene.add(new THREE.HemisphereLight(0xfff8f2, 0xb7aea4, 0.85))
-const key = new THREE.DirectionalLight(0xfff6ee, 1.05)
-key.position.set(2.4, 4, 3)
+scene.add(new THREE.HemisphereLight(0xfff7ef, 0xe4d5c6, 1.25))
+const key = new THREE.DirectionalLight(0xfffaf6, 1.7)
+key.position.set(2.2, 4.2, 3.4)
 scene.add(key)
+const fill = new THREE.DirectionalLight(0xffe8d2, 0.55)
+fill.position.set(-2.6, 2.2, 2.2)
+scene.add(fill)
 
 const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 30)
 camera.position.set(0, 0.95, 5.4)
@@ -24,6 +28,12 @@ controls.minDistance = 1.2
 controls.maxDistance = 6
 controls.update()
 controls.saveState()
+if (EMBED) document.body.classList.add('embed')
+if (new URLSearchParams(location.search).get('view') === 'head') {
+  camera.position.set(0, 1.6, 1.25)
+  controls.target.set(0, 1.57, 0)
+  controls.update()
+}
 
 const loader = new GLTFLoader()
 const group = new THREE.Group()
@@ -49,46 +59,31 @@ let buildBase = ''
 let buildRequest = 0
 
 const hairColors = {
-  black: '#1a120e',
-  brown: '#5c3a24',
-  red: '#8d3b24',
-  blonde: '#d7b56a',
+  black: '#2a1c16',
+  brown: '#7a4a2a',
+  red: '#c45a32',
+  blonde: '#e8c56e',
 }
 const skinColors = {
-  fair: '#f6d7c8',
-  light: '#b9aea3',
-  warm: '#d2a07a',
-  tan: '#a56b45',
-  brown: '#6b4032',
-  deep: '#3e271e',
+  fair: '#ffd8c6',
+  light: '#f3c2a4',
+  warm: '#e8a56e',
+  tan: '#c98456',
+  brown: '#8d5a3c',
+  deep: '#5c3828',
 }
 const eyeColors = {
-  hazel: '#8a6a3b',
-  black: '#1c140f',
-  green: '#3d6b45',
-  blue: '#3d6f9a',
+  hazel: '#a67c3d',
+  black: '#2a211c',
+  green: '#4e8a58',
+  blue: '#4c86b8',
 }
 
 const posePresets = {
-  tpose: {},
-  stand: { armL: -75, armR: -75, elbowL: 8, elbowR: 8 },
-  hips: { armL: -36, armR: -36, elbowL: 100, elbowR: 100, armInL: 48, armInR: 48 },
-  step: { armL: -80, armR: -45, legL: 32, legR: -10, kneeL: 22, elbowR: 12 },
-  wave: { armL: 62, armR: -75, elbowL: 28, elbowR: 8 },
-  'man-front': { armL: -72, armR: -72, elbowL: -8, elbowR: -8, armInL: 8, armInR: 8 },
-  'man-hip': {
-    armL: -48, armInL: 10, elbowL: -100, elbowYawL: -22, wristL: 20, wristTwistL: -30,
-    leftindex: 28, leftmiddle: 30, leftring: 28, leftpinky: 24, leftthumb: 20,
-    armR: -78, elbowR: -12, armInR: 8,
-  },
-  'woman-front': { armL: -76, armR: -68, elbowL: -8, elbowR: -10, armInL: 6, armInR: 10 },
-  'woman-hip': {
-    armR: -48, armInR: 10, elbowR: -100, elbowYawR: -22, wristR: 20, wristTwistR: -30,
-    rightindex: 28, rightmiddle: 30, rightring: 28, rightpinky: 24, rightthumb: 20,
-    armL: -78, elbowL: -12, armInL: 8, outL: 8, outR: 6, kneeL: 14,
-  },
+  front: { armL: -68, armR: -68, elbowL: 22, elbowR: 22, armInL: 10, armInR: 10, outL: 7, outR: 7, wristL: 8, wristR: 8 },
+  glance: { armL: -72, armR: -66, elbowL: 18, elbowR: 28, armInL: 6, armInR: 14, outL: 4, outR: 10, legL: 10, legR: -6, kneeR: 8, head: 32, neck: 8 },
+  casual: { armL: -58, armR: -58, elbowL: 42, elbowR: 42, armInL: 18, armInR: 18, outL: 8, outR: 8, wristL: 6, wristR: 6 },
 }
-let activePose = {}
 
 function resize() {
   const width = canvas.clientWidth || 1
@@ -96,25 +91,106 @@ function resize() {
   const pixelWidth = Math.floor(width * renderer.getPixelRatio())
   const pixelHeight = Math.floor(height * renderer.getPixelRatio())
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) renderer.setSize(width, height, false)
-  const bar = document.querySelector('.build-bar')
-  const sheet = document.querySelector('.sheet')
-  const dock = document.querySelector('.clothes-dock')
-  const top = bar ? bar.getBoundingClientRect().bottom : 0
-  const sheetTop = sheet && !sheet.hidden ? sheet.getBoundingClientRect().top : height
-  const dockTop = dock ? dock.getBoundingClientRect().top : height
-  const bottom = Math.max(0, height - Math.min(sheetTop, dockTop))
-  const free = Math.max(1, height - top - bottom)
-  const freeCenter = top + free / 2
-  const shift = height / 2 - freeCenter
-  camera.zoom = Math.min(1, free / (height * 0.86))
+  const blocks = [document.querySelector('.build-bar'), document.querySelector('.sheet')]
+    .filter((node) => node && !node.hidden)
+  let left = 0
+  let right = width
+  let top = 0
+  let bottom = height
+  blocks.forEach((node) => {
+    const rect = node.getBoundingClientRect()
+    const across = rect.left < width * 0.62 && rect.right > width * 0.38
+    if (across && rect.top > height * 0.45) bottom = Math.min(bottom, rect.top)
+    else if (rect.left > width * 0.45) right = Math.min(right, rect.left - 12)
+  })
+  const freeCenterX = left + Math.max(1, right - left) / 2
+  const freeCenterY = top + Math.max(1, bottom - top) / 2
   camera.aspect = width / height
-  camera.setViewOffset(width, height, 0, shift, width, height)
+  camera.setViewOffset(width, height, width / 2 - freeCenterX, height / 2 - freeCenterY, width, height)
   camera.updateProjectionMatrix()
 }
 
 function showError(message) {
   errorNode.hidden = !message
   errorNode.textContent = message || ''
+}
+
+let progressTimer = 0
+let seenProgress = 0
+
+function appendBuildLine(time, step, detail) {
+  const log = document.getElementById('build-log')
+  if (!log) return
+  const item = document.createElement('li')
+  const stamp = document.createElement('time')
+  stamp.textContent = time
+  const text = document.createElement('div')
+  const title = document.createElement('strong')
+  title.textContent = step
+  const line = document.createElement('span')
+  line.textContent = detail || ''
+  text.append(title, document.createElement('br'), line)
+  item.append(stamp, text)
+  log.append(item)
+  item.scrollIntoView({ block: 'end' })
+}
+
+function showBuild(title, detail) {
+  const overlay = document.getElementById('build-overlay')
+  const heading = document.getElementById('build-title')
+  const line = document.getElementById('build-detail')
+  const fit = document.getElementById('fit')
+  const spinner = overlay?.querySelector('.spinner')
+  if (heading) heading.textContent = title
+  if (line) line.textContent = detail
+  if (fit) fit.textContent = `${title}. ${detail}`
+  if (spinner) spinner.hidden = false
+  if (overlay) overlay.hidden = false
+  appendBuildLine(new Date().toLocaleTimeString('en-GB', { hour12: false }), title, detail)
+}
+
+function hideBuild() {
+  if (progressTimer) {
+    window.clearInterval(progressTimer)
+    progressTimer = 0
+  }
+  const overlay = document.getElementById('build-overlay')
+  if (overlay) overlay.hidden = true
+}
+
+function resetBuildLog() {
+  seenProgress = 0
+  const log = document.getElementById('build-log')
+  if (log) log.replaceChildren()
+}
+
+function watchBuild() {
+  if (progressTimer) window.clearInterval(progressTimer)
+  progressTimer = window.setInterval(async () => {
+    try {
+      const response = await fetch(`${AVATAR_SERVICE}/avatar-progress`)
+      if (!response.ok) return
+      const data = await response.json()
+      const events = Array.isArray(data.events) ? data.events : []
+      if (!events.length) seenProgress = 0
+      for (const event of events) {
+        if (event.id <= seenProgress) continue
+        seenProgress = event.id
+        const overlay = document.getElementById('build-overlay')
+        const heading = document.getElementById('build-title')
+        const line = document.getElementById('build-detail')
+        const fit = document.getElementById('fit')
+        if (heading) heading.textContent = event.step
+        if (line) line.textContent = event.detail || 'Still working.'
+        if (fit) fit.textContent = `${event.step}. ${event.detail || 'Still working.'}`
+        if (overlay) overlay.hidden = false
+        appendBuildLine(event.time, event.step, event.detail)
+      }
+      if (data.busy === false && seenProgress > 0) hideBuild()
+    } catch {
+      // The photo server can be busy for a moment between steps.
+    }
+  }, 1000)
 }
 
 function fitStanding(object) {
@@ -545,8 +621,7 @@ function buildRig(geometry, bounds) {
 
 function degrees(name) {
   const input = document.querySelector(`[data-pose="${name}"]`)
-  const value = input ? Number(input.value) || 0 : activePose[name] || 0
-  return (value * Math.PI) / 180
+  return ((Number(input?.value) || 0) * Math.PI) / 180
 }
 
 function shapeNumber(name) {
@@ -591,14 +666,14 @@ function writeFit() {
     fit.textContent = `${sex}, ${buildLabel(shapeNumber('build'))}. The other sliders still change this body.`
     return
   }
-  fit.textContent = 'Open Avatar to choose a gender and add photos. Build still changes this body.'
+  fit.textContent = 'Upload the front and the back, then press Build from photos. The T4 cloth is worn on the avatar already on screen.'
 }
 
 function resetShapeSliders() {
   const heightSlider = document.querySelector('[data-shape="height"]')
   if (heightSlider) heightSlider.value = String(Math.round(restHeight * 100))
   const shine = document.querySelector('[data-shape="shine"]')
-  if (shine) shine.value = '20'
+  if (shine) shine.value = '48'
   for (const name of [...shapeMorphs, 'build', 'shoulderSlope', 'pelvisTilt']) {
     const slider = document.querySelector(`[data-shape="${name}"]`)
     if (slider) slider.value = '0'
@@ -762,6 +837,11 @@ function addShapeMorphs(mesh) {
 
 function paintColors(mesh = rig?.mesh) {
   if (!mesh?.geometry?.attributes?.position) return
+  if (mesh.userData.photoSkin) {
+    const white = new Float32Array(mesh.geometry.attributes.position.count * 3).fill(1)
+    mesh.geometry.setAttribute('color', new THREE.BufferAttribute(white, 3))
+    return
+  }
   const skin = new THREE.Color(skinColors[skinChoice] || skinColors.light)
   const hair = new THREE.Color(hairColors[hairChoice] || hairColors.brown)
   const iris = new THREE.Color(eyeColors[eyeChoice] || eyeColors.hazel)
@@ -827,6 +907,7 @@ function paintColors(mesh = rig?.mesh) {
     }
     colors.setXYZ(index, color.r, color.g, color.b)
   }
+  if (activeSock === 'thin') tintThinSocks(mesh, colors)
   colors.needsUpdate = true
   const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
   materials.forEach((material) => {
@@ -857,13 +938,14 @@ function applyShape() {
   materials.forEach((material) => {
     if (material && 'roughness' in material) material.roughness = 0.92 - shine * 0.67
   })
-  const heightInput = document.querySelector('[data-shape="height"]')
-  const meters = heightInput ? (Number(heightInput.value) || 0) / 100 : restHeight
-  group.scale.setScalar(restHeight > 0 && meters > 0 ? meters / restHeight : 1)
+  const height = shapeNumber('height') / 100
+  group.scale.setScalar(restHeight > 0 ? height / restHeight : 1)
   rig.root.position.y = 0
   rig.root.updateMatrixWorld(true)
   const box = new THREE.Box3().setFromObject(rig.mesh)
   rig.root.position.y = -box.min.y / (group.scale.y || 1)
+  fitAccessories()
+  fitFootwear()
 }
 
 function applyPose() {
@@ -877,16 +959,23 @@ function applyPose() {
     pose.pelvis?.rotation.set(tilt, 0, 0)
     pose.left_shoulder?.rotation.set(0, degrees('armInL'), degrees('armL') + slope)
     pose.right_shoulder?.rotation.set(0, -degrees('armInR'), -(degrees('armR') + slope))
-    pose.left_elbow?.rotation.set(0, degrees('elbowYawL'), degrees('elbowL'))
-    pose.right_elbow?.rotation.set(0, -degrees('elbowYawR'), -degrees('elbowR'))
+    pose.left_elbow?.rotation.set(0, -degrees('elbowL'), 0)
+    pose.right_elbow?.rotation.set(0, degrees('elbowR'), 0)
     pose.left_wrist?.rotation.set(degrees('wristL'), degrees('wristTwistL'), 0)
     pose.right_wrist?.rotation.set(degrees('wristR'), -degrees('wristTwistR'), 0)
     pose.left_hip?.rotation.set(degrees('legL') - tilt, 0, degrees('outL'))
     pose.right_hip?.rotation.set(degrees('legR') - tilt, 0, -degrees('outR'))
     pose.left_knee?.rotation.set(degrees('kneeL'), 0, 0)
     pose.right_knee?.rotation.set(degrees('kneeR'), 0, 0)
-    pose.left_ankle?.rotation.set(degrees('ankleL'), 0, 0)
-    pose.right_ankle?.rotation.set(degrees('ankleR'), 0, 0)
+    const planted = activeShoe ? (footPreset[activeShoe] * Math.PI) / 180 : null
+    if (activeShoe) {
+      for (const name of ['ankleL', 'ankleR']) {
+        const input = document.querySelector(`[data-pose="${name}"]`)
+        if (input) input.value = String(footPreset[activeShoe])
+      }
+    }
+    pose.left_ankle?.rotation.set(planted ?? degrees('ankleL'), 0, 0)
+    pose.right_ankle?.rotation.set(planted ?? degrees('ankleR'), 0, 0)
     pose.spine1?.rotation.set(degrees('spine') * 0.4, 0, 0)
     pose.spine2?.rotation.set(degrees('spine'), 0, 0)
     pose.spine3?.rotation.set(degrees('spine') * 0.45, 0, 0)
@@ -908,9 +997,9 @@ function applyPose() {
     }
   } else {
     rig.upperArmL.rotation.set(0, 0, Math.PI / 2 + degrees('armL'))
-    rig.forearmL.rotation.set(degrees('elbowL'), 0, 0)
+    rig.forearmL.rotation.set(0, -degrees('elbowL'), 0)
     rig.upperArmR.rotation.set(0, 0, -Math.PI / 2 - degrees('armR'))
-    rig.forearmR.rotation.set(degrees('elbowR'), 0, 0)
+    rig.forearmR.rotation.set(0, degrees('elbowR'), 0)
     rig.lowerLegL.rotation.set(degrees('kneeL'), 0, 0)
     rig.lowerLegR.rotation.set(degrees('kneeR'), 0, 0)
     rig.spine.rotation.set(degrees('spine'), 0, 0)
@@ -936,6 +1025,7 @@ function stepCloth(dt) {
   const spring = 1 - Math.pow(0.78, dt * 60)
   let energy = 0
   for (const mesh of garmentMeshes()) {
+    if (mesh.userData.rigid) continue
     const bind = mesh.userData.bindPos
     const shown = mesh.userData.clothPos
     const vel = mesh.userData.clothVel
@@ -994,18 +1084,1010 @@ function render() {
 }
 
 const garmentFiles = [
-  ['/garments/shirt.glb', 0xc5c8cc],
-  ['/garments/shorts.glb', 0x2c3140],
-  ['/garments/vest.glb', 0x1a1c22],
+  ['/garments/shirt.glb', 0xc5c8cc, ''],
+  ['/garments/shorts.glb', 0x2c3140, ''],
+  ['/garments/vest.glb', 0x1a1c22, ''],
+  ['/garments/hat.glb', 0x1a1a1a, 'hat'],
+  ['/garments/shoes.glb', 0xf3f0ea, 'shoes'],
+  ['/garments/bag.glb', 0xc4a574, 'bag'],
 ]
+const worn = { hat: false, shoes: false, bag: false }
+let activeShoe = null
+let activeSock = null
+const footPreset = { flat: 0, sneaker: 12, heel: 32 }
+const shoeMeshes = {}
+let thickSock = null
+const accessories = []
+const springBones = []
+let springTimer = 0
+
+function jointRest(name) {
+  const bones = rig?.mesh?.skeleton?.bones
+  if (!bones) return null
+  const index = bones.findIndex((bone) => bone.name === name)
+  if (index < 0) return null
+  return new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(rig.mesh.skeleton.boneInverses[index]).invert())
+}
+
+function morphedAt(index, target) {
+  const position = rig.mesh.geometry.attributes.position
+  target.fromBufferAttribute(position, index)
+  const morphs = rig.mesh.geometry.morphAttributes.position || []
+  const influences = rig.mesh.morphTargetInfluences || []
+  for (let morph = 0; morph < morphs.length; morph += 1) {
+    const weight = influences[morph] || 0
+    if (!weight) continue
+    target.x += morphs[morph].getX(index) * weight
+    target.y += morphs[morph].getY(index) * weight
+    target.z += morphs[morph].getZ(index) * weight
+  }
+  return target
+}
+
+function vertexNear(target) {
+  const position = rig.mesh.geometry.attributes.position
+  const point = new THREE.Vector3()
+  let best = 0
+  let bestDistance = Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    point.fromBufferAttribute(position, index)
+    const distance = point.distanceToSquared(target)
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = index
+    }
+  }
+  return best
+}
+
+function earVertex(sign) {
+  const head = jointRest('head')
+  const position = rig.mesh.geometry.attributes.position
+  const point = new THREE.Vector3()
+  let best = 0
+  let bestSide = sign > 0 ? -Infinity : Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    point.fromBufferAttribute(position, index)
+    if (Math.abs(point.y - (head.y + 0.02)) > 0.04) continue
+    if (Math.abs(point.z - head.z) > 0.035) continue
+    const farther = sign > 0 ? point.x > bestSide : point.x < bestSide
+    if (farther) {
+      bestSide = point.x
+      best = index
+    }
+  }
+  return best
+}
+
+function trackAccessory(object, name, anchor, boneName, extra = new THREE.Vector3()) {
+  object.userData.extra = name
+  object.userData.anchor = anchor
+  object.userData.boneName = boneName
+  object.userData.extraOffset = extra
+  object.visible = false
+  object.traverse((child) => {
+    child.frustumCulled = false
+    child.castShadow = true
+  })
+  accessories.push(object)
+  return object
+}
+
+let footwearCache = null
+let restFoot = null
+let knitMap = null
+let knitNormal = null
+
+function footIndices(side) {
+  ensureFootwearCache()
+  return footwearCache[side]
+}
+
+function sockIndices(side) {
+  ensureFootwearCache()
+  return side ? footwearCache.sock[side] : footwearCache.sock.all
+}
+
+function ensureFootwearCache() {
+  if (footwearCache?.mesh === rig.mesh) return
+  const mesh = rig.mesh
+  const position = mesh.geometry.attributes.position
+  footwearCache = { mesh, left: [], right: [], sock: { left: [], right: [], all: [] } }
+  for (const side of ['left', 'right']) {
+    const ankleWeight = boneWeights(mesh, [`${side}_ankle`])
+    const footWeight = boneWeights(mesh, [`${side}_foot`])
+    const kneeWeight = boneWeights(mesh, [`${side}_knee`])
+    const ankle = jointRest(`${side}_ankle`)
+    for (let index = 0; index < position.count; index += 1) {
+      const y = position.getY(index)
+      const footish = ankleWeight[index] + footWeight[index]
+      if (footish > 0.5 && (!ankle || y <= ankle.y + 0.02)) footwearCache[side].push(index)
+      if (footish > 0.18 || (kneeWeight[index] > 0.22 && ankle && y < ankle.y + 0.16)) {
+        footwearCache.sock[side].push(index)
+        footwearCache.sock.all.push(index)
+      }
+    }
+  }
+}
+
+function toeBone(side) {
+  const bones = rig.mesh.skeleton.bones
+  for (const name of [`${side}_toe`, `${side}_toes`, `${side}_foot`]) {
+    const index = bones.findIndex((bone) => bone.name === name)
+    if (index >= 0) return index
+  }
+  return -1
+}
+
+function addBox(parts, min, max) {
+  const size = max.clone().sub(min)
+  if (size.x < 1e-4 || size.y < 1e-4 || size.z < 1e-4) return
+  const geometry = new THREE.BoxGeometry(size.x, size.y, size.z)
+  geometry.translate((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2)
+  parts.push(geometry)
+}
+
+function mergeParts(parts) {
+  let count = 0
+  let indexCount = 0
+  for (const geometry of parts) {
+    count += geometry.attributes.position.count
+    indexCount += geometry.index.count
+  }
+  const position = new Float32Array(count * 3)
+  const normal = new Float32Array(count * 3)
+  const index = new Uint32Array(indexCount)
+  let vertex = 0
+  let offset = 0
+  for (const geometry of parts) {
+    position.set(geometry.attributes.position.array, vertex * 3)
+    normal.set(geometry.attributes.normal.array, vertex * 3)
+    const source = geometry.index.array
+    for (let i = 0; i < source.length; i += 1) index[offset + i] = source[i] + vertex
+    offset += source.length
+    vertex += geometry.attributes.position.count
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3))
+  geometry.setIndex(new THREE.Uint32BufferAttribute(index, 1))
+  return geometry
+}
+
+function withScaleMorphs(geometry, sides) {
+  const position = geometry.attributes.position
+  const uniform = new Float32Array(position.count * 3)
+  const width = new Float32Array(position.count * 3)
+  for (let index = 0; index < position.count; index += 1) {
+    const pivot = jointRest(`${sides[index]}_ankle`) || new THREE.Vector3()
+    const x = position.getX(index) - pivot.x
+    uniform[index * 3] = x
+    uniform[index * 3 + 1] = position.getY(index) - pivot.y
+    uniform[index * 3 + 2] = position.getZ(index) - pivot.z
+    width[index * 3] = x
+  }
+  geometry.morphAttributes.position = [
+    new THREE.Float32BufferAttribute(uniform, 3),
+    new THREE.Float32BufferAttribute(width, 3),
+  ]
+}
+
+function biasToe(geometry, sides) {
+  const position = geometry.attributes.position
+  const index = geometry.attributes.skinIndex
+  const weight = geometry.attributes.skinWeight
+  const range = { left: [Infinity, -Infinity], right: [Infinity, -Infinity] }
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const side = sides[vertex]
+    const z = position.getZ(vertex)
+    if (z < range[side][0]) range[side][0] = z
+    if (z > range[side][1]) range[side][1] = z
+  }
+  const bones = { left: toeBone('left'), right: toeBone('right') }
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const side = sides[vertex]
+    const span = range[side][1] - range[side][0] || 1
+    const along = (position.getZ(vertex) - range[side][0]) / span
+    if (along < 0.62 || bones[side] < 0) continue
+    let channel = -1
+    for (let slot = 0; slot < 4; slot += 1) if (index.getComponent(vertex, slot) === bones[side]) channel = slot
+    if (channel < 0) {
+      channel = 0
+      for (let slot = 1; slot < 4; slot += 1) if (weight.getComponent(vertex, slot) < weight.getComponent(vertex, channel)) channel = slot
+      index.setComponent(vertex, channel, bones[side])
+    }
+    weight.setComponent(vertex, channel, weight.getComponent(vertex, channel) + 0.12 + along * 0.18)
+    let sum = 0
+    for (let slot = 0; slot < 4; slot += 1) sum += weight.getComponent(vertex, slot)
+    for (let slot = 0; slot < 4; slot += 1) weight.setComponent(vertex, slot, weight.getComponent(vertex, slot) / (sum || 1))
+  }
+}
+
+function shoeGeometry(style) {
+  const parts = []
+  const sides = []
+  const position = rig.mesh.geometry.attributes.position
+  for (const side of ['left', 'right']) {
+    const indices = footIndices(side)
+    if (!indices.length) continue
+    const min = new THREE.Vector3(Infinity, Infinity, Infinity)
+    const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity)
+    const point = new THREE.Vector3()
+    for (const index of indices) {
+      point.fromBufferAttribute(position, index)
+      min.min(point)
+      max.max(point)
+    }
+    min.x -= 0.012
+    max.x += 0.012
+    min.z -= 0.008
+    max.z += 0.012
+    const boxes = []
+    const soleTop = min.y + (style === 'sneaker' ? 0.018 : 0.012)
+    if (style === 'heel') {
+      const split = min.z + (max.z - min.z) * 0.42
+      boxes.push([new THREE.Vector3(min.x, min.y - 0.062, min.z), new THREE.Vector3(max.x, soleTop, split)])
+      boxes.push([new THREE.Vector3(min.x, min.y, split - 0.012), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.012, max.z)])
+    } else if (style === 'sneaker') {
+      boxes.push([new THREE.Vector3(min.x, min.y - 0.01, min.z), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.04, max.z)])
+    } else {
+      boxes.push([new THREE.Vector3(min.x, min.y, min.z), new THREE.Vector3(max.x, soleTop, max.z)])
+      boxes.push([new THREE.Vector3(min.x, soleTop, min.z), new THREE.Vector3(max.x, max.y + 0.016, max.z)])
+    }
+    for (const [from, to] of boxes) {
+      const before = parts.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0)
+      addBox(parts, from, to)
+      const after = parts.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0)
+      for (let index = before; index < after; index += 1) sides.push(side)
+    }
+  }
+  if (!parts.length) return null
+  const geometry = mergeParts(parts)
+  parts.forEach((geometry) => geometry.dispose())
+  skinFromBody(geometry)
+  biasToe(geometry, sides)
+  withScaleMorphs(geometry, sides)
+  return geometry
+}
+
+function wearSkinned(geometry, material) {
+  const mesh = new THREE.SkinnedMesh(geometry, material)
+  mesh.frustumCulled = false
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  mesh.position.copy(rig.mesh.position)
+  mesh.quaternion.copy(rig.mesh.quaternion)
+  mesh.scale.copy(rig.mesh.scale)
+  mesh.morphTargetInfluences = [0, 0]
+  rig.mesh.parent.add(mesh)
+  mesh.bind(rig.mesh.skeleton, rig.mesh.bindMatrix)
+  return mesh
+}
+
+function ensureShoeHide() {
+  const geometry = rig.mesh.geometry
+  if (!geometry.getAttribute('shoeHide')) {
+    geometry.setAttribute('shoeHide', new THREE.Float32BufferAttribute(new Float32Array(geometry.attributes.position.count), 1))
+  }
+  return geometry.getAttribute('shoeHide')
+}
+
+function installFootMask() {
+  ensureShoeHide()
+  const materials = Array.isArray(rig.mesh.material) ? rig.mesh.material : [rig.mesh.material]
+  materials.forEach((material) => {
+    if (!material || material.userData.footMask) return
+    material.userData.footMask = true
+    material.customProgramCacheKey = () => 'shoe-hide'
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float shoeHide;\nvarying float vShoeHide;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvShoeHide = shoeHide;')
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vShoeHide;')
+        .replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (vShoeHide > 0.5) discard;')
+    }
+    material.needsUpdate = true
+  })
+}
+
+function maskFeet(style) {
+  const hide = ensureShoeHide()
+  hide.array.fill(0)
+  if (style) {
+    const collar = style === 'sneaker' ? 1 : style === 'heel' ? 0.92 : 0.96
+    const point = new THREE.Vector3()
+    for (const side of ['left', 'right']) {
+      const indices = footIndices(side)
+      let minY = Infinity
+      let maxY = -Infinity
+      for (const index of indices) {
+        morphedAt(index, point)
+        if (point.y < minY) minY = point.y
+        if (point.y > maxY) maxY = point.y
+      }
+      const limit = minY + (maxY - minY) * collar
+      for (const index of indices) {
+        morphedAt(index, point)
+        if (point.y <= limit + 0.004) hide.setX(index, 1)
+      }
+    }
+  }
+  hide.needsUpdate = true
+  maskSock(style)
+}
+
+function maskSock(style) {
+  if (!thickSock) return
+  const hide = thickSock.geometry.getAttribute('sockHide')
+  const source = thickSock.userData.source
+  const shoe = ensureShoeHide()
+  for (let index = 0; index < hide.count; index += 1) hide.setX(index, style ? shoe.getX(source[index]) : 0)
+  hide.needsUpdate = true
+}
+
+function footSize(morphed) {
+  let length = 0
+  let width = 0
+  let count = 0
+  const point = new THREE.Vector3()
+  const position = rig.mesh.geometry.attributes.position
+  for (const side of ['left', 'right']) {
+    const indices = footIndices(side)
+    if (!indices.length) continue
+    let minX = Infinity
+    let maxX = -Infinity
+    let minZ = Infinity
+    let maxZ = -Infinity
+    for (const index of indices) {
+      if (morphed) morphedAt(index, point)
+      else point.fromBufferAttribute(position, index)
+      if (point.x < minX) minX = point.x
+      if (point.x > maxX) maxX = point.x
+      if (point.z < minZ) minZ = point.z
+      if (point.z > maxZ) maxZ = point.z
+    }
+    length += maxZ - minZ
+    width += maxX - minX
+    count += 1
+  }
+  return { length: length / (count || 1), width: width / (count || 1) }
+}
+
+function fitFootwear() {
+  if (!rig?.smplx || !restFoot) return
+  const current = footSize(true)
+  const lengthRatio = current.length / (restFoot.length || 1)
+  const widthRatio = current.width / (restFoot.width || 1)
+  const uniform = THREE.MathUtils.clamp(lengthRatio - 1, -0.45, 0.65)
+  const widthInfluence = THREE.MathUtils.clamp(widthRatio / Math.max(lengthRatio, 0.4) - 1, -0.6, 0.8)
+  for (const mesh of Object.values(shoeMeshes)) {
+    if (!mesh?.morphTargetInfluences) continue
+    mesh.morphTargetInfluences[0] = uniform
+    mesh.morphTargetInfluences[1] = widthInfluence
+  }
+  if (thickSock?.morphTargetInfluences) {
+    thickSock.morphTargetInfluences[0] = uniform
+    thickSock.morphTargetInfluences[1] = widthInfluence
+  }
+  maskFeet(activeShoe)
+}
+
+function tintThinSocks(mesh, colors) {
+  const tint = new THREE.Color('#f4f1ec')
+  const color = new THREE.Color()
+  for (const index of sockIndices()) {
+    color.setRGB(colors.getX(index), colors.getY(index), colors.getZ(index))
+    color.lerp(tint, 0.88)
+    colors.setXYZ(index, color.r, color.g, color.b)
+  }
+}
+
+function knitTextures() {
+  if (knitMap) return
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const context = canvas.getContext('2d')
+  context.fillStyle = '#f4f1ea'
+  context.fillRect(0, 0, 64, 64)
+  context.strokeStyle = '#d5cdc2'
+  context.lineWidth = 1
+  for (let y = 2; y < 64; y += 4) {
+    context.beginPath()
+    for (let x = 0; x <= 64; x += 2) context.lineTo(x, y + Math.sin((x + (y % 8)) * 0.5) * 1.1)
+    context.stroke()
+  }
+  knitMap = new THREE.CanvasTexture(canvas)
+  knitMap.wrapS = THREE.RepeatWrapping
+  knitMap.wrapT = THREE.RepeatWrapping
+  knitMap.repeat.set(8, 10)
+  const bump = document.createElement('canvas')
+  bump.width = 64
+  bump.height = 64
+  const bumpContext = bump.getContext('2d')
+  bumpContext.fillStyle = '#8080ff'
+  bumpContext.fillRect(0, 0, 64, 64)
+  for (let y = 0; y < 64; y += 4) {
+    bumpContext.fillStyle = y % 8 === 0 ? '#6a6aff' : '#9696ff'
+    bumpContext.fillRect(0, y, 64, 2)
+  }
+  knitNormal = new THREE.CanvasTexture(bump)
+  knitNormal.wrapS = THREE.RepeatWrapping
+  knitNormal.wrapT = THREE.RepeatWrapping
+  knitNormal.repeat.set(8, 10)
+}
+
+function discardSock(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float sockHide;\nvarying float vSockHide;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSockHide = sockHide;')
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vSockHide;')
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>\nif (vSockHide > 0.5) discard;')
+  }
+}
+
+function buildThickSock() {
+  const geometry = rig.mesh.geometry
+  const position = geometry.attributes.position
+  const normal = geometry.attributes.normal
+  const index = geometry.index
+  if (!index || !normal) return
+  const region = new Uint8Array(position.count)
+  const sourceSide = new Array(position.count)
+  for (const side of ['left', 'right']) {
+    for (const vertex of sockIndices(side)) {
+      region[vertex] = 1
+      sourceSide[vertex] = side
+    }
+  }
+  const map = new Int32Array(position.count).fill(-1)
+  const faces = []
+  for (let face = 0; face < index.count; face += 3) {
+    const a = index.getX(face)
+    const b = index.getX(face + 1)
+    const c = index.getX(face + 2)
+    if (region[a] && region[b] && region[c]) faces.push(a, b, c)
+  }
+  if (!faces.length) return
+  let cursor = 0
+  for (const vertex of faces) if (map[vertex] < 0) map[vertex] = cursor++
+  const positions = new Float32Array(cursor * 3)
+  const normals = new Float32Array(cursor * 3)
+  const uv = new Float32Array(cursor * 2)
+  const source = new Uint32Array(cursor)
+  const sides = new Array(cursor)
+  const point = new THREE.Vector3()
+  const direction = new THREE.Vector3()
+  let maxY = -Infinity
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    const slot = map[vertex]
+    if (slot < 0) continue
+    point.fromBufferAttribute(position, vertex)
+    direction.fromBufferAttribute(normal, vertex)
+    if (direction.lengthSq() < 1e-8) direction.set(0, 1, 0)
+    direction.normalize()
+    point.addScaledVector(direction, 0.0035)
+    positions[slot * 3] = point.x
+    positions[slot * 3 + 1] = point.y
+    positions[slot * 3 + 2] = point.z
+    normals[slot * 3] = direction.x
+    normals[slot * 3 + 1] = direction.y
+    normals[slot * 3 + 2] = direction.z
+    source[slot] = vertex
+    sides[slot] = sourceSide[vertex] || (point.x >= 0 ? 'left' : 'right')
+    if (point.y > maxY) maxY = point.y
+  }
+  for (let slot = 0; slot < cursor; slot += 1) {
+    const y = positions[slot * 3 + 1]
+    if (y > maxY - 0.012) {
+      const extra = 0.004 * (1 - (maxY - y) / 0.012)
+      positions[slot * 3] += normals[slot * 3] * extra
+      positions[slot * 3 + 1] += extra * 0.35
+      positions[slot * 3 + 2] += normals[slot * 3 + 2] * extra
+    }
+    uv[slot * 2] = Math.atan2(positions[slot * 3], positions[slot * 3 + 2]) / (Math.PI * 2) + 0.5
+    uv[slot * 2 + 1] = positions[slot * 3 + 1] * 6
+  }
+  const shell = new THREE.BufferGeometry()
+  shell.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  shell.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+  shell.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  shell.setAttribute('sockHide', new THREE.Float32BufferAttribute(new Float32Array(cursor), 1))
+  shell.setIndex(new THREE.Uint32BufferAttribute(faces.map((vertex) => map[vertex]), 1))
+  skinFromBody(shell)
+  withScaleMorphs(shell, sides)
+  knitTextures()
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xf7f4ef,
+    map: knitMap,
+    normalMap: knitNormal,
+    roughness: 0.94,
+    side: THREE.DoubleSide,
+  })
+  discardSock(material)
+  thickSock = wearSkinned(shell, material)
+  thickSock.userData.source = source
+  thickSock.visible = activeSock === 'thick'
+}
+
+function buildFootwear() {
+  try {
+    for (const mesh of Object.values(shoeMeshes)) mesh.removeFromParent()
+    thickSock?.removeFromParent()
+    for (const key of Object.keys(shoeMeshes)) delete shoeMeshes[key]
+    thickSock = null
+    footwearCache = null
+    restFoot = null
+    if (!rig?.smplx) return
+    installFootMask()
+    restFoot = footSize(false)
+    const colors = { flat: 0x243056, sneaker: 0xe7e7e4, heel: 0x161616 }
+    for (const style of ['flat', 'sneaker', 'heel']) {
+      const geometry = shoeGeometry(style)
+      if (!geometry) continue
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[style],
+        roughness: style === 'sneaker' ? 0.74 : 0.52,
+        metalness: style === 'heel' ? 0.08 : 0,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      })
+      const mesh = wearSkinned(geometry, material)
+      mesh.renderOrder = 2
+      mesh.visible = activeShoe === style
+      shoeMeshes[style] = mesh
+    }
+    buildThickSock()
+    fitFootwear()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function fingerFit(boneName, childName) {
+  const origin = jointRest(boneName)
+  const child = rig.bones[childName]
+  if (!origin || !child) return null
+  const axis = child.position.clone()
+  const length = axis.length() || 1
+  axis.multiplyScalar(1 / length)
+  const weights = boneWeights(rig.mesh, [boneName])
+  const point = new THREE.Vector3()
+  const radii = []
+  const center = new THREE.Vector3()
+  for (let index = 0; index < weights.length; index += 1) {
+    if (weights[index] < 0.45) continue
+    morphedAt(index, point).sub(origin)
+    const along = point.dot(axis)
+    if (along < length * 0.3 || along > length * 0.8) continue
+    point.addScaledVector(axis, -along)
+    const radial = point.length()
+    if (radial < 0.004 || radial > 0.028) continue
+    radii.push(radial)
+    center.add(point)
+  }
+  if (!radii.length) return { radius: 0.012, center: new THREE.Vector3(), axis, length }
+  center.multiplyScalar(1 / radii.length)
+  radii.sort((a, b) => a - b)
+  return { radius: radii[Math.min(radii.length - 1, Math.floor(radii.length * 0.8))], center, axis, length }
+}
+
+function fitAccessories() {
+  if (!rig?.smplx || !accessories.length) return
+  const point = new THREE.Vector3()
+  const leftEar = accessories.find((item) => item.userData.extra === 'earrings' && item.userData.side === 'left')
+  const rightEar = accessories.find((item) => item.userData.extra === 'earrings' && item.userData.side === 'right')
+  let headScale = 1
+  if (leftEar && rightEar) {
+    const width = morphedAt(leftEar.userData.anchor, point).distanceTo(morphedAt(rightEar.userData.anchor, new THREE.Vector3()))
+    if (!leftEar.userData.restWidth) leftEar.userData.restWidth = width || 1
+    headScale = width / leftEar.userData.restWidth
+  }
+  const handScale = 1 + shapeNumber('hands') / 220
+  for (const item of accessories) {
+    if (item.userData.ring && item.userData.childBone) {
+      const fit = fingerFit(item.parent?.name, item.userData.childBone)
+      if (!fit) continue
+      item.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), fit.axis)
+      item.position.copy(fit.axis).multiplyScalar(fit.length * 0.55).add(fit.center)
+      item.scale.setScalar(fit.radius / (item.userData.hole || 0.0156))
+      continue
+    }
+    if (item.userData.anchor == null || !item.parent) continue
+    const rest = jointRest(item.userData.boneName)
+    if (!rest) continue
+    morphedAt(item.userData.anchor, point).sub(rest).add(item.userData.extraOffset)
+    item.position.copy(point)
+    const scale = item.userData.handScaled ? handScale : headScale
+    item.scale.setScalar(scale)
+  }
+}
+
+function skinFromBody(geometry) {
+  const bodyPosition = rig.mesh.geometry.attributes.position
+  const bodyJoints = rig.mesh.geometry.attributes.skinIndex
+  const bodyWeights = rig.mesh.geometry.attributes.skinWeight
+  const position = geometry.attributes.position
+  const index = new Uint16Array(position.count * 4)
+  const weight = new Float32Array(position.count * 4)
+  const point = new THREE.Vector3()
+  const bodyPoint = new THREE.Vector3()
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    point.fromBufferAttribute(position, vertex)
+    let nearest = 0
+    let nearestDistance = Infinity
+    for (let body = 0; body < bodyPosition.count; body += 1) {
+      bodyPoint.fromBufferAttribute(bodyPosition, body)
+      const distance = point.distanceToSquared(bodyPoint)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = body
+      }
+    }
+    for (let channel = 0; channel < 4; channel += 1) {
+      index[vertex * 4 + channel] = bodyJoints.getComponent(nearest, channel)
+      weight[vertex * 4 + channel] = bodyWeights.getComponent(nearest, channel)
+    }
+  }
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(index, 4))
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(weight, 4))
+}
+
+function makeSpring(parent, local, length) {
+  const bone = new THREE.Object3D()
+  bone.position.copy(local)
+  parent.add(bone)
+  const spring = { bone, length, tail: null, prev: null, extras: [] }
+  springBones.push(spring)
+  return spring
+}
+
+function stepSprings(dt) {
+  const settle = 1 - Math.pow(0.12, Math.max(dt, 0.001) * 60)
+  for (const spring of springBones) {
+    const parent = spring.bone.parent
+    if (!parent) continue
+    parent.updateWorldMatrix(true, false)
+    const origin = new THREE.Vector3()
+    spring.bone.getWorldPosition(origin)
+    const rest = parent.localToWorld(spring.bone.position.clone().add(new THREE.Vector3(0, -spring.length, 0)))
+    if (!spring.tail) {
+      spring.tail = rest.clone()
+      spring.prev = rest.clone()
+    }
+    const velocity = spring.tail.clone().sub(spring.prev).multiplyScalar(0.84)
+    spring.prev.copy(spring.tail)
+    spring.tail.add(velocity)
+    spring.tail.lerp(rest, settle)
+    const offset = spring.tail.clone().sub(origin)
+    if (offset.lengthSq() < 1e-8) continue
+    offset.setLength(spring.length)
+    spring.tail.copy(origin).add(offset)
+    const local = parent.worldToLocal(spring.tail.clone()).sub(spring.bone.position)
+    spring.bone.rotation.x = Math.atan2(local.z, Math.max(0.001, -local.y))
+    spring.bone.rotation.z = Math.atan2(-local.x, Math.max(0.001, -local.y))
+  }
+}
+
+function kickSprings() {
+  if (springTimer) return
+  let last = performance.now()
+  const tick = (now) => {
+    const live = springBones.some((spring) => spring.extras.some((item) => item.visible))
+    if (!live) {
+      springTimer = 0
+      return
+    }
+    const dt = Math.min(0.05, (now - last) / 1000)
+    last = now
+    stepSprings(dt)
+    render()
+    springTimer = requestAnimationFrame(tick)
+  }
+  springTimer = requestAnimationFrame(tick)
+}
+
+function hairTint() {
+  if (!(rig?.mesh?.userData.photoSkin && photoAvatar?.hair && !hairPicked)) return new THREE.Color(hairColors[hairChoice] || hairColors.brown)
+  const color = new THREE.Color(photoAvatar.hair)
+  const hsl = color.getHSL({})
+  return color.setHSL(hsl.h, hsl.s, Math.max(hsl.l, 0.09))
+}
+
+function paintHairExtras() {
+  const color = hairTint()
+  group.traverse((child) => {
+    if (child.userData?.style && child.material?.color) child.material.color.copy(color)
+  })
+}
+
+const STYLE_KINDS = { hair: '/hair/manifest.json' }
+const styleUrls = { hair: {} }
+const STYLE_STORE = 'dressme.look'
+const styleChoice = { hair: JSON.parse(localStorage.getItem(STYLE_STORE) || '{}').hair || null }
+let hairPicked = false
+
+function markStyleChip(kind, id) {
+  document.querySelectorAll(`[data-style-${kind}]`).forEach((item) => {
+    item.classList.toggle('active', item.getAttribute(`data-style-${kind}`) === id)
+  })
+}
+
+function chosenStyle(kind) {
+  if (styleChoice[kind]) return styleChoice[kind]
+  const look = rig?.mesh?.userData.photoSkin ? photoAvatar?.look : null
+  return look?.[kind] || 'none'
+}
+
+const styleTokens = {}
+
+async function wearStyle(kind) {
+  const token = (styleTokens[kind] = (styleTokens[kind] || 0) + 1)
+  const id = chosenStyle(kind)
+  markStyleChip(kind, id)
+  const old = []
+  group.traverse((child) => {
+    if (child.userData?.style === kind) old.push(child)
+  })
+  old.forEach((child) => child.removeFromParent())
+  const body = rig?.mesh
+  const url = styleUrls[kind][id]
+  if (!body?.skeleton || !url) {
+    render()
+    return
+  }
+  const gltf = await new GLTFLoader().loadAsync(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`)
+  if (token !== styleTokens[kind] || body !== rig?.mesh || chosenStyle(kind) !== id) return
+  const meshes = []
+  gltf.scene.traverse((child) => {
+    if (child.isSkinnedMesh) meshes.push(child)
+  })
+  for (const child of meshes) {
+    const source = Array.isArray(child.material) ? child.material[0] : child.material
+    if (source?.map) source.map.colorSpace = THREE.SRGBColorSpace
+    child.material = new THREE.MeshStandardMaterial({
+      map: source?.map || null,
+      color: hairTint(),
+      alphaTest: 0.5,
+      side: THREE.DoubleSide,
+      roughness: 0.55,
+      metalness: 0,
+    })
+    child.frustumCulled = false
+    child.renderOrder = 2
+    child.bind(body.skeleton, child.bindMatrix)
+    child.userData.style = kind
+    group.add(child)
+  }
+  render()
+  requestAnimationFrame(render)
+}
+
+function wearStyles() {
+  for (const kind of Object.keys(STYLE_KINDS)) wearStyle(kind).catch((error) => console.error(error))
+}
+
+for (const [kind, manifest] of Object.entries(STYLE_KINDS)) {
+  const row = document.getElementById(`${kind}-styles`)
+  fetch(manifest)
+    .then((response) => (response.ok ? response.json() : []))
+    .then((items) => {
+      for (const item of items) {
+        styleUrls[kind][item.id] = item.url
+        if (!row) continue
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.textContent = item.label
+        button.setAttribute(`data-style-${kind}`, item.id)
+        row.append(button)
+      }
+      row?.querySelectorAll('button').forEach((button) => {
+        button.addEventListener('click', () => {
+          styleChoice[kind] = button.getAttribute(`data-style-${kind}`)
+          localStorage.setItem(STYLE_STORE, JSON.stringify(styleChoice))
+          wearStyle(kind).catch((error) => console.error(error))
+        })
+      })
+      if (rig?.mesh) wearStyle(kind).catch((error) => console.error(error))
+    })
+    .catch(() => {})
+}
+
+let humanAssets = null
+
+async function loadHumanAssets() {
+  if (humanAssets) return humanAssets
+  const [glasses, left, right, ring] = await Promise.all([
+    loader.loadAsync('/garments/makehuman/glasses.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/earring-left.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/earring-right.glb?v=2'),
+    loader.loadAsync('/garments/makehuman/ring.glb?v=2'),
+  ])
+  humanAssets = { glasses, left, right, ring }
+  return humanAssets
+}
+
+function assetMesh(gltf, shift) {
+  let source = null
+  gltf.scene.traverse((child) => {
+    if (child.isMesh && !source) source = child
+  })
+  const mesh = source.clone()
+  mesh.geometry = source.geometry.clone()
+  if (shift) mesh.geometry.translate(shift.x, shift.y, shift.z)
+  mesh.material = source.material
+  if (mesh.material) mesh.material.side = THREE.DoubleSide
+  mesh.castShadow = true
+  mesh.frustumCulled = false
+  return mesh
+}
+
+async function buildAccessories() {
+  accessories.length = 0
+  springBones.length = 0
+  const assets = await loadHumanAssets().catch((error) => {
+    console.error(error)
+    return null
+  })
+  const headBone = rig.bones.head
+  const head = jointRest('head')
+  const neck = jointRest('neck')
+  if (!headBone || !head || !neck) return
+  const gold = new THREE.MeshStandardMaterial({ color: 0xc6a15a, roughness: 0.28, metalness: 0.7 })
+  const cloth = new THREE.MeshStandardMaterial({ color: 0x8e3b3b, roughness: 0.78, side: THREE.DoubleSide })
+
+  const eyes = jointRest('left_eye_smplhf') && jointRest('right_eye_smplhf')
+    ? jointRest('left_eye_smplhf').add(jointRest('right_eye_smplhf')).multiplyScalar(0.5)
+    : head.clone().add(new THREE.Vector3(0, 0.03, 0.07))
+  if (assets?.glasses) {
+    const glasses = assetMesh(assets.glasses, new THREE.Vector3(0, -0.00144, -0.05434))
+    headBone.add(trackAccessory(glasses, 'glasses', vertexNear(eyes), 'head', new THREE.Vector3(0, 0, 0.001)))
+  }
+
+  if (assets?.left && assets?.right) {
+    const left = assetMesh(assets.left)
+    left.userData.side = 'left'
+    headBone.add(trackAccessory(left, 'earrings', earVertex(1), 'head', new THREE.Vector3(0.0015, 0, 0)))
+    const right = assetMesh(assets.right)
+    right.userData.side = 'right'
+    headBone.add(trackAccessory(right, 'earrings', earVertex(-1), 'head', new THREE.Vector3(-0.0015, 0, 0)))
+  }
+
+  if (assets?.ring && rig.bones.left_ring1 && rig.bones.left_ring2) {
+    const ring = assetMesh(assets.ring)
+    ring.userData.ring = true
+    ring.userData.hole = 0.01555
+    ring.userData.childBone = 'left_ring2'
+    ring.userData.extra = 'ring'
+    ring.visible = false
+    rig.bones.left_ring1.add(ring)
+    accessories.push(ring)
+  }
+
+  const necklaceGeo = new THREE.TorusGeometry(0.064, 0.0055, 8, 28)
+  necklaceGeo.rotateX(Math.PI / 2)
+  necklaceGeo.translate(neck.x, neck.y - 0.01, neck.z)
+  skinFromBody(necklaceGeo)
+  const necklace = new THREE.SkinnedMesh(necklaceGeo, gold)
+  necklace.bind(rig.mesh.skeleton)
+  necklace.userData.extra = 'necklace'
+  necklace.userData.soft = true
+  necklace.visible = false
+  necklace.frustumCulled = false
+  rig.root.add(necklace)
+  accessories.push(necklace)
+  const pendantSpring = makeSpring(rig.bones.neck, new THREE.Vector3(0, -0.02, 0.055), 0.045)
+  const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 10), gold)
+  pendant.position.y = -0.045
+  pendant.userData.extra = 'necklace'
+  pendant.visible = false
+  pendantSpring.bone.add(pendant)
+  pendantSpring.extras.push(necklace, pendant)
+  accessories.push(pendant)
+
+  const scarfGeo = new THREE.TorusGeometry(0.082, 0.013, 6, 20)
+  scarfGeo.rotateX(Math.PI / 2)
+  scarfGeo.translate(neck.x, neck.y - 0.035, neck.z + 0.01)
+  skinFromBody(scarfGeo)
+  const scarf = new THREE.SkinnedMesh(scarfGeo, cloth)
+  scarf.bind(rig.mesh.skeleton)
+  scarf.userData.extra = 'scarf'
+  scarf.userData.soft = true
+  scarf.visible = false
+  scarf.frustumCulled = false
+  rig.root.add(scarf)
+  accessories.push(scarf)
+  const scarfSpring = makeSpring(rig.bones.neck, new THREE.Vector3(0.02, -0.04, 0.06), 0.08)
+  const scarfEnd = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.008), cloth)
+  scarfEnd.position.y = -0.08
+  scarfEnd.userData.extra = 'scarf'
+  scarfEnd.visible = false
+  scarfSpring.bone.add(scarfEnd)
+  scarfSpring.extras.push(scarf, scarfEnd)
+  accessories.push(scarfEnd)
+
+  fitAccessories()
+  buildFootwear()
+}
+
+function coverHead(garment, body) {
+  const position = garment.geometry.attributes.position
+  const skin = body.geometry.attributes.position
+  let minY = Infinity
+  let maxY = -Infinity
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  let axisX = 0
+  let axisZ = 0
+  let axisCount = 0
+  for (let index = 0; index < position.count; index += 1) {
+    if (position.getY(index) > minY + 0.012) continue
+    axisX += position.getX(index)
+    axisZ += position.getZ(index)
+    axisCount += 1
+  }
+  if (!axisCount) return
+  axisX /= axisCount
+  axisZ /= axisCount
+  let crown = 0
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    if (y < minY + 0.03 || y > minY + 0.09) continue
+    crown = Math.max(crown, Math.hypot(position.getX(index) - axisX, position.getZ(index) - axisZ))
+  }
+  if (crown < 0.04) return
+  const bins = 72
+  const reach = new Array(bins).fill(0)
+  for (let index = 0; index < skin.count; index += 1) {
+    const y = skin.getY(index)
+    if (y < minY + 0.004 || y > maxY + 0.02) continue
+    const x = skin.getX(index) - axisX
+    const z = skin.getZ(index) - axisZ
+    const radius = Math.hypot(x, z)
+    if (radius > 0.2) continue
+    const bin = Math.round(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * bins) % bins
+    if (radius > reach[bin]) reach[bin] = radius
+  }
+  const spread = reach.slice()
+  for (let index = 0; index < bins; index += 1) {
+    reach[index] = Math.max(spread[index], spread[(index + bins - 1) % bins], spread[(index + 1) % bins])
+  }
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index) - axisX
+    const z = position.getZ(index) - axisZ
+    const bin = Math.round(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * bins) % bins
+    const factor = Math.min(1.12, Math.max(1, (reach[bin] + 0.006) / crown))
+    if (factor === 1) continue
+    position.setX(index, axisX + x * factor)
+    position.setZ(index, axisZ + z * factor)
+  }
+  const span = Math.max(0.05, maxY - minY)
+  for (let index = 0; index < position.count; index += 1) {
+    const y = position.getY(index)
+    const front = Math.min(1, Math.max(0, (position.getZ(index) - axisZ) / crown))
+    const along = 1 - (y - minY) / span
+    position.setY(index, y - 0.012 * front * along)
+  }
+  position.needsUpdate = true
+  garment.geometry.computeVertexNormals()
+}
 
 async function addGarments(root) {
   const body = rig?.mesh
   if (!body?.skeleton) return
   const garmentLoader = new GLTFLoader()
-  for (const [url, color] of garmentFiles) {
+  for (const [url, color, wear] of garmentFiles) {
     try {
-      const gltf = await garmentLoader.loadAsync(`${url}?v=71`)
+      const gltf = await garmentLoader.loadAsync(`${url}?v=85`)
       const meshes = []
       gltf.scene.traverse((child) => {
         if (child.isSkinnedMesh) meshes.push(child)
@@ -1013,18 +2095,24 @@ async function addGarments(root) {
       for (const child of meshes) {
         const map = child.material?.map || null
         const normalMap = child.material?.normalMap || null
+        const hasColors = Boolean(child.geometry.attributes.color)
         child.material = new THREE.MeshStandardMaterial({
-          color: map ? 0xffffff : color,
+          color: map || hasColors ? 0xffffff : color,
           map,
           normalMap,
-          roughness: 0.72,
-          metalness: 0,
+          vertexColors: hasColors,
+          roughness: wear === 'bag' ? 0.45 : 0.72,
+          metalness: wear === 'bag' ? 0.08 : 0,
           skinning: true,
           side: THREE.DoubleSide,
         })
         child.frustumCulled = false
         child.bind(body.skeleton, child.bindMatrix)
+        if (wear === 'hat') coverHead(child, body)
         child.userData.garment = true
+        child.userData.wear = wear
+        child.userData.rigid = Boolean(wear)
+        child.visible = Boolean(wear) && worn[wear] !== false
         const bound = child.geometry.attributes.position.array
         child.userData.bindPos = bound.slice()
         child.userData.clothPos = bound.slice()
@@ -1036,32 +2124,6 @@ async function addGarments(root) {
       showError(`${url}: ${error?.stack || error}`)
     }
   }
-}
-
-function clearGarments() {
-  const root = rig?.root
-  if (!root) return
-  const worn = []
-  root.traverse((child) => {
-    if (child.userData?.garment) worn.push(child)
-  })
-  worn.forEach((child) => child.removeFromParent())
-}
-
-async function wearSaved() {
-  if (!rig?.mesh?.skeleton || !rig.root) {
-    showError('Load the body first, then wear the saved clothes.')
-    return
-  }
-  showError('')
-  clearGarments()
-  await addGarments(rig.root)
-  settleCloth()
-  document.querySelectorAll('#wear-saved, #wear-saved-panel').forEach((button) => {
-    button.classList.add('active')
-    button.textContent = button.id === 'wear-saved' ? 'Wearing saved' : 'Wearing saved clothes'
-  })
-  render()
 }
 
 async function showMesh(url, height, options = {}) {
@@ -1080,6 +2142,8 @@ async function showMesh(url, height, options = {}) {
   if (!options.keepBuild) buildBase = ''
   showError('')
   while (group.children.length) group.remove(group.children[0])
+  accessories.length = 0
+  springBones.length = 0
   rig = null
   skeletonHelper = null
   try {
@@ -1104,32 +2168,26 @@ async function showMesh(url, height, options = {}) {
       }
       addShapeMorphs(skinned)
       const materials = Array.isArray(skinned.material) ? skinned.material : [skinned.material]
+      skinned.userData.photoSkin = materials.some((material) => material?.map)
       materials.forEach((material) => {
         if (material?.color) material.color.set(0xffffff)
         if (material && 'roughness' in material) material.roughness = 0.78
         if (material) material.vertexColors = true
       })
       paintColors(skinned)
-      if (document.body.dataset.page === 'poses') {
-        const poseMaterials = Array.isArray(skinned.material) ? skinned.material : [skinned.material]
-        poseMaterials.forEach((material) => {
-          if (!material) return
-          material.vertexColors = false
-          material.color?.set(0xbdbdbd)
-          if ('roughness' in material) material.roughness = 0.58
-          material.needsUpdate = true
-        })
-      }
-      if (String(url).includes('smplx_thin') || String(url).includes('smplx_body')) await addGarments(object)
+      markSkinChip(skinned.userData.photoSkin ? 'photo' : skinChoice)
+      if (!EMBED && ['smplx_thin', 'smplx_body', '/avatars/'].some((part) => String(url).includes(part))) await addGarments(object)
+      await buildAccessories()
       skeletonHelper = new THREE.SkeletonHelper(skinned)
-      skeletonHelper.visible = document.getElementById('skeleton')?.checked !== false
+      skeletonHelper.visible = EMBED ? false : document.getElementById('skeleton')?.checked !== false
       group.add(skeletonHelper)
       object.updateMatrixWorld(true)
       const box = new THREE.Box3().setFromObject(skinned)
       restHeight = Math.max(0.2, box.max.y - box.min.y)
       if (!options.keepShape) resetShapeSliders()
-      applyPose()
+      applyNamedPreset('front')
       resetButton.hidden = false
+      wearStyles()
       render()
       return
     }
@@ -1163,8 +2221,81 @@ function onMessage(event) {
       return
     }
   }
+  if (data?.type === 'look') {
+    showLook(data).catch((error) => showError(error instanceof Error ? error.message : 'The avatar did not load.'))
+    return
+  }
+  if (data?.type === 'hairstyle') {
+    styleChoice.hair = data.id || 'none'
+    wearStyle('hair').catch((error) => console.error(error))
+    return
+  }
+  if (data?.type === 'skeleton') {
+    if (skeletonHelper) skeletonHelper.visible = Boolean(data.on)
+    render()
+    return
+  }
+  if (data?.type === 'body') {
+    const height = document.querySelector('[data-shape="height"]')
+    if (height && data.height) height.value = String(Math.round(Number(data.height)))
+    for (const [name, value] of Object.entries(data.shape || {})) {
+      const slider = document.querySelector(`[data-shape="${name}"]`)
+      if (slider) slider.value = String(value)
+    }
+    applyShape()
+    applyPose()
+    render()
+    return
+  }
   if (!data || data.type !== 'scene') return
   showMesh(data.url || '', Number(data.height) || 1)
+}
+
+let lookToken = 0
+
+async function showLook(data) {
+  const token = ++lookToken
+  if (data.profile) photoAvatar = data.profile
+  styleChoice.hair = data.hair || null
+  const height = document.querySelector('[data-shape="height"]')
+  if (height && data.height) height.value = String(Math.round(Number(data.height)))
+  for (const [name, value] of Object.entries(data.shape || {})) {
+    const slider = document.querySelector(`[data-shape="${name}"]`)
+    if (slider) slider.value = String(value)
+  }
+  await showMesh(data.url, 1, { keepShape: true })
+  if (token !== lookToken) return
+  const urls = data.wear || []
+  if (!urls.length) {
+    const fitted = []
+    group.traverse((child) => {
+      if (child.userData?.wear === 'fitted') fitted.push(child)
+    })
+    fitted.forEach((child) => child.removeFromParent())
+    fittedUrls = []
+  }
+  for (const [index, url] of urls.entries()) {
+    await wearGarment(url, index > 0)
+    if (token !== lookToken) return
+  }
+  applyShape()
+  wearStyles()
+  if (EMBED) frameBody()
+  render()
+  window.parent.postMessage(JSON.stringify({ type: 'look-ready' }), '*')
+}
+
+function frameBody() {
+  if (!rig?.mesh) return
+  rig.root.updateMatrixWorld(true)
+  const box = new THREE.Box3().setFromObject(group)
+  const size = box.getSize(new THREE.Vector3())
+  const center = box.getCenter(new THREE.Vector3())
+  const distance = Math.max(size.y / (2 * Math.tan((camera.fov * Math.PI) / 360)), size.x * camera.aspect, 1.6)
+  camera.position.set(center.x, center.y, center.z + distance * 1.35)
+  controls.target.copy(center)
+  controls.update()
+  controls.saveState()
 }
 
 window.addEventListener('message', onMessage)
@@ -1210,6 +2341,7 @@ function skinnedMeshOf(gltf) {
   })
   return skinned
 }
+
 
 function startBuild() {
   if (photoSex !== 'female' && photoSex !== 'male') {
@@ -1265,14 +2397,25 @@ async function useBuild(sex) {
   if (request !== buildRequest) return
   await attachBuildDeltas(sex, request)
 }
-document.getElementById('reset-pose')?.addEventListener('click', () => {
+function applyNamedPreset(name) {
+  const preset = posePresets[name] || {}
   applyingPreset = true
   document.querySelectorAll('[data-pose]').forEach((input) => {
     input.value = '0'
   })
-  document.querySelectorAll('[data-preset]').forEach((button) => button.classList.toggle('active', button.dataset.preset === 'tpose'))
+  Object.entries(preset).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-pose="${key}"]`)
+    if (input) input.value = String(value)
+  })
+  document.querySelectorAll('[data-preset]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.preset === name)
+  })
   applyingPreset = false
   applyPose()
+}
+
+document.getElementById('reset-pose')?.addEventListener('click', () => {
+  applyNamedPreset('front')
 })
 document.getElementById('reset-shape')?.addEventListener('click', () => {
   resetShapeSliders()
@@ -1281,14 +2424,28 @@ document.getElementById('reset-shape')?.addEventListener('click', () => {
 document.getElementById('person-create')?.addEventListener('click', () => {
   createPerson().catch((error) => {
     console.error(error)
-    showError(error instanceof Error ? error.message : 'The photo could not be turned into a body.')
+    hideBuild()
+    showError(error instanceof Error ? error.message : 'The garment run did not start.')
     const button = document.getElementById('person-create')
-    if (button) button.disabled = false
+    if (button) {
+      button.disabled = false
+      button.textContent = 'Build from photos'
+    }
   })
 })
 
 const AVATAR_SERVICE = 'http://127.0.0.1:8766'
 const CLOTHES_SERVICE = 'http://127.0.0.1:8891'
+const KAGGLE_NOTEBOOK = 'https://www.kaggle.com/code/nadhirmaamar/dressme-high-res-clothes'
+let kaggleOpened = false
+
+function openKaggleOnce() {
+  if (kaggleOpened) return
+  kaggleOpened = true
+  window.setTimeout(() => {
+    window.open(KAGGLE_NOTEBOOK, 'dressme-t4')
+  }, 25000)
+}
 
 function renderPeople(people) {
   const root = document.getElementById('people')
@@ -1298,9 +2455,12 @@ function renderPeople(people) {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'person'
-    button.textContent = person.name
+    button.textContent = person.url.includes('/users/') ? `Show ${person.name}` : person.name
     button.addEventListener('click', () => {
-      showMesh(person.url, 1)
+      hideBuild()
+      showMesh(person.url, 1).catch((error) => {
+        showError(error instanceof Error ? error.message : 'This body could not be shown.')
+      })
     })
     root.append(button)
   }
@@ -1320,35 +2480,20 @@ async function loadPeople() {
   renderPeople(people)
 }
 
-const photoFiles = []
+const photoSlots = { front: null, back: null, side: null }
+const photoOrder = ['front', 'back', 'side']
 
-function renderPhotoList() {
-  const root = document.getElementById('photo-list')
-  if (!root) return
-  root.replaceChildren()
-  photoFiles.forEach((file, index) => {
-    const row = document.createElement('div')
-    row.className = 'photo-row'
-    const name = document.createElement('span')
-    name.textContent = file.name
-    const remove = document.createElement('button')
-    remove.type = 'button'
-    remove.textContent = 'Remove'
-    remove.addEventListener('click', () => {
-      photoFiles.splice(index, 1)
-      renderPhotoList()
-    })
-    row.append(name, remove)
-    root.append(row)
-  })
+function assignPhoto(view, file) {
+  photoSlots[view] = file
+  const name = document.getElementById(`photo-${view}-name`)
+  if (name) name.textContent = file ? file.name : 'No photo yet'
 }
 
 async function usePrototype(url, label) {
   const response = await fetch(url)
   if (!response.ok) throw new Error('The prototype photo could not be loaded.')
   const blob = await response.blob()
-  photoFiles.push(new File([blob], label, { type: blob.type || 'image/jpeg' }))
-  renderPhotoList()
+  assignPhoto('front', new File([blob], label, { type: blob.type || 'image/jpeg' }))
   showPanel('photo-panel')
 }
 
@@ -1359,77 +2504,94 @@ document.getElementById('proto-male')?.addEventListener('click', () => {
   usePrototype('/prototypes/male.jpg', 'male-prototype.jpg').catch((error) => showError(error.message))
 })
 
-document.getElementById('photo-add')?.addEventListener('change', (event) => {
-  for (const file of event.target.files || []) photoFiles.push(file)
-  event.target.value = ''
-  renderPhotoList()
-})
-
-async function createPerson() {
-  const name = document.getElementById('person-name')?.value?.trim() || 'Person'
-  const button = document.getElementById('person-create')
-  if (!photoFiles.length) {
-    showError('Add at least one full-body photo. A front T-pose is the one that sets the body.')
-    return
-  }
-  if (button) button.disabled = true
-  showError('')
-  const fit = document.getElementById('fit')
-  const cleared = await fetch(`${AVATAR_SERVICE}/avatar-clear?name=${encodeURIComponent(name)}`, { method: 'POST' })
-  if (!cleared.ok) throw new Error('The photo list could not be started.')
-  for (let index = 0; index < photoFiles.length; index += 1) {
-    if (fit) fit.textContent = `Sending photo ${index + 1} of ${photoFiles.length}.`
-    const saved = await fetch(
-      `${AVATAR_SERVICE}/avatar-photo?name=${encodeURIComponent(name)}&slot=p${index}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: photoFiles[index] },
-    )
-    if (!saved.ok) {
-      const detail = (await saved.text()).trim()
-      throw new Error(detail || `Photo service returned ${saved.status}`)
-    }
-  }
-  if (fit) fit.textContent = `Sorting the views and building ${name}. Each photo takes a minute or two.`
-  const gender = photoSex === 'auto' ? 'auto' : photoSex
-  const response = await fetch(
-    `${AVATAR_SERVICE}/avatar-build?name=${encodeURIComponent(name)}&gender=${encodeURIComponent(gender)}`,
-    { method: 'POST' },
-  )
-  if (!response.ok) {
-    const detail = (await response.text()).trim()
-    throw new Error(detail || `Photo service returned ${response.status}`)
-  }
-  const savedUrl = response.headers.get('X-Avatar-Url')
-  const detected = response.headers.get('X-Avatar-Gender') || 'neutral'
-  const views = response.headers.get('X-Avatar-Views') || ''
-  const hair = response.headers.get('X-Avatar-Hair')
-  if (hair) {
-    const sampled = new THREE.Color(`#${hair.replace('#', '')}`)
-    let nearest = 'brown'
-    let score = Infinity
-    Object.entries(hairColors).forEach(([name, value]) => {
-      const preset = new THREE.Color(value)
-      const distance = (sampled.r - preset.r) ** 2 + (sampled.g - preset.g) ** 2 + (sampled.b - preset.b) ** 2
-      if (distance < score) {
-        score = distance
-        nearest = name
-      }
-    })
-    hairChoice = nearest
-    document.querySelectorAll('[data-hair]').forEach((button) => button.classList.toggle('active', button.dataset.hair === nearest))
-  }
-  const blobUrl = URL.createObjectURL(await response.blob())
-  await showMesh(blobUrl, 1)
-  paintColors()
-  if (button) button.disabled = false
-  if (savedUrl) await loadPeople()
-  const summary = views ? views.replaceAll(',', ', ') : `${photoFiles.length} photos`
-  if (fit) fit.textContent = `${name} is ready. Detected ${detected}. Views: ${summary}.`
+for (const view of photoOrder) {
+  document.getElementById(`photo-${view}`)?.addEventListener('change', (event) => {
+    assignPhoto(view, event.target.files?.[0] || null)
+  })
 }
 
+async function createPerson() {
+  const button = document.getElementById('person-create')
+  const missing = ['front', 'back'].filter((view) => !photoSlots[view])
+  if (missing.length) {
+    showError('Choose the front and the back photo.')
+    return
+  }
+  if (button) {
+    button.disabled = true
+    button.textContent = 'Building…'
+  }
+  showError('')
+  resetBuildLog()
+  garmentSeen = 0
+  kaggleOpened = false
+  showBuild('T4 running', 'Build started. Connecting to the Tesla T4.')
+  const watch = document.getElementById('build-watch')
+  if (watch) watch.hidden = false
+  for (const view of ['front', 'back']) {
+    const file = photoSlots[view]
+    showBuild(`Sending the ${view} photo`, file.name)
+    const saved = await fetch(`${CLOTHES_SERVICE}/garment-photo?slot=${view}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: file,
+    })
+    if (!saved.ok) throw new Error((await saved.text()).trim() || `Clothes service returned ${saved.status}`)
+  }
+  const body = currentBody()
+  const started = await fetch(`${CLOTHES_SERVICE}/garment-build?body=${encodeURIComponent(body)}`, { method: 'POST' })
+  if (!started.ok) throw new Error((await started.text()).trim() || 'The garment run did not start.')
+  openKaggleOnce()
+  showBuild('T4 running', 'The Tesla T4 session is starting.')
+  watchGarment()
+}
+
+function currentBody() {
+  const url = String(shownUrl || '').split('?')[0]
+  if (url.startsWith('/users/') || url.startsWith('/smplx') || url.startsWith('/avatars/')) return url
+  return '/users/test-it.glb'
+}
+
+const PHOTO_AVATAR = '/avatars/me/profile.json'
+let photoAvatar = null
+let plainBody = '/smplx_thin.glb'
+
+function markSkinChip(name) {
+  document.querySelectorAll('[data-skin]').forEach((item) => item.classList.toggle('active', item.dataset.skin === name))
+}
+
+async function switchBody(url) {
+  const worn = [...fittedUrls]
+  await showMesh(url, 1, { keepShape: true })
+  for (const [index, garment] of worn.entries()) await wearGarment(garment, index > 0)
+}
+
+fetch(`${PHOTO_AVATAR}?t=${Date.now()}`)
+  .then((response) => (response.ok ? response.json() : null))
+  .then((profile) => {
+    if (!profile?.mesh || photoAvatar) return
+    photoAvatar = profile
+    const chip = document.querySelector('[data-skin="photo"]')
+    if (chip) chip.hidden = false
+    if (rig?.mesh?.userData.photoSkin) wearStyles()
+  })
+  .catch(() => {})
+
 document.querySelectorAll('[data-skin]').forEach((button) => {
-  button.addEventListener('click', () => {
+  button.addEventListener('click', async () => {
+    const onPhoto = Boolean(rig?.mesh?.userData.photoSkin)
+    if (button.dataset.skin === 'photo') {
+      if (!photoAvatar || onPhoto) return
+      plainBody = String(shownUrl || plainBody).split('?')[0]
+      await switchBody(photoAvatar.mesh)
+      return
+    }
     skinChoice = button.dataset.skin
-    document.querySelectorAll('[data-skin]').forEach((item) => item.classList.toggle('active', item === button))
+    if (onPhoto) {
+      await switchBody(plainBody)
+      return
+    }
+    markSkinChip(skinChoice)
     paintColors()
     render()
   })
@@ -1437,8 +2599,42 @@ document.querySelectorAll('[data-skin]').forEach((button) => {
 document.querySelectorAll('[data-hair]').forEach((button) => {
   button.addEventListener('click', () => {
     hairChoice = button.dataset.hair
+    hairPicked = true
     document.querySelectorAll('[data-hair]').forEach((item) => item.classList.toggle('active', item === button))
     paintColors()
+    paintHairExtras()
+    render()
+  })
+})
+document.querySelectorAll('[data-shoe]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.shoe
+    activeShoe = activeShoe === name ? null : name
+    document.querySelectorAll('[data-shoe]').forEach((item) => item.classList.toggle('active', item.dataset.shoe === activeShoe))
+    for (const [style, mesh] of Object.entries(shoeMeshes)) mesh.visible = style === activeShoe
+    applyPose()
+    render()
+  })
+})
+document.querySelectorAll('[data-sock]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.sock
+    activeSock = activeSock === name ? null : name
+    document.querySelectorAll('[data-sock]').forEach((item) => item.classList.toggle('active', item.dataset.sock === activeSock))
+    if (thickSock) thickSock.visible = activeSock === 'thick'
+    paintColors()
+    fitFootwear()
+    render()
+  })
+})
+document.querySelectorAll('[data-extra]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.extra
+    const items = accessories.filter((item) => item.userData.extra === name)
+    const show = items.some((item) => !item.visible)
+    items.forEach((item) => { item.visible = show })
+    button.classList.toggle('active', show)
+    if (show && items.some((item) => item.userData.soft || springBones.some((spring) => spring.extras.includes(item)))) kickSprings()
     render()
   })
 })
@@ -1450,11 +2646,21 @@ document.querySelectorAll('[data-eye]').forEach((button) => {
     render()
   })
 })
+document.querySelectorAll('[data-wear]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const name = button.dataset.wear
+    worn[name] = !worn[name]
+    document.querySelectorAll(`[data-wear="${name}"]`).forEach((item) => item.classList.toggle('active', worn[name]))
+    group.traverse((child) => {
+      if (child.userData?.wear === name) child.visible = worn[name]
+    })
+    render()
+  })
+})
 document.querySelectorAll('[data-preset]').forEach((button) => {
   button.addEventListener('click', () => {
     const preset = posePresets[button.dataset.preset] || {}
     applyingPreset = true
-    activePose = { ...preset }
     document.querySelectorAll('[data-pose]').forEach((input) => {
       input.value = '0'
     })
@@ -1476,10 +2682,8 @@ document.querySelectorAll('[data-builder]').forEach((button) => {
     document.querySelectorAll('[data-builder]').forEach((item) => item.classList.toggle('active', item === button))
   })
 })
-document.getElementById('wear-saved')?.addEventListener('click', () => { wearSaved() })
-document.getElementById('wear-saved-panel')?.addEventListener('click', () => { wearSaved() })
 document.getElementById('clothes-motion')?.addEventListener('click', () => {
-  const sequence = ['stand', 'step', 'hips', 'wave', 'stand']
+  const sequence = ['front', 'glance', 'casual', 'front']
   let frame = 0
   const play = () => {
     const name = sequence[Math.min(sequence.length - 1, Math.floor(frame / 18))]
@@ -1497,39 +2701,200 @@ document.getElementById('clothes-motion')?.addEventListener('click', () => {
   }
   play()
 })
+const clothSlots = { front: null, back: null, side: null }
+for (const view of ['front', 'back', 'side']) {
+  document.getElementById(`cloth-${view}`)?.addEventListener('change', (event) => {
+    clothSlots[view] = event.target.files?.[0] || null
+    const name = document.getElementById(`cloth-${view}-name`)
+    if (name) name.textContent = clothSlots[view] ? clothSlots[view].name : 'No photo yet'
+  })
+}
+
+async function loadWardrobe() {
+  const root = document.getElementById('wardrobe')
+  if (!root) return
+  root.replaceChildren()
+  try {
+    const response = await fetch(`${CLOTHES_SERVICE}/wardrobe`)
+    if (!response.ok) return
+    const items = await response.json()
+    if (!Array.isArray(items) || !items.length) return
+    const title = document.createElement('p')
+    title.className = 'hint'
+    title.textContent = 'Saved garments. Choose one to wear it again.'
+    root.append(title)
+    for (const item of items) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'ghost'
+      const top = item.markers?.top === 'long_sleeves' ? 'long sleeves' : 'short sleeves'
+      const bottom = item.markers?.bottom === 'pants' ? 'pants' : 'shorts'
+      button.textContent = `${top}, ${bottom}`
+      button.addEventListener('click', () => {
+        wearGarment(item.mesh).catch((error) => showError(error instanceof Error ? error.message : 'That garment did not wear.'))
+      })
+      root.append(button)
+    }
+  } catch {
+    // The clothes server is optional until a garment is made.
+  }
+}
+
+async function wearGarment(url, keep = false) {
+  const body = rig?.mesh
+  if (!body?.skeleton) throw new Error('The avatar has to be on screen before the garment can be worn.')
+  fittedUrls = keep ? [...fittedUrls, url] : [url]
+  if (!keep) {
+    group.traverse((child) => {
+      if (child.userData?.wear === 'fitted') child.removeFromParent()
+      if (child.userData?.garment && child.userData.wear !== 'fitted') child.visible = false
+    })
+  }
+  const gltf = await new GLTFLoader().loadAsync(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`)
+  const meshes = []
+  gltf.scene.traverse((child) => {
+    if (child.isSkinnedMesh) meshes.push(child)
+  })
+  if (!meshes.length) throw new Error('The garment mesh has no skin weights.')
+  for (const child of meshes) {
+    const source = Array.isArray(child.material) ? child.material[0] : child.material
+    const hasMap = !!source?.map
+    const hasColors = !hasMap && !!child.geometry.getAttribute('color')
+    const clothColor = source?.color
+    if (source?.map) source.map.colorSpace = THREE.SRGBColorSpace
+    child.material = new THREE.MeshStandardMaterial({
+      color: hasColors || hasMap ? 0xffffff : (clothColor ? clothColor.clone() : 0xf4f1ea),
+      map: hasMap ? source.map : null,
+      normalMap: source?.normalMap || null,
+      vertexColors: hasColors,
+      roughness: hasMap ? 0.74 : 0.82,
+      metalness: 0,
+      skinning: true,
+      side: THREE.DoubleSide,
+    })
+    child.frustumCulled = false
+    child.bind(body.skeleton, child.bindMatrix)
+    child.userData.garment = true
+    child.userData.wear = 'fitted'
+    child.visible = true
+    group.add(child)
+  }
+  render()
+}
+
+let garmentSeen = 0
+let garmentTimer = 0
+let fittedUrls = []
+
+function watchGarment() {
+  if (garmentTimer) window.clearInterval(garmentTimer)
+  garmentTimer = window.setInterval(async () => {
+    try {
+      const response = await fetch(`${CLOTHES_SERVICE}/garment-status`)
+      if (!response.ok) return
+      const data = await response.json()
+      const watch = document.getElementById('build-watch')
+      if (watch) {
+        watch.hidden = !data.watch
+        if (data.watch) watch.href = data.watch
+      }
+      for (const event of data.events || []) {
+        if (event.id <= garmentSeen) continue
+        garmentSeen = event.id
+        const heading = document.getElementById('build-title')
+        const line = document.getElementById('build-detail')
+        const fit = document.getElementById('fit')
+        if (heading) heading.textContent = event.step
+        if (line) line.textContent = event.detail || 'Still working.'
+        if (fit) fit.textContent = `${event.step}. ${event.detail || ''}`
+        const overlay = document.getElementById('build-overlay')
+        if (overlay) overlay.hidden = false
+        appendBuildLine(event.time, event.step, event.detail)
+        if (watch) watch.hidden = false
+      }
+      const button = document.getElementById('clothes-from-photo')
+      const buildButton = document.getElementById('person-create')
+      if (data.busy === false && garmentSeen > 0) {
+        window.clearInterval(garmentTimer)
+        garmentTimer = 0
+        if (button) {
+          button.disabled = false
+          button.textContent = 'Make the wearable garment'
+        }
+        if (buildButton) {
+          buildButton.disabled = false
+          buildButton.textContent = 'Build from photos'
+        }
+        if (data.mesh) {
+          await wearGarment(data.mesh)
+          if (data.pants) await wearGarment(data.pants, true)
+          await loadWardrobe()
+          const heading = document.getElementById('build-title')
+          const line = document.getElementById('build-detail')
+          if (heading) heading.textContent = 'Build successful'
+          if (line) line.textContent = 'The shirt and pants are on the avatar.'
+          const fit = document.getElementById('fit')
+          if (fit) fit.textContent = 'Build successful.'
+          window.setTimeout(() => {
+            hideBuild()
+            resetBuildLog()
+            const watch = document.getElementById('build-watch')
+            if (watch) watch.hidden = true
+          }, 2800)
+        } else if (data.detail) {
+          showError(data.detail)
+        }
+      }
+    } catch {
+      // The clothes server can pause between Kaggle checks.
+    }
+  }, 3000)
+}
+
 document.getElementById('clothes-from-photo')?.addEventListener('click', async () => {
-  const fit = document.getElementById('fit')
-  if (!photoFiles.length) {
-    showError('Add one full-body photo first. That photo is the outer layer.')
+  const missing = ['front', 'back'].filter((view) => !clothSlots[view])
+  if (missing.length) {
+    showError('Choose the garment front and the garment back.')
     return
   }
+  const button = document.getElementById('clothes-from-photo')
+  if (button) {
+    button.disabled = true
+    button.textContent = 'Making the garment…'
+  }
   showError('')
-  if (fit) fit.textContent = `Inventing the shirt, shorts, and back view, then building with ${clothBuilder}.`
+  resetBuildLog()
+  garmentSeen = 0
+  kaggleOpened = false
+  showBuild('T4 running', 'Build started. Connecting to the Tesla T4.')
+  const watch = document.getElementById('build-watch')
+  if (watch) watch.hidden = false
   try {
-    const saved = await fetch(`${CLOTHES_SERVICE}/from-photo?builder=${encodeURIComponent(clothBuilder)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
-      body: photoFiles[0],
-    })
-    const detail = (await saved.text()).trim()
-    if (!saved.ok) throw new Error(detail || `Clothes service returned ${saved.status}`)
-    if (fit) fit.textContent = detail
-    const watch = async () => {
-      for (let attempt = 0; attempt < 40; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 4000))
-        const status = await fetch(`${CLOTHES_SERVICE}/status`)
-        const text = (await status.text()).trim()
-        if (fit) fit.textContent = text
-        if (/stopped|ready|meshes are in/i.test(text)) break
-      }
+    for (const view of ['front', 'back']) {
+      showBuild(`Sending the ${view} photo`, clothSlots[view].name)
+      const saved = await fetch(`${CLOTHES_SERVICE}/garment-photo?slot=${view}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: clothSlots[view],
+      })
+      if (!saved.ok) throw new Error((await saved.text()).trim() || `Clothes service returned ${saved.status}`)
     }
-    watch().catch(() => {})
+    const body = currentBody()
+    const started = await fetch(`${CLOTHES_SERVICE}/garment-build?body=${encodeURIComponent(body)}`, { method: 'POST' })
+    if (!started.ok) throw new Error((await started.text()).trim() || 'The garment run did not start.')
+    openKaggleOnce()
+    showBuild('T4 running', 'The Tesla T4 session is starting.')
+    watchGarment()
   } catch (error) {
+    hideBuild()
     showError(error instanceof Error ? error.message : 'The clothes service is not running.')
+    if (button) {
+      button.disabled = false
+      button.textContent = 'Make the wearable garment'
+    }
   }
 })
 function showPanel(id) {
-  if (id === 'move-panel') return
   const panel = document.getElementById(id)
   const sheet = document.querySelector('.sheet')
   const opening = Boolean(panel?.hidden)
@@ -1632,96 +2997,30 @@ document.getElementById('skeleton')?.addEventListener('change', (event) => {
 })
 window.addEventListener('resize', render)
 renderer.setAnimationLoop(render)
-window.parent.postMessage(JSON.stringify({ type: 'ready' }), '*')
-function frameCatalog() {
-  controls.target.set(0, 0.86, 0)
-  camera.position.set(0, 0.9, 4.4)
-  controls.update()
+function tickEmbed() {
   render()
+  requestAnimationFrame(tickEmbed)
 }
-
-function currentSex() {
-  return document.querySelector('[data-sex].active')?.dataset.sex === 'female' ? 'female' : 'male'
-}
-
-function poseKey(sex, kind) {
-  if (!kind || kind === 'tpose') return 'tpose'
-  return `${sex === 'female' ? 'woman' : 'man'}-${kind}`
-}
-
-function poseFileName() {
-  const sex = currentSex() === 'female' ? 'woman' : 'man'
-  const kind = document.querySelector('[data-kind].active')?.dataset.kind || 'tpose'
-  return `${sex}-${kind === 'tpose' ? 'tpose' : kind}`
-}
-
-function saveCanvas(name) {
-  frameCatalog()
-  const link = document.createElement('a')
-  link.download = `${name}.png`
-  link.href = renderer.domElement.toDataURL('image/png')
-  link.click()
-}
-
-function applyKind(kind) {
-  document.querySelectorAll('[data-kind]').forEach((button) => {
-    button.classList.toggle('active', button.dataset.kind === kind)
-  })
-  activePose = { ...(posePresets[poseKey(currentSex(), kind)] || {}) }
-  applyPose()
-  frameCatalog()
-}
-
-async function showSex(sex) {
-  document.querySelectorAll('[data-sex]').forEach((button) => {
-    button.classList.toggle('active', button.dataset.sex === sex)
-  })
-  await showMesh(`/presets/${sex}_average.glb`, 1)
-  applyKind(document.querySelector('[data-kind].active')?.dataset.kind || 'tpose')
-}
-
-const catalogShots = [
-  ['male', 'tpose', 'man-tpose'],
-  ['male', 'man-front', 'man-front'],
-  ['male', 'man-hip', 'man-hip'],
-  ['female', 'tpose', 'woman-tpose'],
-  ['female', 'woman-front', 'woman-front'],
-  ['female', 'woman-hip', 'woman-hip'],
-]
-
-document.getElementById('save-pose')?.addEventListener('click', () => {
-  saveCanvas(poseFileName())
-})
-document.getElementById('save-all-poses')?.addEventListener('click', async () => {
-  const button = document.getElementById('save-all-poses')
-  button.disabled = true
-  for (const [sex, pose, name] of catalogShots) {
-    const kind = pose === 'tpose' ? 'tpose' : pose.replace('man-', '').replace('woman-', '')
-    document.querySelectorAll('[data-kind]').forEach((item) => {
-      item.classList.toggle('active', item.dataset.kind === kind)
-    })
-    document.querySelectorAll('[data-sex]').forEach((item) => {
-      item.classList.toggle('active', item.dataset.sex === sex)
-    })
-    activePose = { ...(posePresets[pose] || {}) }
-    await showMesh(`/presets/${sex}_average.glb`, 1)
-    applyPose()
-    saveCanvas(name)
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  button.disabled = false
-})
-document.querySelectorAll('[data-sex]').forEach((button) => {
-  button.addEventListener('click', () => {
-    showSex(button.dataset.sex)
-  })
-})
-document.querySelectorAll('[data-kind]').forEach((button) => {
-  button.addEventListener('click', () => applyKind(button.dataset.kind))
-})
-
+if (EMBED) requestAnimationFrame(tickEmbed)
+window.parent.postMessage(JSON.stringify({ type: 'ready' }), '*')
 const preset = new URLSearchParams(location.search).get('mesh')
-  || (location.pathname.endsWith('clothes.html') ? '/presets/male_average.glb' : '')
-if (preset) showMesh(preset, 1).then(() => frameCatalog())
+const wearOnLoad = new URLSearchParams(location.search).get('wear')
+if (preset) {
+  showMesh(preset, 1).then(async () => {
+    if (wearOnLoad === 'autotest' || wearOnLoad === 'reco') {
+      const folder = wearOnLoad === 'reco' ? 'reco' : 'auto_test'
+      await wearGarment(`/garments/saved/${folder}/shirt.glb`)
+      return wearGarment(`/garments/saved/${folder}/pants.glb`, true)
+    }
+    if (wearOnLoad === 'pants' || wearOnLoad === 'shoes' || wearOnLoad === 'hat') {
+      await wearGarment('/garments/fitted.glb')
+      await wearGarment('/garments/pants.glb', true)
+      if (wearOnLoad === 'shoes' || wearOnLoad === 'hat') await wearGarment('/garments/sneakers.glb', true)
+      if (wearOnLoad === 'hat') return wearGarment('/garments/cap.glb', true)
+    }
+  }).catch((error) => showError(error instanceof Error ? error.message : 'The avatar did not load.'))
+}
 loadPeople()
+loadWardrobe()
 writeShapeReadout()
+if (new URLSearchParams(location.search).get('panel') === 'photo') showPanel('photo-panel')

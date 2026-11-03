@@ -1,0 +1,20 @@
+name: remu_fast
+dataset_root: examples/4d_dress_00127
+subject: "00127"
+gender: male
+
+data:
+  backend: single_image
+  single_image:
+    generate: true
+    model_kwargs:
+      seed: 0
+      num_val_images: 1
+      num_dilation_iterations: [16]
+      num_inference_steps: 20
+      height: 1024
+      width: 1024
+  back_hallucination:
+    enabled: true
+    diffusion_model: /home/nadhir/remu/ReMu/checkpoints/sith/diffusion
+    diffusion_resolution: 512

@@ -1,0 +1,7 @@
+{
+  "00127": {
+    "Outer": {"prompt": "t-shirt"},
+    "Inner": {"prompt": "t-shirt", "inpaint_prompt": "a man wearing a neon yellow short-sleeve t-shirt and khaki pants"},
+    "Lower": {"prompt": "pants", "inpaint_prompt": "a shirtless man with bare chest and stomach wearing khaki pants"}
+  }
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "short01",
+    "label": "Mohawk",
+    "look": "short",
+    "url": "/hair/short01.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "short02",
+    "label": "Quiff",
+    "look": "short",
+    "url": "/hair/short02.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "short03",
+    "label": "Fringe",
+    "look": "short",
+    "url": "/hair/short03.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "short04",
+    "label": "Crop",
+    "look": "short",
+    "url": "/hair/short04.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "afro01",
+    "label": "Afro",
+    "look": "curly",
+    "url": "/hair/afro01.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "bob01",
+    "label": "Bob",
+    "look": "bob",
+    "url": "/hair/bob01.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "bob02",
+    "label": "Short bob",
+    "look": "bob",
+    "url": "/hair/bob02.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "long01",
+    "label": "Long",
+    "look": "long",
+    "url": "/hair/long01.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "ponytail01",
+    "label": "Ponytail",
+    "look": "ponytail",
+    "url": "/hair/ponytail01.glb",
+    "license": "CC0, MakeHuman system assets"
+  },
+  {
+    "id": "braid01",
+    "label": "Braid",
+    "look": "braid",
+    "url": "/hair/braid01.glb",
+    "license": "CC0, MakeHuman system assets"
+  }
+]

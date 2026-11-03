@@ -1,0 +1,10 @@
+{
+  "name": "nadhir",
+  "mesh": "/avatars/nadhir/avatar.glb",
+  "skin": "#846b6a",
+  "hair": "#08080e",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "short04"
+  }
+}

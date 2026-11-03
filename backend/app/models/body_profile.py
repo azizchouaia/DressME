@@ -28,8 +28,9 @@ class BodyProfile(IdMixin, TimestampMixin, Base):
 
     # slim | average | broad — replaced by continuous parameters later.
     avatar_preset: Mapped[str] = mapped_column(String(20), default="average")
-    # manual | estimated. Estimated values must be confirmed by the user
-    # before they replace manual ones.
+    # manual | photo. A photo source means avatar_glb_url is a reconstruction
+    # of the person's picture, standing in the same viewer as the template body.
     source: Mapped[str] = mapped_column(String(20), default="manual")
+    avatar_glb_url: Mapped[str | None] = mapped_column(String(500))
 
     user: Mapped["User"] = relationship(back_populates="body_profile")

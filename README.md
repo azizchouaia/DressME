@@ -10,8 +10,8 @@ It also includes the first slice of the wardrobe system: photo upload, a placeho
 
 | Layer | Technology |
 | --- | --- |
-| UI | React 19 + TypeScript (strict) + Vite, plain CSS |
-| 3D | React Three Fiber + drei + Three.js, GLB/glTF assets |
+| UI | Flutter (Android, iOS, and web) |
+| 3D | A small Three.js viewer served by the API and embedded by Flutter. It composites the avatar and garment GLBs |
 | Backend | FastAPI, Pydantic, SQLAlchemy 2, Alembic |
 | Database | PostgreSQL 16 (Docker Compose) |
 | AI | Swappable service interfaces. Default is a local, no-ML placeholder |
@@ -24,7 +24,7 @@ Everything is free and open source. No paid API is needed.
 
 ## Run it locally
 
-Prerequisites: Node 20+, Python 3.11+, Docker.
+Prerequisites: Flutter stable, Python 3.11+, Docker.
 
 ```bash
 # 1. Configuration
@@ -41,21 +41,23 @@ pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload --port 8765
 
-# 4. Frontend (http://localhost:5287), in a second terminal
-cd frontend
-npm install
-npm run dev
+# 4. Flutter app, in a second terminal
+cd app
+flutter pub get
+flutter run --dart-define=API_URL=http://127.0.0.1:8765
 ```
 
-Open http://localhost:5287 and tap **Explore the demo wardrobe**, or create an account. Every new account starts with 9 sample pieces that have 3D models, plus one saved outfit.
+`flutter run` asks for a device. Use Chrome for the web app, or an Android or iOS simulator. Tap **Explore the demo wardrobe**, or create an account. Every new account starts with 9 sample pieces that have 3D models, plus one saved outfit.
 
-To open the app on your phone, use `http://<your-computer-ip>:5287` on the same Wi-Fi network. Vite proxies `/api` and `/media` to the backend, so only one port needs to be reachable.
+The Android emulator reaches the API at `http://10.0.2.2:8765` instead of `127.0.0.1`. On a phone, use your computer's LAN address for `API_URL`.
+
+The API serves the sample models at `/models` and the avatar viewer at `/viewer`. The viewer loads Three.js from jsDelivr, so the 3D scene needs a network connection.
 
 ### Tests and checks
 
 ```bash
-cd backend && pytest                    # API tests (run against SQLite, no Docker needed)
-cd frontend && npm run typecheck && npm run lint && npm run build
+cd backend && pytest
+cd app && flutter analyze && flutter test
 ```
 
 ### Regenerating the sample 3D assets
@@ -64,7 +66,7 @@ cd frontend && npm run typecheck && npm run lint && npm run build
 python blender/scripts/generate_sample_assets.py
 ```
 
-This writes `frontend/public/models/avatar/base_avatar.glb` and 9 garments to `frontend/public/models/garments/`. The script uses only the Python standard library. Every asset shares one coordinate space (Y up, meters, feet at origin), so garments line up on the avatar with no runtime fitting.
+This writes `models/avatar/base_avatar.glb` and 9 garments to `models/garments/`. The script uses only the Python standard library. Every asset shares one coordinate space (Y up, meters, feet at origin), so garments line up on the avatar with no runtime fitting. FastAPI serves that folder at `/models`.
 
 ---
 
@@ -94,13 +96,15 @@ This writes `frontend/public/models/avatar/base_avatar.glb` and 9 garments to `f
 ## Architecture
 
 ```text
-frontend/ (React + R3F)  ──HTTPS /api/v1──>  backend/ (FastAPI)
-                                               ├── PostgreSQL (SQLAlchemy + Alembic)
-                                               ├── services/ai        ClothingAnalyzer, Segmentation, BodyAnalysis, Recommendation
-                                               ├── services/garments  GarmentFitService, Garment3DProcessor
-                                               ├── services/body      BodyProfile → avatar parameters
-                                               └── services/storage   LocalStorage | S3Storage
-blender/  (offline)  ──GLB──>  storage / frontend/public/models
+app/ (Flutter)  ──HTTP /api/v1──>  backend/ (FastAPI)
+                                    ├── PostgreSQL (SQLAlchemy + Alembic)
+                                    ├── services/ai        ClothingAnalyzer, Segmentation, BodyAnalysis, Recommendation
+                                    ├── services/garments  GarmentFitService, Garment3DProcessor
+                                    ├── services/body      BodyProfile → avatar parameters
+                                    ├── services/storage   LocalStorage | S3Storage
+                                    ├── /models            sample avatar and garment GLBs
+                                    └── /viewer            Three.js avatar scene embedded by Flutter
+blender/  (offline)  ──GLB──>  models/
 ai/       (offline)  model experiments and weights
 ```
 
@@ -113,7 +117,7 @@ ai/       (offline)  model experiments and weights
 | Garment fitting | `GarmentFitStrategy` | `PredefinedScaleFit` (garment follows the avatar transform) | Pass a strategy to `GarmentFitService` |
 | Photo to 3D | `Garment3DProcessor` | `UnavailableGarmentProcessor` (says so honestly) | `get_garment_processor()` |
 | Avatar shape | `build_avatar()` | Preset plus height scale | Shape keys driven by `parameters` |
-| Renderer | `<AvatarViewer>` props | R3F / Three.js | Same props, different component |
+| Renderer | `AvatarStage` scene message | Three.js page at `/viewer` | Same message, different host |
 
 AI output never overwrites what the user has confirmed. Analysis is stored in `ai_analysis` and shown as suggestions. A field changes only when the user saves the form. Body measurements follow the same rule: `BodyProfile.source` records whether values were entered manually or estimated.
 
@@ -136,17 +140,15 @@ Interactive docs: http://127.0.0.1:8765/docs
 ### Project layout
 
 ```text
-frontend/src/
-  api/          typed fetch client + endpoint modules
-  components/   ui/ layout/ wardrobe/ outfit/
-  features/     auth/ avatar/ outfits/   (feature-specific hooks and logic)
-  hooks/        useResource, useWardrobe
-  pages/        one file per screen
-  stores/       zustand: auth session, outfit editor
-  three/        AvatarViewer, GltfModel, disposal, error boundary
-  types/        shared domain types
-  utils/        category/slot mapping, colors
-frontend/public/models/   avatar/ and garments/ GLBs
+app/lib/
+  main.dart     startup and session restore
+  router.dart   routes and signed-in shell
+  state.dart    API client, auth, wardrobe, outfits
+  models.dart   JSON models shared with the API
+  screens/      one file per screen
+  widgets/      shared controls and the embedded avatar stage
+models/         avatar/ and garments/ GLBs, served at /models
+viewer/         Three.js page served at /viewer
 backend/app/
   api/routes/   auth users body wardrobe outfits avatar garments
   models/       User, BodyProfile, ClothingItem, Outfit
@@ -164,12 +166,12 @@ storage/              local uploads/thumbnails/models (git-ignored)
 ## Security notes
 
 - Secrets live only in environment variables. `.env` is git-ignored, and `.env.example` documents every key.
-- The frontend holds no secrets. It talks only to the backend through `/api`.
+- The Flutter app holds no secrets. It talks only to the backend through `API_URL`.
 - Change `SECRET_KEY` and set `SEED_DEMO_USER=false` for any deployment that isn't local.
 
 ## Roadmap
 
-1. ~~Project foundation: React, R3F, FastAPI, PostgreSQL~~
+1. ~~Project foundation: Flutter, FastAPI, PostgreSQL~~
 2. ~~Wardrobe CRUD~~
 3. ~~Image upload~~
 4. AI clothing analysis: replace `LocalHeuristicAnalyzer` with a PyTorch model
@@ -178,6 +180,6 @@ storage/              local uploads/thumbnails/models (git-ignored)
 7. ~~Outfits~~
 8. Continuous body parameters (shape keys on the base avatar)
 9. Garment fitting (landmark-based deformation)
-10. AI stylist and recommendations
+10. AI stylist and recommendations. The first slice lives in `recommender/`: FashionCLIP image embeddings and pgvector search (`recommender/embed_images.py`). H&M data stays local and is for learning, not for the shipped app.
 
 Not planned for this phase: live AR, cloth physics, animation, automatic photo-to-perfect-3D, payments, or social features.

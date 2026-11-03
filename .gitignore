@@ -27,9 +27,14 @@ blender/exports/*
 !blender/exports/.gitkeep
 *.blend1
 
-# AI weights
+# Recommender downloads, embeddings, and its own virtualenv
+recommender/data/
+recommender/.venv/
+
+# AI weights and the local TripoSR checkout (model code, venv, logs)
 ai/models/**
 !ai/models/.gitkeep
+ai/vendor/
 
 # OS / editors
 .DS_Store

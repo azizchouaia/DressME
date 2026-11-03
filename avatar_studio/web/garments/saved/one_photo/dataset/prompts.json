@@ -1,0 +1,13 @@
+{
+  "00127": {
+    "Outer": {"prompt": "pluffy vest"},
+    "Inner": {"prompt": "shirt", "inpaint_prompt": "a man wearing a plain grey long-sleeve shirt and dark shorts"},
+    "Lower": {"prompt": "shorts", "inpaint_prompt": "a shirtless man with bare chest and stomach wearing dark shorts"}
+  },
+  "5": {
+    "Outer": {"prompt": "shirt", "mask_select": "first"},
+    "InOuter": {"prompt": "jacket", "mask_select": "first", "inpaint_prompt": "a man wearing a jacket"},
+    "Inner": {"prompt": "t-shirt", "mask_select": "first", "inpaint_prompt": "a man wearing a t-shirt"},
+    "Lower": {"prompt": "pants", "mask_select": "first", "inpaint_prompt": "a shirtless man with bare chest and stomach wearing dark pants"}
+  }
+}

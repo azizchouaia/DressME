@@ -1,0 +1,16 @@
+[
+  {"id": "oxford", "name": "Black oxford shirt", "category": "shirt", "size": "M", "price": 45, "stock": 3, "text": "black cotton oxford button shirt for the office"},
+  {"id": "tee", "name": "White T-shirt", "category": "t-shirt", "size": "S", "price": 18, "stock": 4, "text": "plain white cotton t-shirt casual"},
+  {"id": "merino", "name": "Navy merino sweater", "category": "shirt", "size": "M", "price": 70, "stock": 2, "text": "navy merino wool sweater for cold office days"},
+  {"id": "linen", "name": "Sand linen shirt", "category": "shirt", "size": "M", "price": 40, "stock": 2, "text": "light sand linen shirt for hot summer"},
+  {"id": "rain-jacket", "name": "Olive rain jacket", "category": "jacket", "size": "M", "price": 110, "stock": 1, "text": "olive water resistant rain jacket coat for autumn rain"},
+  {"id": "wool-coat", "name": "Charcoal wool coat", "category": "coat", "size": "L", "price": 240, "stock": 1, "text": "charcoal formal wool overcoat"},
+  {"id": "jeans", "name": "Blue jeans", "category": "jeans", "size": "32", "price": 60, "stock": 2, "text": "dark blue denim jeans"},
+  {"id": "trousers", "name": "Grey wool trousers", "category": "pants", "size": "32", "price": 85, "stock": 2, "text": "grey wool dress trousers for the office"},
+  {"id": "shorts", "name": "Sand shorts", "category": "shorts", "size": "32", "price": 30, "stock": 0, "text": "sand cotton shorts for summer"},
+  {"id": "chinos", "name": "Navy chinos", "category": "pants", "size": "32", "price": 55, "stock": 2, "text": "navy cotton chinos smart casual"},
+  {"id": "sneakers", "name": "White sneakers", "category": "shoes", "size": "42", "price": 75, "stock": 3, "text": "white leather sneakers casual shoes"},
+  {"id": "oxfords", "name": "Black oxford shoes", "category": "shoes", "size": "42", "price": 95, "stock": 1, "text": "black leather oxford dress shoes for the office"},
+  {"id": "boots", "name": "Brown rain boots", "category": "shoes", "size": "42", "price": 80, "stock": 2, "text": "brown waterproof rain boots for wet weather"},
+  {"id": "loafers", "name": "Tan loafers", "category": "shoes", "size": "43", "price": 70, "stock": 1, "text": "tan leather loafers"}
+]
