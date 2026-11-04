@@ -86,6 +86,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements-all.txt
 python -m scripts.init_db
+cd ..
 python ml/scripts/m02/download_models.py
 ```
 
@@ -210,7 +211,7 @@ About 700 tests pass (some are skipped when a model or service is not installed)
 | Assistant: `503 assistant unavailable` | LLM not reachable: check the key (Groq) or that Ollama runs |
 | Assistant writes a "function call" or picks the wrong agent | use Groq or `qwen2.5:14b` (section 3) |
 | BO1: "wardrobe empty … add at least 2 pieces" | add pieces in Wardrobe (top, bottom, shoes) |
-| `prompts.npz` / M2 weights missing | `python ml/scripts/m02/download_models.py` |
+| M2 weights missing | from the repo root: `python ml/scripts/m02/download_models.py` |
 | `Blender not found` (Try it on) | install Blender 4.2 and set `M09_BLENDER`, or use *My 3D avatar* |
 | 3D avatar page "Not Found" | restart the backend (it serves `/viewer`) |
 | Avatar stays bare after a change | Ctrl+Shift+R in Chrome (cache) |
