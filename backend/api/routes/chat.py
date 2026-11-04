@@ -73,6 +73,7 @@ class ChatOut(BaseModel):
     session_id: str
     last_agent: str | None = None
     photo: dict | None = None  # what the photo was read as
+    error: str | None = None  # what went wrong (for the team; the reply stays friendly)
 
 
 @router.post("/message", response_model=ChatOut)
@@ -93,9 +94,13 @@ async def message(inp: ChatIn):
             out["photo"] = {k: attachment.get(k) for k in ("label", "subcategory", "colour")}
     except HTTPException:
         raise
-    except Exception as e:  # noqa: BLE001 - LLM down / misconfigured: say it clearly
-        raise HTTPException(503, f"assistant unavailable: {type(e).__name__}: {e}. "
-                                 "Is Ollama running with the model in LLM_MODEL (default llama3.1:8b)?") from e
+    except Exception as e:  # noqa: BLE001 - never a raw error in the chat: a short answer + the reason in the log
+        log.exception("chat turn failed")
+        down = any(w in f"{type(e).__name__} {e}".lower() for w in ("connect", "refused", "timeout", "api key", "401", "auth"))
+        reply = ("My brain (the LLM) is not reachable right now: check the Groq key or that Ollama is running, then ask again."
+                 if down else "Sorry, I got lost on that one. Could you say it another way, or give me a bit more detail?")
+        return {"reply": reply, "question": None, "next_actions": [], "cards": [], "session_id": inp.session_id,
+                "last_agent": None, "error": f"{type(e).__name__}: {e}"[:300]}
     return out
 
 

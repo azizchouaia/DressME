@@ -82,43 +82,65 @@ def _rescue_text_call(reply, tools, messages):
                                               "type": "tool_call"}], id=getattr(reply, "id", None))
 
 
-_TYPES = ["t-shirt", "shirt", "sweater", "blouse", "jeans", "chinos", "trousers", "skirt", "sneakers", "loafers",
-          "boots", "sandals", "jacket", "coat", "blazer", "dress", "jebba"]
-_COLOURS = ["white", "black", "grey", "navy", "beige", "brown", "camel", "blue", "olive", "red", "pink", "green",
-            "burgundy", "mustard"]
-_RULES = [  # (tool, words): a clear request goes straight to its agent, the LLM only for the rest
-    ("smartbuy", r"\b(should i (buy|get)|worth (it|buying)|buy (it|this|a|an)|ach[eè]ter|nechri|n?chri)\b"),
-    ("localshop", r"\b(find .* (in|at) (a )?(shop|store)|where (can|to) (i )?buy|in a shop|local shops?|boutique|magasin)\b"),
-    ("challenges", r"\b(challenges?|d[ée]fis?)\b"),
-    ("wardrobe", r"\b(show|list|what('s| is) in) my (wardrobe|closet|clothes)\b|\bgarde-robe\b"),
-    ("stylist", r"\b(what (should|do|can) i wear|outfit|tenue|n?elbes|look for (today|tomorrow))\b"),
-]
+ASK_PIECE = ("Happy to judge it against your wardrobe! Which piece is it? Send me a photo, or tell me the type, "
+             "the colour and the price, for example: \"a navy blazer at 120 TND\".")
 
 
-def route_by_rules(text: str, tool_names: set, attachment: dict | None = None) -> dict | None:
-    """Deterministic routing for clear requests (the 8B local model often mis-routes or writes the call)."""
-    low = (text or "").lower()
-    for name, rx in _RULES:
-        if name not in tool_names or not re.search(rx, low):
-            continue
-        if name == "smartbuy":
-            typ = next((t for t in _TYPES if re.search(rf"\b{re.escape(t)}s?\b", low)), None)
-            col = next((k for k in _COLOURS if re.search(rf"\b{k}\b", low)), None)
-            if not typ and not (attachment or {}).get("image"):
-                continue  # nothing to judge: let the LLM ask
-            args: dict = {"probe_image": (attachment or {}).get("probe") or f"custom:{typ}:{col or 'black'}"}
-            price = re.search(r"(\d+(?:[.,]\d+)?)\s*(tnd|dt|dinars?)", low)
-            if price:
-                args["price_tnd"] = float(price.group(1).replace(",", "."))
-            return {"name": name, "args": args}
-        return {"name": name, "args": {"action": "chat", "message": text, "payload": {"message": text}}}
-    return None
+def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, pending: dict | None = None) -> dict | None:
+    """Deterministic routing for clear requests, with typos, French and Tounsi (orchestrator/understand.py).
+    -> {"name", "args"} to call an agent, {"ask": text, "intent": {...}} to ask first, or None (the LLM decides)."""
+    from .understand import intent_of, piece_of
+
+    intent = intent_of(text)
+    piece = piece_of(text)
+    att = attachment or {}
+    if pending and pending.get("tool") == "smartbuy" and intent in (None, "smartbuy") and (piece["type"] or att.get("image")):
+        intent = "smartbuy"  # the answer to "which piece is it?"
+        piece = {**piece, "price": piece["price"] or pending.get("price")}
+    if not intent and att.get("image"):
+        intent = "smartbuy"  # a photo alone: "what do you think of this piece?"
+    intent = {"laundry": "stylist"}.get(intent, intent)
+    if not intent or intent not in tool_names:
+        return None
+    if intent == "smartbuy":
+        if not piece["type"] and not att.get("image"):
+            return {"ask": ASK_PIECE, "intent": {"tool": "smartbuy", "price": piece["price"]}}
+        probe = att.get("probe") or att.get("image") or f"custom:{piece['type']}:{piece['colour'] or 'black'}"
+        args: dict = {"probe_image": probe}
+        if piece["price"]:
+            args["price_tnd"] = piece["price"]
+        return {"name": "smartbuy", "args": args}
+    payload = {"message": text}
+    if intent == "localshop" and (piece["type"] or piece["colour"]):
+        payload["query"] = " ".join(x for x in (piece["colour"], piece["type"]) if x) + (
+            f" under {int(piece['price'])} TND" if piece["price"] else "")
+    return {"name": intent, "args": {"action": "chat", "message": text, "payload": payload}}
 
 
-def build_graph(model=None, tools=None, checkpointer=None):
+def agent_error_reply(agent: str, error: str) -> str:
+    """What the user reads when an agent could not finish: what to do next, no stack trace."""
+    hints = {
+        "smartbuy": "Send me a photo of the piece, or its type, colour and price (\"a black jacket at 200 TND\").",
+        "stylist": "Add at least a top, a bottom and shoes in your Wardrobe, then ask me again.",
+        "localshop": "Tell me the piece and the city, for example \"a white shirt in Tunis under 80 TND\".",
+        "wardrobe": "Check that the database is running, then open Wardrobe to add pieces.",
+        "tryon": "Open My 3D avatar from Outfits to try pieces on.",
+    }
+    detail = error.split(":", 2)[-1].strip()[:140]
+    return (f"I couldn't finish that with the {agent or 'right'} agent ({detail}). "
+            + hints.get(agent, "Could you say it another way, or give me a bit more detail?"))
+
+
+def _friendly_tool_error(e: Exception) -> str:
+    """An agent failed: the writer turns it into a helpful sentence (never a 503 for the user)."""
+    return f"AGENT_ERROR: {type(e).__name__}: {e}"
+
+
+def build_graph(model=None, tools=None, checkpointer=None, rules=None):
     """Compile the graph. Tests pass a scripted model and a stand-in tool."""
 
     chosen = list(get_tools() if tools is None else tools)
+    use_rules = (tools is None) if rules is None else rules  # the app: rules first; unit tests: the scripted model
     if model is None:
         from shared.llm import get_chat_model
 
@@ -136,14 +158,18 @@ def build_graph(model=None, tools=None, checkpointer=None):
         return {}
 
     async def planner(state: ChatState):
-        if not int(state.get("tool_calls") or 0) and not state.get("answering") and tools is None:
+        if not int(state.get("tool_calls") or 0) and not state.get("answering") and use_rules:
             last = state["messages"][-1]
             if isinstance(last, HumanMessage):
                 text = last.content if isinstance(last.content, str) else str(last.content)
-                hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"))
+                hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"),
+                                     state.get("intent"))
+                if hit and "ask" in hit:  # a clear intent but a missing detail: ask, remember the intent
+                    return {"messages": [AIMessage(content=hit["ask"], additional_kwargs={"final": True})],
+                            "intent": hit["intent"]}
                 if hit:
                     log.info("rule route -> %s", hit["name"])
-                    return {"messages": [AIMessage(content="", tool_calls=[{**hit, "id": f"call_{uuid.uuid4().hex[:8]}",
+                    return {"intent": None, "messages": [AIMessage(content="", tool_calls=[{**hit, "id": f"call_{uuid.uuid4().hex[:8]}",
                                                                             "type": "tool_call"}])]}
         system = (
             f"{SYSTEM_PROMPT}\n"
@@ -216,6 +242,11 @@ def build_graph(model=None, tools=None, checkpointer=None):
         return {"messages": [AIMessage(content=state.get("pending_question") or "")]}
 
     async def writer(state: ChatState):
+        last = state["messages"][-1]
+        if isinstance(last, AIMessage) and last.additional_kwargs.get("final"):
+            return {}  # already the answer (a question the rules asked)
+        if isinstance(last, ToolMessage) and "AGENT_ERROR" in str(last.content):
+            return {"messages": [AIMessage(content=agent_error_reply(getattr(last, "name", "") or "", str(last.content)))]}
         payload = last_payload(state["messages"]) or {}
         system = f"{WRITER_PROMPT}\nFacts:\n{json.dumps(protected_facts(payload), ensure_ascii=False)}"
         draft = await brain.ainvoke([("system", system), *state["messages"]])
@@ -226,7 +257,7 @@ def build_graph(model=None, tools=None, checkpointer=None):
     graph.add_node("begin", begin)
     graph.add_node("planner", planner)
     graph.add_node("prepare_tools", prepare_tools)
-    graph.add_node("tools", ToolNode(chosen))
+    graph.add_node("tools", ToolNode(chosen, handle_tool_errors=_friendly_tool_error))
     graph.add_node("after_tool", after_tool)
     graph.add_node("ask_user", ask_user)
     graph.add_node("writer", writer)
