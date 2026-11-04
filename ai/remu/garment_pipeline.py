@@ -22,21 +22,66 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "ai" / "remu"))
 
-from garment_inputs import prepare  # noqa: E402
-
 WORK = ROOT / "avatar_studio" / "web" / "garments" / "saved" / "pipeline"
 DATASET_DIR = WORK / "dataset"
 RUN_DIR = WORK / "run"
 KERNEL_DIR = ROOT / "ai" / "remu" / "kaggle_outfit"
 DATASET_ID = "nadhirmaamar/dressme-garment-photos"
 KERNEL_ID = "nadhirmaamar/dressme-outfit-pipeline"
-PYTHON = ROOT / "ai" / "vendor" / "TripoSR" / ".venv" / "Scripts" / "python.exe"
+REQ = ROOT / "ai" / "requirements-studio.txt"
+VENDOR_PYTHON = ROOT / "ai" / "vendor" / "TripoSR" / ".venv" / "Scripts" / "python.exe"
+LOCAL_VENV = ROOT / "ai" / ".venv"
 OUTPUTS = r"^(outfit_reco\.obj|outfit_smplx\.obj|fit/.*)$"
+FIT_PROBE = "import numpy,trimesh,PIL,scipy,pygltflib,fast_simplification,torch,smplx,transformers"
+
+
+def _interpreter(venv: Path) -> Path:
+    if os.name == "nt":
+        return venv / "Scripts" / "python.exe"
+    return venv / "bin" / "python"
+
+
+def _ready(py: Path, probe: str) -> bool:
+    if not py.is_file():
+        return False
+    return subprocess.run([str(py), "-c", probe], capture_output=True).returncode == 0
+
+
+def fitting_python() -> Path:
+    """Python that can cut the clothes and print the face. Installed on first use."""
+    if VENDOR_PYTHON.is_file():
+        return VENDOR_PYTHON
+    py = _interpreter(LOCAL_VENV)
+    marker = LOCAL_VENV / ".studio-ready"
+    if py.is_file() and marker.is_file() and marker.stat().st_mtime >= REQ.stat().st_mtime:
+        return py
+    _say("installing the local libraries")
+    if not py.is_file():
+        subprocess.check_call([sys.executable, "-m", "venv", str(LOCAL_VENV)])
+    subprocess.check_call([str(py), "-m", "pip", "install", "--upgrade", "pip"])
+    subprocess.check_call([str(py), "-m", "pip", "install", "-r", str(REQ)])
+    if not _ready(py, FIT_PROBE):
+        raise RuntimeError("The local libraries did not install.")
+    marker.write_text("ok\n", encoding="utf-8")
+    return py
+
+
+def _pipeline_ready() -> bool:
+    try:
+        import kaggle  # noqa: F401
+        import numpy  # noqa: F401
+        import scipy  # noqa: F401
+        import torch  # noqa: F401
+        import transformers  # noqa: F401
+        from PIL import Image  # noqa: F401
+    except Exception:
+        return False
+    return True
 
 
 def _kaggle(args: list[str]) -> str:
     env = {**os.environ, "PYTHONUTF8": "1"}
-    result = subprocess.run(["py", "-3", "-m", "kaggle", *args], cwd=str(ROOT), env=env, text=True, encoding="utf-8", errors="replace", capture_output=True)
+    result = subprocess.run([sys.executable, "-m", "kaggle", *args], cwd=str(ROOT), env=env, text=True, encoding="utf-8", errors="replace", capture_output=True)
     output = (result.stdout or "") + (result.stderr or "")
     if result.returncode != 0:
         raise RuntimeError(output.strip() or f"kaggle {' '.join(args)} failed")
@@ -103,6 +148,9 @@ def download() -> None:
 
 
 def main() -> None:
+    from garment_inputs import prepare  # noqa: E402
+
+    fitting_python()
     flags = sys.argv[1:]
     avatar = flags[flags.index("--avatar") + 1] if "--avatar" in flags else None
     gender = flags[flags.index("--gender") + 1] if "--gender" in flags else None
@@ -121,16 +169,21 @@ def main() -> None:
     _say("cutting the shirt and pants and fitting them to the avatar")
     sex = gender if gender in ("male", "female") else "female"
     body_type = shape if shape in ("slim", "average", "athletic", "heavy") else "slim"
-    subprocess.check_call([str(PYTHON), str(ROOT / "ai" / "remu" / "reco_garments.py"), str(RUN_DIR), str(DATASET_DIR), sex, body_type], cwd=str(ROOT))
+    fit = str(fitting_python())
+    subprocess.check_call([fit, str(ROOT / "ai" / "remu" / "reco_garments.py"), str(RUN_DIR), str(DATASET_DIR), sex, body_type], cwd=str(ROOT))
     mesh = "/smplx_thin.glb"
     if avatar:
         _say("picking the hairstyle from the photos")
         subprocess.check_call([sys.executable, str(ROOT / "ai" / "remu" / "hair_look.py"), str(DATASET_DIR), *(["--gender", gender] if gender else [])], cwd=str(ROOT))
         _say(f"saving the face and skin tone as the avatar {avatar}")
-        subprocess.check_call([str(PYTHON), str(ROOT / "ai" / "remu" / "photo_avatar.py"), str(RUN_DIR), str(DATASET_DIR), avatar], cwd=str(ROOT))
+        subprocess.check_call([fit, str(ROOT / "ai" / "remu" / "photo_avatar.py"), str(RUN_DIR), str(DATASET_DIR), avatar], cwd=str(ROOT))
         mesh = f"/avatars/{avatar}/avatar.glb"
     _say(f"done: open the viewer with ?mesh={mesh}&wear=reco")
 
 
 if __name__ == "__main__":
+    if not _pipeline_ready():
+        chosen = fitting_python()
+        if Path(sys.executable).resolve() != chosen.resolve():
+            raise SystemExit(subprocess.call([str(chosen), *sys.argv]))
     main()

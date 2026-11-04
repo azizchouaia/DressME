@@ -44,6 +44,7 @@ MAX_BYTES = 20 * 1024 * 1024
 PORT = 8893
 
 STEPS = [
+    ("installing the local libraries", "Installing the local libraries"),
     ("checking and framing", "Checking the photos"),
     ("uploading the photos", "Uploading to the GPU"),
     ("starting the T4", "Reconstructing in 3D (about 20 minutes)"),

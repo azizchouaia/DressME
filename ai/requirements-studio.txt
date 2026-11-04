@@ -1,0 +1,14 @@
+# Libraries for the local step after Kaggle: cut the clothes, fit them, and print the face.
+# The first build installs these into ai/.venv when they are not already available.
+numpy==2.5.2
+scipy==1.18.1
+trimesh==5.1.0
+Pillow==12.3.0
+pygltflib==1.16.5
+fast-simplification==0.2.0
+smplx==0.1.28
+transformers==4.35.2
+huggingface-hub==0.20.3
+tokenizers==0.15.2
+kaggle
+torch
