@@ -184,8 +184,22 @@ def remix(req: dict) -> dict:
     return _result(req.get("user_id"), ranked, ctx, src)
 
 
+def _with_taste(user_id, p) -> None:
+    """No taste given: use the one M5 learnt from the user's swipes (BO4), so outfits follow their style."""
+    if getattr(p.options, "style_vector", None):
+        return
+    try:
+        from shared.style_taste import taste_vector
+
+        if v := taste_vector(user_id):
+            p.options.style_vector = v
+    except Exception:  # noqa: BLE001 - no M5 profile: outfits without the taste
+        pass
+
+
 def complete(req: dict) -> dict:
     p = CompletePayload.model_validate(req.get("payload") or {})
+    _with_taste(req.get("user_id"), p)
     items, usable, ctx, src = _setup(req.get("user_id"), p)
     by_id = {i.item_id: i for i in items}
     pinned = [by_id[i] for i in p.pinned_item_ids if i in by_id]

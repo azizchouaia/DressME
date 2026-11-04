@@ -34,7 +34,10 @@ class AgentSection {
 
 /// The whole BO page: hero, the screens (button sections) + result + how it worked, and the chat tab.
 class RacemBoPage extends ConsumerStatefulWidget {
-  const RacemBoPage({super.key, required this.eyebrow, required this.title, required this.boAgent, required this.sections, required this.examples});
+  const RacemBoPage({super.key, required this.eyebrow, required this.title, required this.boAgent, required this.sections, required this.examples, this.top});
+
+  /// shown above the agent sections (BO1: start from one of my pieces)
+  final Widget? top;
 
   final String eyebrow;
   final String title;
@@ -160,6 +163,7 @@ class _RacemBoPageState extends ConsumerState<RacemBoPage> {
               child: chat
                   ? AgentChat(boAgent: widget.boAgent, examples: widget.examples, user: user, session: session, catalog: catalog)
                   : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      if (widget.top != null) ...[widget.top!, const SizedBox(height: 12)],
                       for (final s in widget.sections) _section(s),
                       const SizedBox(height: 6),
                       if (busy) const LinearProgressIndicator(),

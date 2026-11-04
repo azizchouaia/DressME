@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
+import '../../../core/widgets/complete_around.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../data/m1_wardrobe.dart';
 
@@ -236,6 +237,13 @@ class _PieceSheetState extends State<PieceSheet> {
         ])),
         _section('Similar pieces', _similar()),
         const SizedBox(height: 16),
+        // the star action: an outfit built around this piece (BO1 · M2 complete)
+        DmButton('Build an outfit around it', kind: DmButtonKind.gold, icon: Icons.auto_awesome_outlined,
+            onPressed: laundry == 'laundry'
+                ? null
+                : () => showCompleteAround(context, '${item['item_id']}', pieceName: pieceTitle(item).toLowerCase())),
+        if (laundry == 'laundry') const Text('It is in the laundry: bring it back to build an outfit with it.', style: DmText.caption),
+        const SizedBox(height: 10),
         // everyday actions, for every piece
         Row(children: [
           Expanded(

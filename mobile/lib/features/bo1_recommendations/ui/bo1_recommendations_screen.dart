@@ -3,6 +3,7 @@
 // capsule, style_insights, gap_filling, travel), each button calling the agent directly.
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/complete_around.dart';
 import 'racem_agents.dart';
 
 class RecommendationsScreen extends StatelessWidget {
@@ -14,6 +15,7 @@ class RecommendationsScreen extends StatelessWidget {
       eyebrow: 'BO1 · Personalised recommendations',
       title: 'Outfits for you',
       boAgent: 'personalised_recommendations',
+      top: PiecePicker(),
       sections: [
         AgentSection('Outfit', 'BO1 · daily_outfit', [
           AgentButton('Work outfit', 'daily_outfit', 'recommend', args: {'occasion': 'work'}),
