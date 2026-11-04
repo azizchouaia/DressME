@@ -1,0 +1,10 @@
+{
+  "name": "eye-sockets-bodyshape-and-sex",
+  "mesh": "/avatars/eye-sockets-bodyshape-and-sex/avatar.glb",
+  "skin": "#fad4c2",
+  "hair": "#382925",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "short03"
+  }
+}

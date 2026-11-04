@@ -1,0 +1,10 @@
+{
+  "name": "oum",
+  "mesh": "/avatars/oum/avatar.glb",
+  "skin": "#fad4c2",
+  "hair": "#382925",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "short03"
+  }
+}

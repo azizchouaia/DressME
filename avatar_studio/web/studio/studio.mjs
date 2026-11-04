@@ -21,14 +21,9 @@ const STEPS = {
 }
 
 const $ = (selector) => document.querySelector(selector)
-const SHAPES = {
-  slim: { fat: -28, muscle: -8, breasts: 4 },
-  average: { fat: 0, muscle: 0, breasts: 12 },
-  athletic: { fat: -12, muscle: 48, breasts: 8 },
-  heavy: { fat: 42, muscle: 10, breasts: 22 },
-}
+const BUILD = { slim: -100, average: -33, athletic: 33, heavy: 100 }
 
-const state = { users: [], user: null, wearing: null, gender: 'male', shape: 'average', photos: { create: {}, outfit: {} }, viewerReady: false, pendingLook: null }
+const state = { users: [], user: null, wearing: null, gender: 'male', shape: 'slim', photos: { create: {}, outfit: {} }, viewerReady: false, pendingLook: null }
 
 async function api(path, options = {}) {
   let response
@@ -99,23 +94,18 @@ function sendLook(look) {
 }
 
 function morphsFor(user) {
-  const shape = { ...(SHAPES[user.shape] || SHAPES.average) }
-  if (user.gender !== 'female') shape.breasts = 0
-  const typical = 22 * (Number(user.height) / 100) ** 2
-  const extra = Math.max(-25, Math.min(40, (Number(user.weight) - typical) * 1.15))
-  shape.fat = Math.max(-40, Math.min(70, shape.fat + extra))
-  return shape
+  return { build: BUILD[user.shape] ?? 0 }
 }
 
 function lookFor(user, pieces) {
-  return { url: user.avatar, height: user.height, hair: user.hair, profile: user.profile, wear: pieces, shape: morphsFor(user) }
+  return { url: user.avatar, height: user.height, hair: user.hair, profile: user.profile, wear: pieces, gender: user.gender, shape: morphsFor(user) }
 }
 
 function applyBody() {
   const user = state.user
   if (!user) return
   $('#home-meta').textContent = `${user.gender === 'female' ? 'Female' : 'Male'} · ${Math.round(user.height)} cm · ${Math.round(user.weight)} kg · ${(user.shape || 'average')[0].toUpperCase()}${(user.shape || 'average').slice(1)}`
-  viewer.contentWindow?.postMessage(JSON.stringify({ type: 'body', height: user.height, shape: morphsFor(user) }), '*')
+  viewer.contentWindow?.postMessage(JSON.stringify({ type: 'body', height: user.height, gender: user.gender, shape: morphsFor(user) }), '*')
 }
 
 function wear(outfit) {
@@ -281,7 +271,7 @@ async function openUser(id, options = {}) {
     viewer.addEventListener('load', () => {
       if (state.pendingLook) sendLook(state.pendingLook)
     })
-    viewer.src = '/viewer/index.html?embed=1&v=142'
+    viewer.src = '/viewer/index.html?embed=1&v=178'
   }
   const saved = localStorage.getItem(`dressme.wearing.${user.id}`)
   const outfit = options.draft && user.draft ? user.draft : user.outfits.find((item) => item.id === saved) || user.draft || user.outfits[0] || null

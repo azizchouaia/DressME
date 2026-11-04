@@ -1,17 +1,18 @@
 {
+  "body": "female slim",
   "labels": {
-    "other": 36376,
-    "top": 4550,
-    "bottom": 4074
+    "other": 12870,
+    "top": 13805,
+    "bottom": 18326
   },
   "shirt": {
-    "vertices": 4715,
-    "faces": 8637,
-    "bytes": 437288
+    "vertices": 14809,
+    "faces": 28043,
+    "bytes": 1383296
   },
   "pants": {
-    "vertices": 4182,
-    "faces": 7549,
-    "bytes": 396824
+    "vertices": 18583,
+    "faces": 35241,
+    "bytes": 1698372
   }
 }

@@ -7,8 +7,11 @@ shirt. The pants use a plain denim weave from a jeans photo, with no logo.
 
 from __future__ import annotations
 
+import io
+import os
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -202,9 +205,9 @@ def _pack(path: Path, albedo: Image.Image, tile: float, uvs: np.ndarray | None =
     weight_id = add_accessor(weights.astype(np.float32), "VEC4", FLOAT, ARRAY_BUFFER)
     index_id = add_accessor(faces.astype(np.uint32), "SCALAR", UNSIGNED_INT, ELEMENT_ARRAY_BUFFER)
 
-    png = SAMPLES / "_albedo_pack.png"
-    albedo.save(png)
-    raw = png.read_bytes()
+    png = io.BytesIO()
+    albedo.save(png, format="PNG")
+    raw = png.getvalue()
     offset = len(blob)
     blob.extend(raw)
     blob.extend(b"\x00" * ((4 - (len(blob) % 4)) % 4))
@@ -272,7 +275,24 @@ def _pack(path: Path, albedo: Image.Image, tile: float, uvs: np.ndarray | None =
         accessors=accessors,
     )
     gltf.set_binary_blob(bytes(blob))
-    gltf.save(path)
+    _save_glb(gltf, path)
+
+
+def _save_glb(gltf, path) -> None:
+    """Write a real .glb beside the destination, then replace it. A direct save on Windows
+    sometimes hits a file that is still open, and a non-.glb name makes pygltflib write JSON."""
+    path = Path(path)
+    temporary = path.with_suffix(".tmp.glb")
+    last = None
+    for attempt in range(6):
+        try:
+            gltf.save(temporary)
+            os.replace(temporary, path)
+            return
+        except OSError as error:
+            last = error
+            time.sleep(0.4 * (attempt + 1))
+    raise last
 
 
 def main() -> None:

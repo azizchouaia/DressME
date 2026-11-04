@@ -135,8 +135,8 @@
           <div>
             <div class="field">Shape</div>
             <div class="chips" id="shape">
-              <button type="button" class="chip" data-shape="slim">Slim</button>
-              <button type="button" class="chip on" data-shape="average">Average</button>
+              <button type="button" class="chip on" data-shape="slim">Slim</button>
+              <button type="button" class="chip" data-shape="average">Average</button>
               <button type="button" class="chip" data-shape="athletic">Athletic</button>
               <button type="button" class="chip" data-shape="heavy">Heavy</button>
             </div>
@@ -214,7 +214,7 @@
 
           <div class="tab" id="tab-me">
             <div class="stack">
-              <p class="muted">Change these any time. Height and shape update the 3D body on screen. Weight is kept with your profile and also slightly changes how full the body looks.</p>
+              <p class="muted">Height scales the body. Shape steps along the thin-to-thick slider: Slim, Average, Athletic, then Heavy. A female avatar stays on the female body.</p>
               <div class="grid2">
                 <label class="field">Height (cm)<input type="number" id="body-height" min="120" max="230" /></label>
                 <label class="field">Weight (kg)<input type="number" id="body-weight" min="30" max="250" /></label>
@@ -246,6 +246,6 @@
       <label class="drop"><input type="file" accept="image/*" capture="environment" /><span><b></b>Tap to choose a photo</span><img alt="" hidden /></label>
     </template>
 
-    <script type="module" src="./studio.mjs?v=5"></script>
+    <script type="module" src="./studio.mjs?v=38"></script>
   </body>
 </html>

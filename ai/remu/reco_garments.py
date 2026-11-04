@@ -46,6 +46,7 @@ HEM_LIFT = 0.03
 HEM_SNAP = 0.012
 HEM_MIN_PART = 0.05
 BARE = ("head", "jaw", "eye", "foot", "thumb", "index", "middle", "ring", "pinky")
+SHAPE_BUILD = {"slim": -100, "average": -33, "athletic": 33, "heavy": 100}
 
 
 def _raw_classes(labels: np.ndarray) -> np.ndarray:
@@ -231,7 +232,27 @@ def hem(points: np.ndarray, faces: np.ndarray, height: float) -> tuple[np.ndarra
     return points, faces
 
 
-def build(run: Path, dataset: Path, out: Path = OUT) -> dict:
+def shaped_body(sex: str, shape: str) -> np.ndarray:
+    """The body the studio shows for this sex and shape: the average preset, plus the thin or heavy step."""
+    if sex not in ("female", "male"):
+        raise RuntimeError("The avatar needs a male or female body before the clothes can be fitted.")
+    if shape not in SHAPE_BUILD:
+        raise RuntimeError("The avatar needs a body type: slim, average, athletic, or heavy.")
+    presets = WEB / "presets"
+
+    def positions(name: str) -> np.ndarray:
+        return np.asarray(body_skin(presets / f"{sex}_{name}.glb")[0], dtype=np.float32)
+
+    average, thin, heavy = positions("average"), positions("thin"), positions("heavy")
+    if average.shape != thin.shape or average.shape != heavy.shape:
+        raise RuntimeError("The body presets do not share the same SMPL-X topology.")
+    build = SHAPE_BUILD[shape] / 100
+    if build < 0:
+        return average + (-build) * (thin - average)
+    return average + build * (heavy - average)
+
+
+def build(run: Path, dataset: Path, sex: str, shape: str, out: Path = OUT) -> dict:
     reco = trimesh.load(run / "outfit_reco.obj", process=False, force="mesh")
     fitted = trimesh.load(run / "outfit_smplx.obj", process=False, force="mesh")
     verts, faces = np.asarray(reco.vertices, dtype=np.float32), np.asarray(reco.faces)
@@ -246,12 +267,16 @@ def build(run: Path, dataset: Path, out: Path = OUT) -> dict:
     back_rgb = np.asarray(Image.open(dataset / "back_images" / "outfit.png").convert("RGB"))
 
     positions, joints, weights, names, parents, world = body_skin(BODY)
+    shaped = shaped_body(sex, shape)
+    if len(shaped) != len(positions):
+        raise RuntimeError("The shaped body does not match the avatar skeleton.")
+    positions = shaped
     gltf = GLTF2().load(str(BODY))
     avatar_faces = _export_faces(gltf, gltf.binary_blob(), gltf.meshes[0].primitives[0].indices)
     avatar_mesh = trimesh.Trimesh(positions, avatar_faces, process=False)
     bare = [index for index, bone in enumerate(names) if any(part in bone for part in BARE)]
     out.mkdir(parents=True, exist_ok=True)
-    report = {"labels": {name: int((labels == value).sum()) for name, value in (("other", OTHER), ("top", TOP), ("bottom", BOTTOM))}}
+    report = {"body": f"{sex} {shape}", "labels": {name: int((labels == value).sum()) for name, value in (("other", OTHER), ("top", TOP), ("bottom", BOTTOM))}}
     for name, (piece, band) in cut_pieces(reco, labels).items():
         source = np.asarray(piece.vertices, dtype=np.float32)
         piece_faces = np.asarray(piece.faces)
@@ -276,4 +301,4 @@ def build(run: Path, dataset: Path, out: Path = OUT) -> dict:
 
 
 if __name__ == "__main__":
-    print(json.dumps(build(Path(sys.argv[1]), Path(sys.argv[2])), indent=2))
+    print(json.dumps(build(Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4]), indent=2))

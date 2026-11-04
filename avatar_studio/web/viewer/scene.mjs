@@ -918,6 +918,30 @@ function paintColors(mesh = rig?.mesh) {
   })
 }
 
+function cleanPhotoSkinUVs(mesh) {
+  if (!mesh?.userData?.photoSkin) return
+  const uv = mesh.geometry.attributes.uv
+  const skinIndex = mesh.geometry.attributes.skinIndex
+  const skinWeight = mesh.geometry.attributes.skinWeight
+  if (!uv || !skinIndex || !skinWeight || !mesh.skeleton) return
+  const faceBones = new Set()
+  mesh.skeleton.bones.forEach((bone, index) => {
+    const name = bone.name
+    if (name === 'head' || name === 'jaw' || name.includes('eye')) faceBones.add(index)
+  })
+  if (!faceBones.size) return
+  for (let index = 0; index < uv.count; index += 1) {
+    const u = uv.getX(index)
+    if (u >= 0.5) continue
+    let face = 0
+    for (let channel = 0; channel < 4; channel += 1) {
+      if (faceBones.has(skinIndex.getComponent(index, channel))) face += skinWeight.getComponent(index, channel)
+    }
+    if (face < 0.4) uv.setX(index, u + 0.5)
+  }
+  uv.needsUpdate = true
+}
+
 function applyShape() {
   writeShapeReadout()
   writeFit()
@@ -1827,6 +1851,314 @@ function chosenStyle(kind) {
 
 const styleTokens = {}
 
+function headRegions(mesh) {
+  const position = mesh.geometry.attributes.position
+  const skinIndex = mesh.geometry.attributes.skinIndex
+  const skinWeight = mesh.geometry.attributes.skinWeight
+  if (!position || !skinIndex || !skinWeight || !mesh.skeleton) return null
+  const bones = new Set()
+  mesh.skeleton.bones.forEach((bone, index) => {
+    if (bone.name === 'head' || bone.name === 'jaw' || bone.name.includes('eye')) bones.add(index)
+  })
+  if (!bones.size) return null
+  const head = []
+  let sx = 0
+  let sy = 0
+  let sz = 0
+  for (let index = 0; index < position.count; index += 1) {
+    let weight = 0
+    for (let channel = 0; channel < 4; channel += 1) {
+      if (bones.has(skinIndex.getComponent(index, channel))) weight += skinWeight.getComponent(index, channel)
+    }
+    if (weight < 0.5) continue
+    head.push(index)
+    sx += position.getX(index)
+    sy += position.getY(index)
+    sz += position.getZ(index)
+  }
+  if (head.length < 20) return null
+  const center = new THREE.Vector3(sx / head.length, sy / head.length, sz / head.length)
+  let crown = -Infinity
+  let chin = Infinity
+  let front = -Infinity
+  let maxAbsX = 0
+  for (const index of head) {
+    crown = Math.max(crown, position.getY(index))
+    chin = Math.min(chin, position.getY(index))
+    front = Math.max(front, position.getZ(index))
+    maxAbsX = Math.max(maxAbsX, Math.abs(position.getX(index) - center.x))
+  }
+  const span = Math.max(crown - chin, 1e-4)
+  const face = new Uint8Array(position.count)
+  const scalp = new Uint8Array(position.count)
+  for (const index of head) {
+    const x = position.getX(index)
+    const y = position.getY(index)
+    const z = position.getZ(index)
+    const side = Math.abs(x - center.x)
+    const frontFace = z > center.z + (front - center.z) * 0.42 && y < chin + span * 0.78 && y > chin + span * 0.12 && side < 0.072
+    // Only the ear flap sticks out past the skull. The side of the cranium must stay in the scalp so hair can cover it.
+    const ear = side > maxAbsX * 0.86 && y < chin + span * 0.64 && y > chin + span * 0.3 && z > center.z - 0.02
+    const cranium = y > chin + span * 0.5 || (z < center.z + (front - center.z) * 0.15 && y > chin + span * 0.38)
+    if (frontFace) face[index] = 1
+    else if (!ear && cranium) scalp[index] = 1
+  }
+  return { face, scalp, center }
+}
+
+function morphedXYZ(mesh) {
+  const position = mesh.geometry.attributes.position
+  const out = new Float32Array(position.count * 3)
+  for (let index = 0; index < position.count; index += 1) {
+    out[index * 3] = position.getX(index)
+    out[index * 3 + 1] = position.getY(index)
+    out[index * 3 + 2] = position.getZ(index)
+  }
+  const influences = mesh.morphTargetInfluences
+  const morphs = mesh.geometry.morphAttributes.position
+  if (!influences || !morphs) return out
+  for (let morph = 0; morph < morphs.length; morph += 1) {
+    const weight = influences[morph] || 0
+    if (!weight) continue
+    const delta = morphs[morph]
+    for (let index = 0; index < position.count; index += 1) {
+      out[index * 3] += delta.getX(index) * weight
+      out[index * 3 + 1] += delta.getY(index) * weight
+      out[index * 3 + 2] += delta.getZ(index) * weight
+    }
+  }
+  return out
+}
+
+function pointGrid(points, cell) {
+  const grid = new Map()
+  for (let index = 0; index < points.length; index += 3) {
+    const key = `${Math.floor(points[index] / cell)}|${Math.floor(points[index + 1] / cell)}|${Math.floor(points[index + 2] / cell)}`
+    let bucket = grid.get(key)
+    if (!bucket) grid.set(key, (bucket = []))
+    bucket.push(index)
+  }
+  return grid
+}
+
+function nearestInGrid(grid, points, x, y, z, cell, limit) {
+  const cx = Math.floor(x / cell)
+  const cy = Math.floor(y / cell)
+  const cz = Math.floor(z / cell)
+  let best = -1
+  let bestD = limit * limit
+  for (let ox = -1; ox <= 1; ox += 1) {
+    for (let oy = -1; oy <= 1; oy += 1) {
+      for (let oz = -1; oz <= 1; oz += 1) {
+        const bucket = grid.get(`${cx + ox}|${cy + oy}|${cz + oz}`)
+        if (!bucket) continue
+        for (const index of bucket) {
+          const dx = points[index] - x
+          const dy = points[index + 1] - y
+          const dz = points[index + 2] - z
+          const dist = dx * dx + dy * dy + dz * dz
+          if (dist < bestD) {
+            bestD = dist
+            best = index
+          }
+        }
+      }
+    }
+  }
+  return best
+}
+
+function seatHairOnHead(body, hairMeshes) {
+  const regions = headRegions(body)
+  const index = body.geometry.index
+  if (!regions || !index) return
+  if (!body.userData.baseIndex) body.userData.baseIndex = index.array.slice()
+  const morphed = morphedXYZ(body)
+  const { face, scalp, center } = regions
+  const scalpPoints = []
+  for (let vertex = 0; vertex < scalp.length; vertex += 1) {
+    if (!scalp[vertex]) continue
+    scalpPoints.push(morphed[vertex * 3], morphed[vertex * 3 + 1], morphed[vertex * 3 + 2])
+  }
+  if (scalpPoints.length < 30) return
+  const cell = 0.08
+  const scalpGrid = pointGrid(scalpPoints, cell)
+  const capPoints = []
+  restoreHead(body)
+  for (const hair of hairMeshes) {
+    if (hair.userData?.scalpCover) continue
+    const hairPos = hair.geometry.attributes.position
+    if (!hair.userData.basePos) hair.userData.basePos = hairPos.array.slice()
+    hairPos.array.set(hair.userData.basePos)
+    const uv = hair.geometry.attributes.uv
+    const cap = []
+    for (let vertex = 0; vertex < hairPos.count; vertex += 1) {
+      if (!uv || uv.getY(vertex) < 0.9) continue
+      cap.push(vertex)
+    }
+    if (cap.length > 12) {
+      let sx = 0
+      let sy = 0
+      let sz = 0
+      let tx = 0
+      let ty = 0
+      let tz = 0
+      let hits = 0
+      for (const vertex of cap) {
+        const hit = nearestInGrid(scalpGrid, scalpPoints, hairPos.getX(vertex), hairPos.getY(vertex), hairPos.getZ(vertex), cell, 0.08)
+        if (hit < 0) continue
+        const ox = scalpPoints[hit] - center.x
+        const oy = scalpPoints[hit + 1] - center.y
+        const oz = scalpPoints[hit + 2] - center.z
+        const length = Math.hypot(ox, oy, oz) || 1
+        sx += hairPos.getX(vertex)
+        sy += hairPos.getY(vertex)
+        sz += hairPos.getZ(vertex)
+        tx += scalpPoints[hit] + (ox / length) * 0.0025
+        ty += scalpPoints[hit + 1] + (oy / length) * 0.0025
+        tz += scalpPoints[hit + 2] + (oz / length) * 0.0025
+        hits += 1
+      }
+      if (hits > 12) {
+        const dx = tx / hits - sx / hits
+        const dy = ty / hits - sy / hits
+        const dz = tz / hits - sz / hits
+        const move = Math.hypot(dx, dy, dz)
+        if (move < 0.04) {
+          for (let vertex = 0; vertex < hairPos.count; vertex += 1) {
+            hairPos.setXYZ(vertex, hairPos.getX(vertex) + dx, hairPos.getY(vertex) + dy, hairPos.getZ(vertex) + dz)
+          }
+        }
+      }
+      for (const vertex of cap) capPoints.push(hairPos.getX(vertex), hairPos.getY(vertex), hairPos.getZ(vertex))
+    }
+    hairPos.needsUpdate = true
+    const source = hair.geometry.index?.array
+    if (!source) continue
+    if (!hair.userData.baseIndex) hair.userData.baseIndex = source.slice()
+    const facePoints = []
+    for (let vertex = 0; vertex < face.length; vertex += 1) {
+      if (!face[vertex]) continue
+      const y = morphed[vertex * 3 + 1]
+      if (y > center.y) continue
+      facePoints.push(morphed[vertex * 3], y, morphed[vertex * 3 + 2])
+    }
+    const faceGrid = pointGrid(facePoints, 0.02)
+    const kept = []
+    const base = hair.userData.baseIndex
+    for (let triangle = 0; triangle < base.length; triangle += 3) {
+      const a = base[triangle]
+      const b = base[triangle + 1]
+      const c = base[triangle + 2]
+      const x = (hairPos.getX(a) + hairPos.getX(b) + hairPos.getX(c)) / 3
+      const y = (hairPos.getY(a) + hairPos.getY(b) + hairPos.getY(c)) / 3
+      const z = (hairPos.getZ(a) + hairPos.getZ(b) + hairPos.getZ(c)) / 3
+      const hit = nearestInGrid(faceGrid, facePoints, x, y, z, 0.02, 0.007)
+      const overlap = hit >= 0 && z > facePoints[hit + 2] - 0.003
+      if (!overlap) kept.push(a, b, c)
+    }
+    hair.geometry.setIndex(kept)
+    hair.geometry.computeVertexNormals()
+    hair.renderOrder = 2
+  }
+  coverScalp(body)
+}
+
+function coverScalp(body) {
+  const previous = []
+  group.traverse((child) => {
+    if (child.userData?.scalpCover) previous.push(child)
+  })
+  previous.forEach((child) => child.removeFromParent())
+  const regions = headRegions(body)
+  const base = body.userData.baseIndex
+  if (!regions || !base) return
+  const { scalp, center } = regions
+  const morphed = morphedXYZ(body)
+  const position = new Float32Array(morphed.length)
+  for (let index = 0; index < scalp.length; index += 1) {
+    let x = morphed[index * 3]
+    let y = morphed[index * 3 + 1]
+    let z = morphed[index * 3 + 2]
+    if (scalp[index]) {
+      let ox = x - center.x
+      let oy = y - center.y
+      let oz = z - center.z
+      const length = Math.hypot(ox, oy, oz) || 1
+      x += (ox / length) * 0.0035
+      y += (oy / length) * 0.0035
+      z += (oz / length) * 0.0035
+    }
+    position[index * 3] = x
+    position[index * 3 + 1] = y
+    position[index * 3 + 2] = z
+  }
+  const index = []
+  for (let triangle = 0; triangle < base.length; triangle += 3) {
+    const a = base[triangle]
+    const b = base[triangle + 1]
+    const c = base[triangle + 2]
+    if (scalp[a] && scalp[b] && scalp[c]) index.push(a, b, c)
+  }
+  if (index.length < 30) return
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  geometry.setAttribute('skinIndex', body.geometry.attributes.skinIndex.clone())
+  geometry.setAttribute('skinWeight', body.geometry.attributes.skinWeight.clone())
+  geometry.setIndex(index)
+  geometry.computeVertexNormals()
+  const cover = new THREE.SkinnedMesh(geometry, new THREE.MeshStandardMaterial({ color: hairTint(), roughness: 0.62, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }))
+  cover.position.copy(body.position)
+  cover.quaternion.copy(body.quaternion)
+  cover.scale.copy(body.scale)
+  ;(body.parent || group).add(cover)
+  cover.bind(body.skeleton, body.bindMatrix)
+  cover.frustumCulled = false
+  cover.renderOrder = 1
+  cover.userData.scalpCover = true
+  cover.userData.style = 'hair'
+}
+
+function skinUnderHair(body, scalp, morphed, capPoints) {
+  const uv = body.geometry.attributes.uv
+  if (!uv || capPoints.length < 30) return
+  if (!body.userData.baseUV) body.userData.baseUV = uv.array.slice()
+  uv.array.set(body.userData.baseUV)
+  const grid = pointGrid(capPoints, 0.02)
+  for (let vertex = 0; vertex < scalp.length; vertex += 1) {
+    if (!scalp[vertex]) continue
+    const x = morphed[vertex * 3]
+    const y = morphed[vertex * 3 + 1]
+    const z = morphed[vertex * 3 + 2]
+    if (nearestInGrid(grid, capPoints, x, y, z, 0.02, 0.016) < 0) continue
+    const u = uv.getX(vertex)
+    if (u < 0.5) uv.setX(vertex, u + 0.5)
+  }
+  uv.needsUpdate = true
+}
+
+function reseatWornHair() {
+  const body = rig?.mesh
+  if (!body) return
+  const meshes = []
+  group.traverse((child) => {
+    if (child.userData?.style === 'hair' && child.isSkinnedMesh && !child.userData.scalpCover) meshes.push(child)
+  })
+  if (!meshes.length) restoreHead(body)
+  else seatHairOnHead(body, meshes)
+  render()
+}
+
+function restoreHead(body) {
+  if (!body?.geometry) return
+  if (body.userData.baseIndex) body.geometry.setIndex(Array.from(body.userData.baseIndex))
+  const uv = body.geometry.attributes.uv
+  if (uv && body.userData.baseUV) {
+    uv.array.set(body.userData.baseUV)
+    uv.needsUpdate = true
+  }
+}
+
 async function wearStyle(kind) {
   const token = (styleTokens[kind] = (styleTokens[kind] || 0) + 1)
   const id = chosenStyle(kind)
@@ -1839,6 +2171,7 @@ async function wearStyle(kind) {
   const body = rig?.mesh
   const url = styleUrls[kind][id]
   if (!body?.skeleton || !url) {
+    if (kind === 'hair' && body) restoreHead(body)
     render()
     return
   }
@@ -1865,6 +2198,7 @@ async function wearStyle(kind) {
     child.userData.style = kind
     group.add(child)
   }
+  if (kind === 'hair') seatHairOnHead(body, meshes)
   render()
   requestAnimationFrame(render)
 }
@@ -2126,6 +2460,131 @@ async function addGarments(root) {
   }
 }
 
+function eyeballMask(mesh) {
+  const skinIndex = mesh.geometry.attributes.skinIndex
+  const skinWeight = mesh.geometry.attributes.skinWeight
+  const mask = new Uint8Array(skinIndex?.count || 0)
+  if (!skinIndex || !skinWeight || !mesh.skeleton) return mask
+  const eyes = new Set()
+  mesh.skeleton.bones.forEach((bone, boneIndex) => {
+    if (bone.name.includes('eye')) eyes.add(boneIndex)
+  })
+  if (!eyes.size) return mask
+  for (let vertex = 0; vertex < skinIndex.count; vertex += 1) {
+    let weight = 0
+    for (let channel = 0; channel < 4; channel += 1) {
+      if (eyes.has(skinIndex.getComponent(vertex, channel))) weight += skinWeight.getComponent(vertex, channel)
+    }
+    if (weight > 0.5) mask[vertex] = 1
+  }
+  return mask
+}
+
+function smoothEyePositions(array, eyeball) {
+  const count = array.length / 3
+  let mid = 0
+  let balls = 0
+  for (let index = 0; index < count; index += 1) {
+    if (!eyeball[index]) continue
+    mid += array[index * 3]
+    balls += 1
+  }
+  if (balls < 10) return
+  mid /= balls
+  const side = [0, 0, 0, 0, 0, 0, 0, 0]
+  for (let index = 0; index < count; index += 1) {
+    if (!eyeball[index]) continue
+    const slot = array[index * 3] >= mid ? 0 : 4
+    side[slot] += array[index * 3]
+    side[slot + 1] += array[index * 3 + 1]
+    side[slot + 2] += array[index * 3 + 2]
+    side[slot + 3] += 1
+  }
+  const centers = []
+  for (const slot of [0, 4]) {
+    if (side[slot + 3] < 10) continue
+    centers.push([side[slot] / side[slot + 3], side[slot + 1] / side[slot + 3], side[slot + 2] / side[slot + 3]])
+  }
+  for (const [ex, ey, ez] of centers) {
+    const rim = []
+    const pocket = []
+    for (let index = 0; index < count; index += 1) {
+      if (eyeball[index]) continue
+      const x = array[index * 3]
+      const y = array[index * 3 + 1]
+      const z = array[index * 3 + 2]
+      const dx = x - ex
+      const dist = Math.hypot(dx, y - ey, z - ez)
+      if (Math.abs(dx) >= 0.028) continue
+      if (z > ez + 0.002 && z < ez + 0.02 && dist > 0.014 && dist < 0.03) rim.push(index)
+      if (dist < 0.016 && z > ez - 0.008 && z < ez + 0.016 && Math.abs(dx) < 0.02) pocket.push(index)
+    }
+    if (rim.length < 8) continue
+    for (const index of pocket) {
+      const x = array[index * 3]
+      const y = array[index * 3 + 1]
+      const z = array[index * 3 + 2]
+      let weightSum = 0
+      let zSum = 0
+      for (const rimIndex of rim) {
+        const distance = Math.hypot(x - array[rimIndex * 3], y - array[rimIndex * 3 + 1]) + 1e-4
+        const weight = 1 / (distance * distance)
+        weightSum += weight
+        zSum += weight * array[rimIndex * 3 + 2]
+      }
+      const gap = zSum / weightSum - z
+      if (gap < 0.0015) continue
+      const dist = Math.hypot(x - ex, y - ey, z - ez)
+      let spatial = (0.022 - dist) / 0.006
+      spatial = Math.max(0, Math.min(1, spatial))
+      spatial = spatial * spatial * (3 - 2 * spatial)
+      const blend = gap > 0.003 && dist < 0.02 ? 1 : spatial
+      array[index * 3 + 2] = z + gap * blend
+    }
+  }
+}
+
+function smoothEyeSockets(mesh) {
+  const position = mesh.geometry.attributes.position
+  if (!position) return
+  const eyeball = eyeballMask(mesh)
+  const array = position.array
+  smoothEyePositions(array, eyeball)
+  position.needsUpdate = true
+  mesh.geometry.computeVertexNormals()
+}
+
+function dropEyeballs(mesh) {
+  const skinIndex = mesh.geometry.attributes.skinIndex
+  const skinWeight = mesh.geometry.attributes.skinWeight
+  const index = mesh.geometry.index
+  if (!skinIndex || !skinWeight || !index || !mesh.skeleton) return
+  const eyes = new Set()
+  mesh.skeleton.bones.forEach((bone, boneIndex) => {
+    if (bone.name.includes('eye')) eyes.add(boneIndex)
+  })
+  if (!eyes.size) return
+  const eyeball = new Uint8Array(skinIndex.count)
+  for (let vertex = 0; vertex < skinIndex.count; vertex += 1) {
+    let weight = 0
+    for (let channel = 0; channel < 4; channel += 1) {
+      if (eyes.has(skinIndex.getComponent(vertex, channel))) weight += skinWeight.getComponent(vertex, channel)
+    }
+    if (weight > 0.5) eyeball[vertex] = 1
+  }
+  const source = index.array
+  const kept = []
+  for (let triangle = 0; triangle < source.length; triangle += 3) {
+    const a = source[triangle]
+    const b = source[triangle + 1]
+    const c = source[triangle + 2]
+    if (eyeball[a] && eyeball[b] && eyeball[c]) continue
+    kept.push(a, b, c)
+  }
+  mesh.geometry.setIndex(kept)
+  mesh.userData.baseIndex = kept.slice()
+}
+
 async function showMesh(url, height, options = {}) {
   group.scale.set(1, 1, 1)
   if (!url) {
@@ -2147,7 +2606,7 @@ async function showMesh(url, height, options = {}) {
   rig = null
   skeletonHelper = null
   try {
-    const gltf = await loader.loadAsync(url)
+    const gltf = await loader.loadAsync(`${url}${String(url).includes('?') ? '&' : '?'}t=${Date.now()}`)
     if (token !== loadToken) return
     const object = gltf.scene
     let skinned = null
@@ -2175,6 +2634,9 @@ async function showMesh(url, height, options = {}) {
         if (material) material.vertexColors = true
       })
       paintColors(skinned)
+      cleanPhotoSkinUVs(skinned)
+      dropEyeballs(skinned)
+      smoothEyeSockets(skinned)
       markSkinChip(skinned.userData.photoSkin ? 'photo' : skinChoice)
       if (!EMBED && ['smplx_thin', 'smplx_body', '/avatars/'].some((part) => String(url).includes(part))) await addGarments(object)
       await buildAccessories()
@@ -2238,13 +2700,18 @@ function onMessage(event) {
   if (data?.type === 'body') {
     const height = document.querySelector('[data-shape="height"]')
     if (height && data.height) height.value = String(Math.round(Number(data.height)))
+    if (data.gender === 'female' || data.gender === 'male') zeroShapeSliders()
     for (const [name, value] of Object.entries(data.shape || {})) {
       const slider = document.querySelector(`[data-shape="${name}"]`)
       if (slider) slider.value = String(value)
     }
-    applyShape()
-    applyPose()
-    render()
+    const sex = data.gender === 'female' || data.gender === 'male' ? data.gender : null
+    Promise.resolve(sex ? applyAverageBody(sex) : null).then(() => {
+      applyShape()
+      applyPose()
+      reseatWornHair()
+      render()
+    })
     return
   }
   if (!data || data.type !== 'scene') return
@@ -2253,18 +2720,30 @@ function onMessage(event) {
 
 let lookToken = 0
 
+function zeroShapeSliders() {
+  for (const name of shapeMorphs) {
+    const slider = document.querySelector(`[data-shape="${name}"]`)
+    if (slider) slider.value = '0'
+  }
+}
+
 async function showLook(data) {
   const token = ++lookToken
   if (data.profile) photoAvatar = data.profile
   styleChoice.hair = data.hair || null
   const height = document.querySelector('[data-shape="height"]')
   if (height && data.height) height.value = String(Math.round(Number(data.height)))
+  if (data.gender === 'female' || data.gender === 'male') zeroShapeSliders()
   for (const [name, value] of Object.entries(data.shape || {})) {
     const slider = document.querySelector(`[data-shape="${name}"]`)
     if (slider) slider.value = String(value)
   }
   await showMesh(data.url, 1, { keepShape: true })
   if (token !== lookToken) return
+  if (data.gender === 'female' || data.gender === 'male') {
+    await applyAverageBody(data.gender)
+    if (token !== lookToken) return
+  }
   const urls = data.wear || []
   if (!urls.length) {
     const fitted = []
@@ -2280,7 +2759,7 @@ async function showLook(data) {
   }
   applyShape()
   wearStyles()
-  if (EMBED) frameBody()
+  if (EMBED && new URLSearchParams(location.search).get('view') !== 'head') frameBody()
   render()
   window.parent.postMessage(JSON.stringify({ type: 'look-ready' }), '*')
 }
@@ -2342,6 +2821,110 @@ function skinnedMeshOf(gltf) {
   return skinned
 }
 
+let thinTemplatePos = null
+
+async function loadThinTemplate() {
+  if (thinTemplatePos) return thinTemplatePos
+  const gltf = await loader.loadAsync('/smplx_thin.glb')
+  thinTemplatePos = skinnedMeshOf(gltf)?.geometry?.attributes?.position || null
+  return thinTemplatePos
+}
+
+function mapSplitToTemplate(fromPos, templatePos) {
+  const map = new Int32Array(fromPos.count)
+  if (fromPos.count === templatePos.count) {
+    for (let index = 0; index < fromPos.count; index += 1) map[index] = index
+    return map
+  }
+  const table = new Map()
+  const keyOf = (attr, index) => `${Math.round(attr.getX(index) * 1e4)}_${Math.round(attr.getY(index) * 1e4)}_${Math.round(attr.getZ(index) * 1e4)}`
+  for (let index = 0; index < templatePos.count; index += 1) table.set(keyOf(templatePos, index), index)
+  const missed = []
+  for (let index = 0; index < fromPos.count; index += 1) {
+    const hit = table.get(keyOf(fromPos, index))
+    if (hit === undefined) missed.push(index)
+    else map[index] = hit
+  }
+  for (const index of missed) {
+    let best = 0
+    let bestD = Infinity
+    const x = fromPos.getX(index)
+    const y = fromPos.getY(index)
+    const z = fromPos.getZ(index)
+    for (let other = 0; other < templatePos.count; other += 1) {
+      const dx = templatePos.getX(other) - x
+      const dy = templatePos.getY(other) - y
+      const dz = templatePos.getZ(other) - z
+      const dist = dx * dx + dy * dy + dz * dz
+      if (dist < bestD) {
+        bestD = dist
+        best = other
+      }
+    }
+    map[index] = best
+  }
+  return map
+}
+
+async function applyAverageBody(sex) {
+  if (!rig?.smplx || (sex !== 'female' && sex !== 'male')) return
+  if (rig.mesh.userData.averageSex === sex) return
+  const mesh = rig.mesh
+  const dest = mesh.geometry.attributes.position
+  if (!mesh.userData.smplxMap) {
+    const template = await loadThinTemplate()
+    if (!template || rig.mesh !== mesh) return
+    mesh.userData.smplxMap = mapSplitToTemplate(dest, template)
+  }
+  const [averageGltf, thinGltf, heavyGltf] = await Promise.all([
+    loader.loadAsync(`/presets/${sex}_average.glb`),
+    loader.loadAsync(`/presets/${sex}_thin.glb`),
+    loader.loadAsync(`/presets/${sex}_heavy.glb`),
+  ])
+  if (rig.mesh !== mesh) return
+  const average = skinnedMeshOf(averageGltf)?.geometry?.attributes?.position
+  const thin = skinnedMeshOf(thinGltf)?.geometry?.attributes?.position
+  const heavy = skinnedMeshOf(heavyGltf)?.geometry?.attributes?.position
+  if (!average || !thin || !heavy) return
+  const map = mesh.userData.smplxMap
+  const eyeball = eyeballMask(mesh)
+  const shaped = [average, thin, heavy].map((source) => {
+    const array = new Float32Array(dest.count * 3)
+    for (let index = 0; index < dest.count; index += 1) {
+      const vertex = map[index]
+      array[index * 3] = source.getX(vertex)
+      array[index * 3 + 1] = source.getY(vertex)
+      array[index * 3 + 2] = source.getZ(vertex)
+    }
+    smoothEyePositions(array, eyeball)
+    return array
+  })
+  const [averagePositions, thinPositions, heavyPositions] = shaped
+  dest.array.set(averagePositions)
+  const thinDelta = new Float32Array(dest.count * 3)
+  const heavyDelta = new Float32Array(dest.count * 3)
+  for (let offset = 0; offset < averagePositions.length; offset += 1) {
+    thinDelta[offset] = thinPositions[offset] - averagePositions[offset]
+    heavyDelta[offset] = heavyPositions[offset] - averagePositions[offset]
+  }
+  dest.needsUpdate = true
+  mesh.geometry.computeVertexNormals()
+  const attributes = mesh.geometry.morphAttributes.position || []
+  attributes.length = shapeMorphs.length
+  attributes.push(new THREE.BufferAttribute(thinDelta, 3), new THREE.BufferAttribute(heavyDelta, 3))
+  mesh.geometry.morphAttributes.position = attributes
+  mesh.geometry.morphTargetsRelative = true
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+  materials.forEach((material) => {
+    if (!material) return
+    material.morphTargets = true
+    material.needsUpdate = true
+  })
+  mesh.updateMorphTargets()
+  mesh.userData.averageSex = sex
+  bodySex = sex
+}
+
 
 function startBuild() {
   if (photoSex !== 'female' && photoSex !== 'male') {
@@ -2369,15 +2952,25 @@ async function attachBuildDeltas(sex, request) {
   const thin = skinnedMeshOf(thinGltf)?.geometry?.attributes?.position
   const heavy = skinnedMeshOf(heavyGltf)?.geometry?.attributes?.position
   if (!thin || !heavy || thin.count !== base.count || heavy.count !== base.count) return
+  const eyeball = eyeballMask(rig.mesh)
+  const shaped = [base, thin, heavy].map((source) => {
+    const array = new Float32Array(base.count * 3)
+    for (let index = 0; index < base.count; index += 1) {
+      array[index * 3] = source.getX(index)
+      array[index * 3 + 1] = source.getY(index)
+      array[index * 3 + 2] = source.getZ(index)
+    }
+    smoothEyePositions(array, eyeball)
+    return array
+  })
+  base.array.set(shaped[0])
+  base.needsUpdate = true
+  rig.mesh.geometry.computeVertexNormals()
   const thinDelta = new Float32Array(base.count * 3)
   const heavyDelta = new Float32Array(base.count * 3)
-  for (let index = 0; index < base.count; index += 1) {
-    thinDelta[index * 3] = thin.getX(index) - base.getX(index)
-    thinDelta[index * 3 + 1] = thin.getY(index) - base.getY(index)
-    thinDelta[index * 3 + 2] = thin.getZ(index) - base.getZ(index)
-    heavyDelta[index * 3] = heavy.getX(index) - base.getX(index)
-    heavyDelta[index * 3 + 1] = heavy.getY(index) - base.getY(index)
-    heavyDelta[index * 3 + 2] = heavy.getZ(index) - base.getZ(index)
+  for (let offset = 0; offset < shaped[0].length; offset += 1) {
+    thinDelta[offset] = shaped[1][offset] - shaped[0][offset]
+    heavyDelta[offset] = shaped[2][offset] - shaped[0][offset]
   }
   const attributes = rig.mesh.geometry.morphAttributes.position
   attributes.length = shapeMorphs.length

@@ -173,16 +173,12 @@ def scalp_cap(positions, faces, normals, head_mask, hair_mesh, eyes_y, eyes_z):
     """Avatar head triangles under the hair, so gaps between cards show hair
     colour instead of skin. The face stays clear: in front of the ears the cap
     starts above the brows."""
-    candidates = np.flatnonzero(head_mask)
-    distance = np.full(len(positions), np.inf)
-    _, distance[candidates], _ = trimesh.proximity.closest_point(hair_mesh, positions[candidates])
     y, z = positions[:, 1], positions[:, 2]
     forehead = z > eyes_z - 0.035
     ears = (np.abs(positions[:, 0]) > CAP_EAR_X) & (y < eyes_y + 0.03)
     allowed = head_mask & ~ears & np.where(forehead, y > eyes_y + CAP_BROW, y > eyes_y - CAP_NAPE)
-    covered = _grow(distance < np.where(forehead, CAP_REACH_FRONT, CAP_REACH), faces, 3, True)
-    covered = _grow(covered, faces, 3, False) & allowed
-    picked = faces[covered[faces].all(axis=1)]
+    # The strands are transparent between cards. The cap is every scalp triangle the hair should hide, not only the ones touching a strand.
+    picked = faces[allowed[faces].all(axis=1)]
     used = np.unique(picked)
     remap = np.full(len(positions), -1)
     remap[used] = np.arange(len(used))

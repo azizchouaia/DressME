@@ -1,16 +1,16 @@
 {
   "hair": "short03",
-  "hair_length": -0.779,
+  "hair_length": -0.095,
   "hair_scores": {
-    "short04": 0.004,
+    "short04": 0.001,
     "short02": 0.0,
-    "short03": 0.153,
-    "short01": 0.005,
-    "afro01": 0.003,
-    "bob01": 0.649,
-    "long01": 0.039,
-    "ponytail01": 0.108,
-    "braid01": 0.014,
-    "none": 0.015
+    "short03": 0.241,
+    "short01": 0.0,
+    "afro01": 0.002,
+    "bob01": 0.656,
+    "long01": 0.037,
+    "ponytail01": 0.034,
+    "braid01": 0.024,
+    "none": 0.004
   }
 }

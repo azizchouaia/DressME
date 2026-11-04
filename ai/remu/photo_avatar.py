@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT / "ai" / "remu"))
 
 from garment_job import _export_faces  # noqa: E402
 from pygltflib import GLTF2  # noqa: E402
-from reco_garments import BODY, photo_uvs  # noqa: E402
+from reco_garments import BODY, SIDE, photo_uvs  # noqa: E402
 from skin_garments import body_skin  # noqa: E402
 from smplx_export import pack_glb, vertex_normals  # noqa: E402
 from texture_samples import _pack  # noqa: E402
@@ -80,6 +80,111 @@ def look(dataset: Path) -> dict:
     return {"hair": picks.get("hair", "none")}
 
 
+def drop_eyeballs(faces: np.ndarray, joints: np.ndarray, weights: np.ndarray, names: list[str]) -> np.ndarray:
+    """The eyeball spheres are separate from the face. The photo still prints the eyes on the eyelids."""
+    names = [str(name) for name in names]
+    eyes = [names.index(bone) for bone in ("left_eye_smplhf", "right_eye_smplhf") if bone in names]
+    if not eyes:
+        return faces
+    influence = np.zeros(len(joints), dtype=np.float32)
+    for slot in range(joints.shape[1]):
+        influence += np.where(np.isin(joints[:, slot], eyes), weights[:, slot], 0.0)
+    eyeball = influence > 0.5
+    return faces[~eyeball[faces].all(axis=1)]
+
+
+def _eye_shift(fitted: np.ndarray, joints: np.ndarray, weights: np.ndarray, names: list[str], dataset: Path) -> list[tuple[float, float, float, float]]:
+    """Photo eye to the eyeball that wears it, in image pixels: source col, row, destination col, row."""
+    path = dataset / "images" / "outfit_keypoints.json"
+    if not path.exists():
+        return []
+    people = json.loads(path.read_text(encoding="utf-8")).get("people") or []
+    if not people:
+        return []
+    points = np.asarray(people[0]["pose_keypoints_2d"], dtype=np.float32).reshape(-1, 3)
+    if len(points) < 17:
+        return []
+    photo = [(float(points[index, 0]), float(points[index, 1])) for index in (15, 16) if points[index, 2] > 0.3]
+    if len(photo) < 2:
+        return []
+    names = [str(name) for name in names]
+    shifts = []
+    used = set()
+    for bone in ("left_eye_smplhf", "right_eye_smplhf"):
+        if bone not in names:
+            continue
+        joint = names.index(bone)
+        weight = np.zeros(len(fitted), dtype=np.float32)
+        for slot in range(joints.shape[1]):
+            weight += np.where(joints[:, slot] == joint, weights[:, slot], 0)
+        chosen = weight > 0.35
+        if chosen.sum() < 8:
+            continue
+        cap = fitted[chosen]
+        cap = cap[np.argsort(cap[:, 2])[-max(8, len(cap) // 5):]]
+        center = cap.mean(axis=0)
+        column = SIDE / 2 + SIDE / 2 * float(center[0])
+        row = SIDE / 2 - SIDE / 2 * float(center[1])
+        free = [item for item in range(len(photo)) if item not in used]
+        if not free:
+            break
+        nearest = min(free, key=lambda item: (photo[item][0] - column) ** 2 + (photo[item][1] - row) ** 2)
+        used.add(nearest)
+        shifts.append((photo[nearest][0], photo[nearest][1], column, row))
+    return shifts
+
+
+def fit_eyeball_uvs(uvs: np.ndarray, vertex: np.ndarray, fitted: np.ndarray, joints: np.ndarray, weights: np.ndarray, names: list[str], shifts: list[tuple[float, float, float, float]]) -> np.ndarray:
+    """Put the photo iris on the eyeball. The eyelids keep the face projection."""
+    if not shifts:
+        return uvs
+    uvs = np.array(uvs, copy=True)
+    names = [str(name) for name in names]
+    bones = [names.index(bone) for bone in ("left_eye_smplhf", "right_eye_smplhf") if bone in names]
+    if len(bones) != len(shifts):
+        return uvs
+    influence = np.zeros((len(fitted), len(bones)), dtype=np.float32)
+    for slot in range(joints.shape[1]):
+        for eye, joint in enumerate(bones):
+            influence[:, eye] += np.where(joints[:, slot] == joint, weights[:, slot], 0.0)
+    owner = influence.argmax(axis=1)
+    strength = influence.max(axis=1)
+    orig = np.asarray(vertex)
+    cols = SIDE / 2 + SIDE / 2 * fitted[orig, 0]
+    rows = SIDE / 2 - SIDE / 2 * fitted[orig, 1]
+    moved = 0
+    for eye, (src_c, src_r, dst_c, dst_r) in enumerate(shifts):
+        chosen = (strength[orig] > 0.35) & (owner[orig] == eye)
+        if not chosen.any():
+            continue
+        sample_c = src_c + (cols[chosen] - dst_c) * 0.72
+        sample_r = src_r + (rows[chosen] - dst_r) * 0.72
+        uvs[chosen, 0] = (sample_c + 0.5) / (2 * SIDE)
+        uvs[chosen, 1] = (sample_r + 0.5) / SIDE
+        moved += int(chosen.sum())
+    print("eyeball uvs", moved, flush=True)
+    return uvs
+
+
+def place_eyes(image: np.ndarray, shifts: list[tuple[float, float, float, float]]) -> np.ndarray:
+    """Slide each printed eye onto the model's eyeball. The rest of the face stays put."""
+    if not shifts:
+        return image
+    height, width = image.shape[:2]
+    columns, rows = np.meshgrid(np.arange(width, dtype=np.float32), np.arange(height, dtype=np.float32))
+    sample_c, sample_r = columns.copy(), rows.copy()
+    for source_c, source_r, dest_c, dest_r in shifts:
+        distance = np.hypot(columns - dest_c, rows - dest_r)
+        radius = max(np.hypot(source_c - dest_c, source_r - dest_r) * 3.2, 42.0)
+        falloff = np.clip(1 - distance / radius, 0, 1) ** 2
+        sample_c += (source_c - dest_c) * falloff
+        sample_r += (source_r - dest_r) * falloff
+    out = np.empty_like(image)
+    for channel in range(image.shape[2]):
+        out[..., channel] = ndimage.map_coordinates(image[..., channel], [sample_r, sample_c], order=1, mode="nearest")
+    return np.clip(np.rint(out), 0, 255).astype(np.uint8)
+
+
 def _side(image: np.ndarray, labels: np.ndarray, skin: np.ndarray, rows: tuple[float, float] | None) -> np.ndarray:
     """Skin tone everywhere, the whole face printed from the photo, beard
     included. Hair above the nose is left to the 3D hairstyle, and the neck
@@ -117,6 +222,7 @@ def build(run: Path, dataset: Path, name: str) -> dict:
     faces = _export_faces(gltf, gltf.binary_blob(), gltf.meshes[0].primitives[0].indices)
     if len(fitted.vertices) != len(positions):
         raise RuntimeError("The fitted body does not have the avatar's SMPL-X topology.")
+    faces = drop_eyeballs(faces, joints, weights, names)
     vertex, split_faces, uvs = photo_uvs(np.asarray(fitted.vertices, dtype=np.float32), faces)
     normals = vertex_normals(positions, faces)[vertex]
     plain = np.empty_like(back)

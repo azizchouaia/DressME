@@ -9,7 +9,9 @@ Optional: SMPLX_FEMALE.npz and SMPLX_MALE.npz
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -362,7 +364,17 @@ def pack_glb(vertices, normals, joints, weights, faces, names, parents, world_jo
     )
     gltf.set_binary_blob(bytes(blob))
     destination.parent.mkdir(parents=True, exist_ok=True)
-    gltf.save(destination)
+    temporary = destination.with_suffix(".tmp.glb")
+    last = None
+    for attempt in range(6):
+        try:
+            gltf.save(temporary)
+            os.replace(temporary, destination)
+            return
+        except OSError as error:
+            last = error
+            time.sleep(0.4 * (attempt + 1))
+    raise last
 
 
 _MODELS: dict[str, object] = {}

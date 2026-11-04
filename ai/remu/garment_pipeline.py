@@ -106,7 +106,8 @@ def main() -> None:
     flags = sys.argv[1:]
     avatar = flags[flags.index("--avatar") + 1] if "--avatar" in flags else None
     gender = flags[flags.index("--gender") + 1] if "--gender" in flags else None
-    args = [a for a in flags if not a.startswith("--") and a not in (avatar, gender)]
+    shape = flags[flags.index("--shape") + 1] if "--shape" in flags else None
+    args = [a for a in flags if not a.startswith("--") and a not in (avatar, gender, shape)]
     if "--skip-kaggle" not in sys.argv:
         _say("checking and framing the photos")
         _say(json.dumps(prepare(Path(args[0]), Path(args[1]), DATASET_DIR, DATASET_ID, "--mirror-front" in sys.argv)))
@@ -118,7 +119,9 @@ def main() -> None:
         _say("downloading the outfit mesh and the fitted body")
         download()
     _say("cutting the shirt and pants and fitting them to the avatar")
-    subprocess.check_call([str(PYTHON), str(ROOT / "ai" / "remu" / "reco_garments.py"), str(RUN_DIR), str(DATASET_DIR)], cwd=str(ROOT))
+    sex = gender if gender in ("male", "female") else "female"
+    body_type = shape if shape in ("slim", "average", "athletic", "heavy") else "slim"
+    subprocess.check_call([str(PYTHON), str(ROOT / "ai" / "remu" / "reco_garments.py"), str(RUN_DIR), str(DATASET_DIR), sex, body_type], cwd=str(ROOT))
     mesh = "/smplx_thin.glb"
     if avatar:
         _say("picking the hairstyle from the photos")

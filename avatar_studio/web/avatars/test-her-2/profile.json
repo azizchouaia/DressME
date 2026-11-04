@@ -1,0 +1,10 @@
+{
+  "name": "test-her-2",
+  "mesh": "/avatars/test-her-2/avatar.glb",
+  "skin": "#d6b9a6",
+  "hair": "#78614e",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "short03"
+  }
+}

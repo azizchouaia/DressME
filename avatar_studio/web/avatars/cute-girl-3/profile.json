@@ -1,8 +1,8 @@
 {
   "name": "cute-girl-3",
   "mesh": "/avatars/cute-girl-3/avatar.glb",
-  "skin": "#d5b9ad",
-  "hair": "#433932",
+  "skin": "#fad4c2",
+  "hair": "#382925",
   "body": "smplx_thin.glb",
   "look": {
     "hair": "short03"

@@ -198,7 +198,8 @@ def _run(user: str, kind: str, mirror: bool) -> None:
         command.append("--skip-kaggle")
         job["lines"].append("These photos were reconstructed before; reusing that 3D result.")
     if kind == "avatar":
-        command += ["--avatar", user, "--gender", info["gender"]]
+        command += ["--avatar", user]
+    command += ["--gender", info["gender"], "--shape", info.get("shape") or "slim"]
     try:
         process = subprocess.Popen(command, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
         for raw in process.stdout:
