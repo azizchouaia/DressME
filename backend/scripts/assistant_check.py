@@ -42,6 +42,10 @@ CONVERSATIONS = {
         "Show me the challenges",
     ],
     "Small talk": ["hello", "who are you?", "thanks!"],
+    "Fashion questions (no agent)": ["how do I wash a wool sweater?", "what colours go with navy?",
+                                     "comment repasser une chemise en lin ?"],
+    "Out of scope (polite no + what I can do)": ["what is the capital of France?", "recommend me a good restaurant",
+                                                 "write me python code"],
 }
 
 
@@ -66,7 +70,8 @@ def main() -> None:
             try:
                 r = ask(a.base, a.user, session, m)
                 agent, reply = r.get("last_agent") or "—", (r.get("question") or r.get("reply") or "").replace("\n", " ")
-                ok = not r.get("error") and (agent != "—" or title == "Small talk" or "?" in reply)
+                ok = not r.get("error") and bool(reply) and (agent != "—" or "agent" in title or title == "Small talk"
+                                                             or "Out of scope" in title or "?" in reply)
             except Exception as e:  # noqa: BLE001
                 agent, reply, ok = "ERROR", str(e), False
             bad += not ok

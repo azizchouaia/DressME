@@ -159,3 +159,34 @@ def test_a_new_request_is_not_taken_as_an_answer():
 
     assert clean("10 Ã— 10 capsule") == "10 × 10 capsule"
     assert clean("denim denim jeans") == "denim jeans"
+
+
+@pytest.mark.parametrize("text", ["what is the capital of France?", "solve this equation 2x+3=7", "who won the football match",
+                                  "write me python code", "tell me a joke"])
+def test_off_topic_is_declined_kindly(text):
+    g = build_graph(model=Writer(), tools=[], rules=True)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="s5", message=text))
+    assert "style assistant" in r["reply"] and "outfit" in r["reply"]
+
+
+class BadLLM(Writer):
+    async def ainvoke(self, messages):
+        return AIMessage(content='I can\'t answer that. The function to use is {"name": "stylist"}')
+
+
+def test_never_a_technical_or_empty_answer():
+    g = build_graph(model=BadLLM(), tools=[], rules=True)
+    fashion = asyncio.run(run_turn(g, user_id="jury", session_id="s6", message="how do I wash a wool sweater?"))
+    assert "not sure I understood" in fashion["reply"] and "function" not in fashion["reply"]
+    other = asyncio.run(run_turn(g, user_id="jury", session_id="s7", message="recommend me a good restaurant"))
+    assert "style assistant" in other["reply"]
+
+
+def test_a_fashion_question_gets_the_llm_answer():
+    class Good(Writer):
+        async def ainvoke(self, messages):
+            return AIMessage(content="Wash it cold, by hand, and dry it flat. I can also build an outfit with it!")
+
+    g = build_graph(model=Good(), tools=[], rules=True)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="s8", message="how do I wash a wool sweater?"))
+    assert r["reply"].startswith("Wash it cold")

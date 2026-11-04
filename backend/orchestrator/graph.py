@@ -193,7 +193,11 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
                 text = last.content if isinstance(last.content, str) else str(last.content)
                 from .replies import small_talk
 
+                from .replies import OUT_OF_SCOPE, off_topic
+
                 chat = small_talk(text) if not state.get("attachment") else None
+                if not chat and not state.get("attachment") and off_topic(text):
+                    chat = OUT_OF_SCOPE
                 if chat:
                     return {"messages": [AIMessage(content=chat, additional_kwargs={"final": True})], "intent": None}
                 hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"),
@@ -310,10 +314,29 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
             fixed = from_facts(tool_name(turn), payload)
             if fixed:
                 return {"messages": [AIMessage(content=fixed)]}
+        user_text = next((m.content for m in turn if isinstance(m, HumanMessage)), "")
+        user_text = user_text if isinstance(user_text, str) else str(user_text)
+        no_agent = not any(isinstance(m, ToolMessage) for m in turn)
+        if no_agent and use_rules:
+            from .replies import GENERAL_PROMPT, guard
+
+            history = [m for m in state["messages"] if isinstance(m, HumanMessage)
+                       or (isinstance(m, AIMessage) and m.content and not m.tool_calls)][-6:]
+            try:
+                draft = await brain.ainvoke([("system", GENERAL_PROMPT), *history])
+                text = draft.content if isinstance(draft.content, str) else ""
+            except Exception:  # noqa: BLE001 - LLM down: the guard answers
+                text = ""
+            return {"messages": [AIMessage(content=guard(text, user_text))]}
         system = f"{WRITER_PROMPT}\nFacts:\n{json.dumps(protected_facts(payload), ensure_ascii=False)}"
         draft = await brain.ainvoke([("system", system), *state["messages"]])
         text = draft.content if isinstance(draft.content, str) else json.dumps(draft.content)
-        return {"messages": [AIMessage(content=enforce_facts(text, payload))]}
+        text = enforce_facts(text, payload)
+        if use_rules:
+            from .replies import guard
+
+            text = guard(text, user_text)
+        return {"messages": [AIMessage(content=text)]}
 
     graph = StateGraph(ChatState)
     graph.add_node("begin", begin)

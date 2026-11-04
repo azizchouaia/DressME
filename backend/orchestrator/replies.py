@@ -134,3 +134,58 @@ def from_facts(agent: str | None, p: dict) -> str | None:
         names = _names(ch, ("title", "name"))
         return f"{len(ch)} challenges for you: " + ", ".join(names[:4]) + ". Open Share & challenges to join one."
     return None
+
+
+# ---------------------------------------------------------------- every question gets an answer
+CAN_DO = ("I can choose your outfit for today or tomorrow, build an outfit around one of your pieces, tell you "
+          "BUY / THINK / SKIP before you buy something, find a piece in Tunisian shops, show your wardrobe and your "
+          "style, or open the challenges.")
+
+OUT_OF_SCOPE = ("I'm DressMe's style assistant, so I can't help with that one. " + CAN_DO
+                + " What would you like?")
+
+UNSURE = ("I'm not sure I understood. " + CAN_DO + " For example: \"what should I wear tomorrow?\" or "
+          "\"should I buy a black jacket at 200 TND?\"")
+
+_FASHION = (r"\b(wear|outfit|look|style|cloth|clothes|dress|shirt|t-shirt|jean|pant|trouser|skirt|shoe|sneaker|boot|"
+            r"jacket|coat|blazer|suit|costume|sweater|pull|hoodie|bag|hat|scarf|colou?r|fabric|wash|iron|size|fit|"
+            r"fashion|mode|tenue|v[êe]tement|habit|chemise|robe|pantalon|chaussure|veste|couleur|taille|laver|repasser|"
+            r"wardrobe|closet|garde-robe|buy|shop|store|boutique|price|tnd|dt|wedding|mariage|interview|party|soir[ée]e|"
+            r"elbes|nelbes|7wayej|hwayej|9mejja|sabbat|kabbot)\b")
+_OFF_TOPIC = (r"\b(capital of|president|politic|election|football|match score|recipe|cook|math|equation|calculate|"
+              r"code|python|java|program|homework|exam|translate|weather in|news|stock|bitcoin|crypto|movie|film|"
+              r"song|lyrics|joke|blague|medical|doctor|symptom|religion|game)\b")
+
+
+def is_fashion(text: str) -> bool:
+    return bool(re.search(_FASHION, norm(text)))
+
+
+def off_topic(text: str) -> bool:
+    """Clearly not about clothes (and no clothes word in it): decline politely, without the LLM."""
+    low = norm(text)
+    return bool(re.search(_OFF_TOPIC, low)) and not is_fashion(low)
+
+
+_BAD = (r"(i can'?t answer|i cannot answer|i don'?t have (any )?(specific )?(information|function|module)|"
+        r"\bjson\b|function call|the function|tool call|documentation|as an ai|i'?m not able to|i am not able to|"
+        r"provide more context|payload|probe_image|\{\s*\")")
+
+
+def guard(reply: str, user_text: str) -> str:
+    """Never a blank, technical or 'I can't answer' reply: fall back to what DressMe can do."""
+    r = (reply or "").strip()
+    if not r or re.search(_BAD, r, re.I):
+        return UNSURE if is_fashion(user_text) else OUT_OF_SCOPE
+    return r
+
+
+GENERAL_PROMPT = (
+    "You are DressMe's style assistant in Tunisia. Answer the user's last message yourself, in their language, "
+    "in 2 or 3 short sentences.\n"
+    "- About clothes, outfits, colours, fabrics, care (washing, ironing), sizes, style or fashion in general: give a "
+    "useful, concrete answer, then offer one thing the app can do for them.\n"
+    "- About anything else: say kindly that you only help with clothes and style, then suggest two things you can "
+    "do: choose an outfit, judge a purchase (BUY / THINK / SKIP), find a piece in local shops.\n"
+    "Never mention functions, tools, JSON, modules or documentation. Never invent the user's clothes."
+)
