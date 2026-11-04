@@ -25,7 +25,8 @@ class AgentCardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = _flat(card);
+    final d = Map<String, dynamic>.of(_flat(card));
+    if (!const {'buy', 'think', 'skip'}.contains('${d['verdict']}'.toLowerCase())) d.remove('verdict'); // only Smart Buy has a verdict ring
     final parts = <Widget>[
       if (d['verdict'] != null) _Verdict(d: d),
       if (jsonList(d['results']).isNotEmpty || jsonList(d['products']).isNotEmpty)

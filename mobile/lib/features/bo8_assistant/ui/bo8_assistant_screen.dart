@@ -387,8 +387,10 @@ class _CardFacts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pills = <String>[
-      if (card['verdict'] != null) '${card['verdict']}'.toUpperCase(),
-      if (card['score'] != null) 'score ${card['score']}',
+      if (const {'buy', 'think', 'skip'}.contains('${card['verdict']}'.toLowerCase())) ...[
+        '${card['verdict']}'.toUpperCase(),
+        if (card['score'] != null) 'score ${card['score']}',
+      ],
       if (card['piece'] != null) '${card['piece']}',
       if (card['results'] is List) '${(card['results'] as List).length} shop results',
       if (card['outfits'] is List) '${(card['outfits'] as List).length} outfits',
@@ -469,6 +471,16 @@ class _Workflow extends StatefulWidget {
 class _WorkflowState extends State<_Workflow> {
   bool open = false;
 
+  Widget _node(String label, IconData icon, Color bg, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: fg, fontSize: 11.5, fontWeight: FontWeight.w600)),
+        ]),
+      );
+
   IconData _icon(Json s) => switch ('${s['step']}') {
         'understand' => Icons.psychology_outlined,
         'route' => Icons.call_split_rounded,
@@ -482,14 +494,21 @@ class _WorkflowState extends State<_Workflow> {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // the flow, always visible: Orchestrator -> agent(s) -> Orchestrator (reply); tap for the details
         InkWell(
           onTap: () => setState(() => open = !open),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.account_tree_outlined, size: 14, color: DmColors.gold),
-            const SizedBox(width: 4),
-            Text(agents.isEmpty ? 'How I answered' : 'How I answered · ${agents.join(' → ')}',
-                style: const TextStyle(color: DmColors.gold, fontSize: 12, fontWeight: FontWeight.w600)),
-            Icon(open ? Icons.expand_less : Icons.expand_more, size: 16, color: DmColors.gold),
+          child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 4, runSpacing: 4, children: [
+            _node('Orchestrator', Icons.hub_outlined, DmColors.inkDeep, Colors.white),
+            for (final s in widget.steps.where((s) => s['step'] == 'agent')) ...[
+              const Icon(Icons.arrow_forward_rounded, size: 14, color: DmColors.gold),
+              _node('${s['title']}'.replaceAll(' answered', '').replaceAll(' failed', '').replaceAll(' checked (M1)', ''),
+                  s['ok'] == false ? Icons.error_outline : Icons.smart_toy_outlined,
+                  s['ok'] == false ? DmColors.warningBg : const Color(0xFFF3EBDD), DmColors.inkDeep),
+            ],
+            const Icon(Icons.arrow_forward_rounded, size: 14, color: DmColors.gold),
+            _node(agents.isEmpty ? 'Orchestrator answered' : 'Orchestrator · answer', Icons.chat_bubble_outline,
+                DmColors.inkDeep, Colors.white),
+            Icon(open ? Icons.expand_less : Icons.expand_more, size: 18, color: DmColors.gold),
           ]),
         ),
         AnimatedSize(
