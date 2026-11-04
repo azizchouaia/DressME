@@ -9,6 +9,7 @@ import '../core/design/dressme_design.dart';
 import '../core/widgets/dm_widgets.dart';
 import 'today_card.dart';
 import 'tour.dart';
+import 'week_card.dart';
 
 class BoEntry {
   const BoEntry(this.code, this.title, this.owner, this.route, this.icon, this.modules, this.check);
@@ -128,7 +129,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Icon(icon, size: 20, color: dark ? DmColors.inkDeep : DmColors.bronze),
               ),
               const Spacer(),
-              Text(title, style: DmText.cardTitle.copyWith(color: dark ? Colors.white : DmColors.text)),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: DmText.cardTitle.copyWith(color: dark ? Colors.white : DmColors.text)),
               const SizedBox(height: 2),
               Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: DmText.caption.copyWith(color: dark ? DmColors.goldLight : DmColors.muted)),
@@ -215,6 +217,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                   if (ready) ...[
                     const TodayCard(),
+                    const SizedBox(height: 14),
+                    const WeekCard(),
                     const SizedBox(height: 22),
                   ],
                   const Text('WHAT DO YOU NEED?', style: DmText.eyebrow),

@@ -93,7 +93,7 @@ class _TodayCardState extends ConsumerState<TodayCard> {
             ),
         ]),
         const SizedBox(height: 6),
-        Text(worn ? 'Enjoy your day ✓' : 'Your outfit of the day',
+        Text(worn ? 'Enjoy your day ✓' : 'Your outfit of the day', maxLines: 2,
             style: const TextStyle(color: Colors.white, fontFamily: DmFonts.serif, fontSize: 24)),
         const SizedBox(height: 12),
         if (busy == 'today' && d == null)
@@ -113,8 +113,9 @@ class _TodayCardState extends ConsumerState<TodayCard> {
             ),
           ),
         const SizedBox(height: 12),
-        Row(children: [
-          Expanded(
+        Wrap(spacing: 10, runSpacing: 8, children: [
+          SizedBox(
+            width: 180,
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: DmColors.gold, foregroundColor: DmColors.inkDeep),
               onPressed: busy != null || ids.isEmpty || worn ? null : () => _run('wear'),
@@ -124,7 +125,6 @@ class _TodayCardState extends ConsumerState<TodayCard> {
               label: Text(worn ? 'Logged as worn' : 'I wear it'),
             ),
           ),
-          const SizedBox(width: 10),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white38)),
             onPressed: busy != null || ids.isEmpty ? null : () => _run('change'),

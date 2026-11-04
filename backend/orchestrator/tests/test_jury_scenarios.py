@@ -62,7 +62,7 @@ def test_buy_without_a_piece_asks_then_remembers():
     first = route_by_rules("should i buy it for 90 dt?", TOOLS)
     assert "ask" in first and first["intent"] == {"tool": "smartbuy", "price": 90.0}
     second = route_by_rules("a green jacket", TOOLS, pending=first["intent"])
-    assert second == {"name": "smartbuy", "args": {"probe_image": "custom:jacket:green", "price_tnd": 90.0}}
+    assert second["name"] == "smartbuy" and second["args"] == {"probe_image": "custom:jacket:green", "price_tnd": 90.0}
 
 
 def test_a_photo_alone_goes_to_smart_buy():
@@ -190,3 +190,25 @@ def test_a_fashion_question_gets_the_llm_answer():
     g = build_graph(model=Good(), tools=[], rules=True)
     r = asyncio.run(run_turn(g, user_id="jury", session_id="s8", message="how do I wash a wool sweater?"))
     assert r["reply"].startswith("Wash it cold")
+
+
+def test_follow_ups_reuse_the_last_request():
+    m = route_by_rules("Should I buy a navy blazer at 120 TND?", TOOLS)["memory"]
+    assert route_by_rules("and in black?", TOOLS, memory=m)["args"] == {"probe_image": "custom:blazer:black", "price_tnd": 120.0}
+    assert route_by_rules("cheaper?", TOOLS, memory=m)["args"]["price_tnd"] == 84
+    assert route_by_rules("et en beige ?", TOOLS, memory=m)["args"]["probe_image"] == "custom:blazer:beige"
+    shop = route_by_rules("Find a white shirt in a shop in Tunis", TOOLS)["memory"]
+    assert route_by_rules("in sousse", TOOLS, memory=shop)["args"]["city"] == "Sousse"
+    look = route_by_rules("What should I wear tomorrow for work?", TOOLS)["memory"]
+    assert route_by_rules("for a wedding instead", TOOLS, memory=look)["name"] == "stylist"
+    assert route_by_rules("show my wardrobe", TOOLS, memory=look)["name"] == "wardrobe"  # a new request
+    assert route_by_rules("hello", TOOLS, memory=look) is None
+
+
+def test_memory_across_turns_in_the_graph():
+    seen = []
+    g = _graph(seen)
+    run = lambda m: asyncio.run(run_turn(g, user_id="jury", session_id="s9", message=m))  # noqa: E731
+    run("should I buy a navy blazer at 120 TND")
+    run("and in white?")
+    assert seen[-1] == ("smartbuy", "custom:blazer:white", 120.0)

@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api/dm_api.dart';
 import '../../../core/design/dressme_design.dart';
+import '../../../core/widgets/complete_around.dart';
 import '../../../core/widgets/dm_widgets.dart';
 import '../data/m1_wardrobe.dart';
 import 'piece_sheet.dart';
@@ -30,6 +31,8 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
   Set<String> dupIds = {};
   final newIds = <String>{};
   var laundryIds = <String>{};
+  String query = ''; // search in name / type / colour
+  String? colour; // filter by main colour
   final doors = GlobalKey<WardrobeDoorsState>();
   String? category;
   String? season;
@@ -166,6 +169,87 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
     }
   }
 
+  String _colourOf(Json it) => '${(jsonList(it['colors']).firstOrNull ?? const {})['name'] ?? ''}'.toLowerCase();
+
+  bool _matches(Json it) {
+    if (colour != null && _colourOf(it) != colour) return false;
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    final hay = [pieceTitle(it), it['category'], it['subcategory'], it['material'], it['pattern'], _colourOf(it)]
+        .whereType<Object>()
+        .join(' ')
+        .toLowerCase();
+    return q.split(RegExp(r'\s+')).every(hay.contains);
+  }
+
+  /// Long press on a piece: the everyday actions without opening its sheet.
+  void _quick(Json it) {
+    final id = '${it['item_id']}';
+    final washing = laundryIds.contains(id);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: SizedBox(width: 44, child: PieceImage(m1: m1, item: it, size: 44)),
+            title: Text(pieceTitle(it), style: DmText.cardTitle),
+            subtitle: Text(cap(_colourOf(it)), style: DmText.caption),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_outlined, color: DmColors.bronze),
+            title: const Text('Build an outfit around it'),
+            enabled: !washing,
+            onTap: () {
+              Navigator.pop(sheet);
+              showCompleteAround(context, id, pieceName: pieceTitle(it).toLowerCase());
+            },
+          ),
+          ListTile(
+            leading: Icon(washing ? Icons.checkroom_rounded : Icons.local_laundry_service_outlined, color: DmColors.bronze),
+            title: Text(washing ? 'Back from the laundry' : 'Send to the laundry'),
+            onTap: () async {
+              Navigator.pop(sheet);
+              try {
+                washing ? await m1.backFromLaundry(id) : await m1.toLaundry(id);
+                if (mounted) dmToast(context, washing ? 'Back in your closet.' : 'In the laundry: outfits skip it for now.');
+                _load();
+              } catch (e) {
+                if (mounted) dmToast(context, apiError(e));
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.volunteer_activism_outlined, color: DmColors.bronze),
+            title: const Text('Give it away'),
+            onTap: () async {
+              Navigator.pop(sheet);
+              final place = await showDialog<(bool, String?)>(context: context, builder: (_) => DonateDialog(m1: m1, item: it));
+              if (place == null || !place.$1) return;
+              try {
+                await m1.donate(id, place.$2);
+                if (mounted) dmToast(context, '"${pieceTitle(it)}" is in your give-away bag.');
+                _load();
+              } catch (e) {
+                if (mounted) dmToast(context, apiError(e));
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline_rounded, color: DmColors.bronze),
+            title: const Text('All details'),
+            onTap: () {
+              Navigator.pop(sheet);
+              _open(it);
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+  }
+
   void _open(Json it) {
     showModalBottomSheet<void>(
       context: context,
@@ -224,7 +308,9 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final groups = {for (final (b, _) in _bays) b: <Json>[]};
-    for (final it in items) {
+    final shown = items.where(_matches).toList();
+    final colours = {for (final it in items) _colourOf(it)}.where((x) => x.isNotEmpty).toList()..sort();
+    for (final it in shown) {
       groups[shelf(it)]!.add(it);
     }
     final filtered = category != null || season != null;
@@ -299,7 +385,54 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
                   ),
                 ]),
                 const SizedBox(height: 12),
-                Text('${items.length} piece(s)${filtered ? ' (filtered)' : ''}', style: DmText.cardTitle),
+                // search + colours (client side, instant)
+                TextField(
+                  onChanged: (v) => setState(() => query = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search: "white shirt", "linen", "jacket"…',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(DmRadius.pill), borderSide: const BorderSide(color: DmColors.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(DmRadius.pill), borderSide: const BorderSide(color: DmColors.border)),
+                  ),
+                ),
+                if (colours.length > 1) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 36,
+                    child: ListView(scrollDirection: Axis.horizontal, children: [
+                      for (final col in colours)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            avatar: CircleAvatar(backgroundColor: _swatch(col), radius: 7),
+                            label: Text(cap(col)),
+                            selected: colour == col,
+                            onSelected: (on) => setState(() => colour = on ? col : null),
+                          ),
+                        ),
+                    ]),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Text(
+                    shown.length == items.length
+                        ? '${items.length} piece(s)${filtered ? ' (filtered)' : ''} · long-press a piece for quick actions'
+                        : '${shown.length} of ${items.length} pieces',
+                    style: DmText.cardTitle),
+                if (shown.isEmpty && items.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: TextButton(
+                      onPressed: () => setState(() {
+                        query = '';
+                        colour = null;
+                      }),
+                      child: const Text('No piece matches: clear the search'),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 // the three sections of the closet
                 Row(children: [
@@ -319,7 +452,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
                   WardrobeDoors(
                     key: doors,
                     child: _Closet(
-                      key: ValueKey('$bay-${items.length}'), // replay the reveal when the section changes
+                      key: ValueKey('$bay-${items.length}-$query-$colour'), // replay the reveal when the section changes
                       bay: bay,
                       items: groups[bay]!,
                       m1: m1,
@@ -327,6 +460,7 @@ class _WardrobeScreenState extends ConsumerState<StyleProfileScreen> {
                       dupIds: dupIds,
                       laundryIds: laundryIds,
                       onTap: _open,
+                      onLongPress: _quick,
                     ),
                   ),
               ]),
@@ -365,7 +499,7 @@ class _Drop extends StatelessWidget {
 
 /// One section of the closet: hanging rails for clothes, shelves (2 per shelf) for accessories and shoes.
 class _Closet extends StatelessWidget {
-  const _Closet({super.key, required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, this.laundryIds = const {}, required this.onTap});
+  const _Closet({super.key, required this.bay, required this.items, required this.m1, required this.newIds, required this.dupIds, this.laundryIds = const {}, required this.onTap, this.onLongPress});
 
   final String bay;
   final List<Json> items;
@@ -374,6 +508,7 @@ class _Closet extends StatelessWidget {
   final Set<String> dupIds;
   final Set<String> laundryIds;
   final void Function(Json) onTap;
+  final void Function(Json)? onLongPress;
 
   Widget _piece(Json it, {required bool hanging}) {
     final id = '${it['item_id']}';
@@ -382,6 +517,7 @@ class _Closet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: InkWell(
         onTap: () => onTap(it),
+        onLongPress: onLongPress == null ? null : () => onLongPress!(it),
         borderRadius: BorderRadius.circular(DmRadius.card),
         child: SizedBox(
           width: 112,
@@ -478,3 +614,15 @@ class _Closet extends StatelessWidget {
     );
   }
 }
+
+
+const _swatches = {
+  'black': 0xFF1C1B1A, 'charcoal': 0xFF3B3B3B, 'grey': 0xFF8E8E8E, 'white': 0xFFF7F7F5, 'cream': 0xFFEFE6D2,
+  'beige': 0xFFD8C3A5, 'khaki': 0xFFB5A27A, 'camel': 0xFFC19A6B, 'tan': 0xFFA57C52, 'brown': 0xFF6F4E37,
+  'navy': 0xFF1F2A44, 'blue': 0xFF2F5DA8, 'denim': 0xFF4A6A8F, 'teal': 0xFF2A7F7F, 'green': 0xFF3E7D4F,
+  'olive': 0xFF6B6B3A, 'mint': 0xFFA8D5BA, 'yellow': 0xFFE8C547, 'mustard': 0xFFC9A227, 'orange': 0xFFE07B39,
+  'red': 0xFFB3261E, 'burgundy': 0xFF6D1A2B, 'pink': 0xFFE8A0B4, 'purple': 0xFF6A4C93, 'lavender': 0xFFB8A9D9,
+  'gold': 0xFFC4A35A, 'silver': 0xFFBFC1C2,
+};
+
+Color _swatch(String name) => Color(_swatches[name] ?? 0xFF9E9E9E);

@@ -97,3 +97,46 @@ def intent_of(text: str) -> str | None:
         if re.search(rx, low):
             return name
     return None
+
+
+# ---------------------------------------------------------------- follow-ups ("and in black?", "cheaper?")
+_FOLLOW = (r"^(and|et|w|wel|what about|how about|and what about|et en|et pour|et si|plut[ôo]t|instead|rather|same|"
+           r"the same|la m[êe]me|le m[êe]me|nafs|ok and|then|alors)\b|\b(instead|plut[ôo]t|rather|too|aussi|zeda)\b")
+_CHEAPER = r"\b(cheaper|less expensive|moins cher|moins ch[èe]re|arkhes|ar5es|budget)\b"
+_WHEN = r"\b(tomorrow|today|tonight|weekend|demain|aujourd'?hui|ce soir|ghodwa|lyoum|lil)\b"
+_OCCASION = r"\b(work|office|wedding|party|interview|sport|gym|casual|travail|bureau|mariage|soir[ée]e|entretien|khedma|3ers)\b"
+
+
+def followup(text: str, intent: str | None, piece: dict, mem: dict):
+    """A short message that refines the last request -> (agent, merged piece, message for the agent), else None."""
+    low = norm(text)
+    agent = mem.get("agent")
+    last_piece = mem.get("piece") or {}
+    from .replies import city_of
+
+    has_detail = (any(piece.get(k) for k in ("type", "colour", "price")) or re.search(_CHEAPER, low)
+                  or (agent == "localshop" and city_of(text)))
+    short = len(low.split()) <= 7
+    is_follow = re.search(_FOLLOW, low) or (short and not intent and (has_detail or re.search(_WHEN + "|" + _OCCASION, low)))
+    if intent and intent != agent:
+        return None  # a new kind of request
+    if not is_follow and not (intent == agent and not piece.get("type") and last_piece.get("type")):
+        return None
+    if agent in ("smartbuy", "localshop"):
+        merged = {k: piece.get(k) or last_piece.get(k) for k in ("type", "colour", "price")}
+        if piece.get("type") and piece.get("type") != last_piece.get("type") and not piece.get("colour"):
+            merged["colour"] = None  # another kind of piece: the old colour may not apply
+        if re.search(_CHEAPER, low) and not piece.get("price"):
+            merged["price"] = round((last_piece.get("price") or 150) * 0.7)
+        message = " ".join(x for x in (merged.get("colour"), merged.get("type")) if x) or mem.get("text", "")
+        if agent == "localshop":
+            from .replies import city_of
+
+            city = city_of(text) or city_of(mem.get("text", ""))
+            message = "find " + (message or "clothes") + (f" in {city}" if city else "")
+            if merged.get("price"):
+                message += f" under {int(merged['price'])} tnd"
+        return agent, merged, message
+    if agent in ("stylist", "taste", "profile"):
+        return "stylist", piece, f"{mem.get('text', '')} — {text}".strip(" —")
+    return None

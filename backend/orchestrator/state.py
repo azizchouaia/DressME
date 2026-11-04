@@ -14,5 +14,6 @@ class ChatState(TypedDict, total=False):
     last_agent: str | None
     pending: dict | None     # the open question: {agent, question, question_key}
     answering: dict | None   # set for the turn that answers it
+    memory: dict | None      # the last request {agent, piece, text}: for follow-ups
     intent: dict | None      # an intent waiting for a detail (which piece?) across turns
     attachment: dict | None  # this turn's photo: {image (data URL), probe ('custom:type:colour'), label}

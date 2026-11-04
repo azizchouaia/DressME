@@ -86,14 +86,22 @@ ASK_PIECE = ("Happy to judge it against your wardrobe! Which piece is it? Send m
              "the colour and the price, for example: \"a navy blazer at 120 TND\".")
 
 
-def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, pending: dict | None = None) -> dict | None:
+def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, pending: dict | None = None,
+                   memory: dict | None = None) -> dict | None:
     """Deterministic routing for clear requests, with typos, French and Tounsi (orchestrator/understand.py).
-    -> {"name", "args"} to call an agent, {"ask": text, "intent": {...}} to ask first, or None (the LLM decides)."""
-    from .understand import intent_of, piece_of
+    -> {"name", "args", "memory"} to call an agent, {"ask": text, "intent": {...}} to ask first, or None (the LLM).
+    memory = the last request ({agent, piece, text}): follow-ups like "and in black?", "cheaper?",
+    "for tomorrow instead?" reuse it."""
+    from .understand import followup, intent_of, piece_of
 
     intent = intent_of(text)
     piece = piece_of(text)
     att = attachment or {}
+    mem = memory or {}
+    if mem.get("agent") and not att.get("image"):
+        follow = followup(text, intent, piece, mem)
+        if follow:
+            intent, piece, text = follow
     if pending and pending.get("tool") == "smartbuy" and intent in (None, "smartbuy") and (piece["type"] or att.get("image")):
         intent = "smartbuy"  # the answer to "which piece is it?"
         piece = {**piece, "price": piece["price"] or pending.get("price")}
@@ -109,8 +117,9 @@ def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, p
         args: dict = {"probe_image": probe}
         if piece["price"]:
             args["price_tnd"] = piece["price"]
-        return {"name": "smartbuy", "args": args}
-    return {"name": intent, "args": args_for(intent, text, piece)}
+        return {"name": "smartbuy", "args": args, "memory": {"agent": "smartbuy", "piece": piece, "text": text}}
+    return {"name": intent, "args": args_for(intent, text, piece),
+            "memory": {"agent": intent, "piece": piece, "text": text}}
 
 
 def args_for(agent: str, text: str, piece: dict) -> dict:
@@ -201,13 +210,15 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
                 if chat:
                     return {"messages": [AIMessage(content=chat, additional_kwargs={"final": True})], "intent": None}
                 hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"),
-                                     state.get("intent"))
+                                     state.get("intent"), state.get("memory"))
                 if hit and "ask" in hit:  # a clear intent but a missing detail: ask, remember the intent
                     return {"messages": [AIMessage(content=hit["ask"], additional_kwargs={"final": True})],
                             "intent": hit["intent"]}
                 if hit:
                     log.info("rule route -> %s", hit["name"])
-                    return {"intent": None, "messages": [AIMessage(content="", tool_calls=[{**hit, "id": f"call_{uuid.uuid4().hex[:8]}",
+                    call = {"name": hit["name"], "args": hit["args"]}
+                    return {"intent": None, "memory": hit.get("memory"),
+                            "messages": [AIMessage(content="", tool_calls=[{**call, "id": f"call_{uuid.uuid4().hex[:8]}",
                                                                             "type": "tool_call"}])]}
         answering = state.get("answering")
         if use_rules and answering and not int(state.get("tool_calls") or 0) and answering.get("question_key"):
