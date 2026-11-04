@@ -117,3 +117,35 @@ def test_an_agent_error_becomes_a_helpful_sentence():
     r = asyncio.run(run_turn(g, user_id="jury", session_id="s2", message="should I buy a black dress at 100 TND"))
     assert "couldn't finish" in r["reply"] and "photo" in r["reply"]
     assert "Traceback" not in r["reply"]
+
+
+def test_answer_goes_back_with_the_key_and_replies_are_written_from_facts():
+    calls = []
+
+    async def smartbuy(probe_image: str = "", price_tnd: float | None = None, answer: dict | None = None,
+                       user_id: str = "", session_id: str = "") -> dict:
+        calls.append(answer)
+        if not answer:
+            return {"verdict": "think", "score": 54, "question": "Do you need it for an event?",
+                    "question_key": "need_for_occasion"}
+        return {"verdict": "buy", "score": 72, "piece": "Blue blazer", "explanation": "It completes 4 outfits."}
+
+    g = build_graph(model=Writer(), tools=[_tool("smartbuy", smartbuy)], rules=True)
+    run = lambda m: asyncio.run(run_turn(g, user_id="jury", session_id="s3", message=m))  # noqa: E731
+    assert run("should I buy a blue costume at 320dt")["question"] == "Do you need it for an event?"
+    r = run("yes, for a wedding")
+    assert calls[-1] == {"question_key": "need_for_occasion", "value": True}
+    assert r["reply"].startswith("BUY") and "It completes 4 outfits." in r["reply"]
+
+
+@pytest.mark.parametrize("text", ["hello", "Bonjour !", "who are you?", "thanks!", "aslema"])
+def test_small_talk_is_answered_without_the_llm(text):
+    g = build_graph(model=Writer(), tools=[], rules=True)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="s4", message=text))
+    assert "DressMe" in r["reply"] or "welcome" in r["reply"].lower()
+
+
+def test_local_shop_gets_its_own_arguments():
+    hit = route_by_rules("where can i buy black boots in sousse under 200 dt", TOOLS)
+    assert hit["args"] == {"query": "where can i buy black boots in sousse under 200 dt", "subcategory": "boots",
+                           "color": "black", "max_price_tnd": 200.0, "city": "Sousse"}

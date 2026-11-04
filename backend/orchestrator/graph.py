@@ -110,11 +110,31 @@ def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, p
         if piece["price"]:
             args["price_tnd"] = piece["price"]
         return {"name": "smartbuy", "args": args}
-    payload = {"message": text}
-    if intent == "localshop" and (piece["type"] or piece["colour"]):
-        payload["query"] = " ".join(x for x in (piece["colour"], piece["type"]) if x) + (
-            f" under {int(piece['price'])} TND" if piece["price"] else "")
-    return {"name": intent, "args": {"action": "chat", "message": text, "payload": payload}}
+    return {"name": intent, "args": args_for(intent, text, piece)}
+
+
+def args_for(agent: str, text: str, piece: dict) -> dict:
+    """The arguments each agent's own schema expects (orchestrator/registry: one schema per tool)."""
+    from .replies import city_of
+
+    if agent == "localshop":
+        a: dict = {"query": text}
+        if piece.get("type"):
+            a["subcategory"] = piece["type"]
+        if piece.get("colour"):
+            a["color"] = piece["colour"]
+        if piece.get("price"):
+            a["max_price_tnd"] = piece["price"]
+        if city := city_of(text):
+            a["city"] = city
+        return a
+    if agent == "challenges":
+        return {"action": "recommend"}
+    if agent == "talk":
+        return {"message": text}
+    if agent in ("stylist", "tryon"):
+        return {"action": "chat", "payload": {"message": text}}
+    return {"message": text, "payload": {"message": text}}  # wardrobe, profile, trips, taste
 
 
 def agent_error_reply(agent: str, error: str) -> str:
@@ -153,8 +173,15 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
         last = state["messages"][-1]
         if isinstance(last, HumanMessage):
             # an open question from the last turn: this message is its answer
-            return {"tool_calls": 0, "pending_question": None, "pending": None,
-                    "answering": state.get("pending")}
+            pending = state.get("pending")
+            if pending:  # a new, clear request is not an answer to the open question
+                from .understand import intent_of
+
+                text = last.content if isinstance(last.content, str) else str(last.content)
+                new = intent_of(text)
+                if new and new != pending.get("agent"):
+                    pending = None
+            return {"tool_calls": 0, "pending_question": None, "pending": None, "answering": pending}
         return {}
 
     async def planner(state: ChatState):
@@ -162,6 +189,11 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
             last = state["messages"][-1]
             if isinstance(last, HumanMessage):
                 text = last.content if isinstance(last.content, str) else str(last.content)
+                from .replies import small_talk
+
+                chat = small_talk(text) if not state.get("attachment") else None
+                if chat:
+                    return {"messages": [AIMessage(content=chat, additional_kwargs={"final": True})], "intent": None}
                 hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"),
                                      state.get("intent"))
                 if hit and "ask" in hit:  # a clear intent but a missing detail: ask, remember the intent
@@ -171,6 +203,20 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
                     log.info("rule route -> %s", hit["name"])
                     return {"intent": None, "messages": [AIMessage(content="", tool_calls=[{**hit, "id": f"call_{uuid.uuid4().hex[:8]}",
                                                                             "type": "tool_call"}])]}
+        answering = state.get("answering")
+        if use_rules and answering and not int(state.get("tool_calls") or 0) and answering.get("question_key"):
+            # the user answers an agent's question: send it back to that agent, with the key it asked for
+            from .replies import yes_no
+
+            last = state["messages"][-1]
+            text = last.content if isinstance(last.content, str) else str(last.content)
+            yn = yes_no(text)
+            value = yn if yn is not None else text
+            args = {"session_id": state.get("session_id") or "",
+                    "answer": {"question_key": answering["question_key"], "value": value}}
+            return {"messages": [AIMessage(content="", tool_calls=[{"name": answering["agent"], "args": args,
+                                                                     "id": f"call_{uuid.uuid4().hex[:8]}",
+                                                                     "type": "tool_call"}])]}
         system = (
             f"{SYSTEM_PROMPT}\n"
             f"session_id: {state.get('session_id', '')}\n"
@@ -248,6 +294,12 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
         if isinstance(last, ToolMessage) and "AGENT_ERROR" in str(last.content):
             return {"messages": [AIMessage(content=agent_error_reply(getattr(last, "name", "") or "", str(last.content)))]}
         payload = last_payload(state["messages"]) or {}
+        if use_rules:
+            from .replies import from_facts
+
+            fixed = from_facts(tool_name(state["messages"]), payload)
+            if fixed:
+                return {"messages": [AIMessage(content=fixed)]}
         system = f"{WRITER_PROMPT}\nFacts:\n{json.dumps(protected_facts(payload), ensure_ascii=False)}"
         draft = await brain.ainvoke([("system", system), *state["messages"]])
         text = draft.content if isinstance(draft.content, str) else json.dumps(draft.content)

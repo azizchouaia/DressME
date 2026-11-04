@@ -1,0 +1,103 @@
+"""Answers written from the agent's own facts, without the LLM: exact, instant, never "here is a JSON object".
+
+The LLM writes only when no template fits (small talk the rules do not know, free questions).
+"""
+
+from __future__ import annotations
+
+import re
+
+from .understand import norm
+
+CITIES = ["tunis", "la marsa", "ariana", "ben arous", "manouba", "sousse", "sfax", "monastir", "nabeul", "hammamet",
+          "bizerte", "kairouan", "gabes", "djerba", "mahdia", "lac", "menzah", "carthage"]
+
+SMALL_TALK = [
+    (r"^(hi|hello|hey|salut|bonjour|bonsoir|aslema|ahla|salam|marhba)\b",
+     "Hi! I'm your DressMe assistant. I can choose your outfit of the day, judge a piece before you buy it, find it "
+     "in local shops, show your wardrobe or your style. What would you like?"),
+    (r"\b(who are you|what are you|what can you do|t'es qui|tu es qui|chkoun enti|que sais-tu faire|help|aide)\b",
+     "I'm DressMe's assistant: a team of AI agents behind one chat. The stylist builds outfits from your own clothes, "
+     "Smart Buy tells you BUY / THINK / SKIP before you pay, local shops finds pieces in Tunisia, and I can show your "
+     "wardrobe, your style and the challenges. Write, speak or send a photo."),
+    (r"^(thanks|thank you|merci|chokran|y3aychek|yaatik saha|top|great|super|parfait|nice)\b",
+     "You're welcome! Anything else: an outfit for tomorrow, a piece to judge, a shop to find?"),
+    (r"^(bye|goodbye|au revoir|bslema|ciao)\b", "See you soon, and enjoy your outfit!"),
+]
+
+
+def small_talk(text: str) -> str | None:
+    low = norm(text)
+    for rx, answer in SMALL_TALK:
+        if re.search(rx, low):
+            return answer
+    return None
+
+
+def city_of(text: str) -> str | None:
+    low = norm(text)
+    return next((c.title() for c in CITIES if re.search(rf"\b{re.escape(c)}\b", low)), None)
+
+
+YES = {"yes", "y", "yeah", "yep", "oui", "ouais", "ey", "eyh", "ih", "sure", "of course", "bien sûr", "ok", "okay", "true"}
+NO = {"no", "n", "nope", "non", "le", "la", "lé", "false", "not really", "pas vraiment"}
+
+
+def yes_no(text: str) -> bool | None:
+    low = norm(text).strip(" .!?")
+    first = re.split(r"[ ,.!]", low)[0] if low else ""
+    if low in YES or first in YES or re.search(r"\b(i need it|j'en ai besoin|for a (wedding|party|event))\b", low):
+        return True
+    if low in NO or first in NO or re.search(r"\b(i don'?t need|pas besoin|just because)\b", low):
+        return False
+    return None
+
+
+def _names(items, key=("name", "label", "subcategory", "item", "title")) -> list[str]:
+    out = []
+    for it in items or []:
+        if isinstance(it, dict):
+            out.append(next((str(it[k]) for k in key if it.get(k)), str(it.get("id", ""))))
+        else:
+            out.append(str(it))
+    return [n for n in out if n]
+
+
+def from_facts(agent: str | None, p: dict) -> str | None:
+    """The answer for this agent's result, or None to let the LLM write."""
+    if not isinstance(p, dict) or not agent:
+        return None
+    r = p.get("result") if isinstance(p.get("result"), dict) else p
+    if agent == "smartbuy" and r.get("verdict"):
+        word = {"buy": "BUY ✅", "think": "THINK 🤔", "skip": "SKIP ✋"}.get(r["verdict"], r["verdict"].upper())
+        head = f"{word} — {r.get('piece') or 'this piece'}, score {r.get('score')}/100."
+        body = r.get("explanation") or "; ".join(r.get("reasons") or [])
+        extra = f" It makes {r['new_outfits']} new outfits with your clothes." if r.get("new_outfits") else ""
+        return f"{head} {body}{extra}".strip()
+    if agent == "stylist" and isinstance(r.get("reply"), str) and r["reply"].strip():
+        return r["reply"].strip()
+    if agent == "wardrobe":
+        items = r.get("items") or []
+        if not items:
+            return "Your wardrobe is empty for now. Open Wardrobe and add a photo of a piece to start."
+        names = _names(items)
+        more = f" and {len(names) - 8} more" if len(names) > 8 else ""
+        return f"You have {len(items)} pieces: {', '.join(names[:8])}{more}. Open Wardrobe to see them on the rails."
+    if agent == "localshop":
+        res = r.get("results") or r.get("products") or []
+        if r.get("question"):
+            return str(r["question"])
+        if not res:
+            return "I found nothing in the local shops for that. Try another colour, a bigger budget or another city."
+        lines = []
+        for x in res[:3]:
+            price = f"{round(x['price_tnd'])} TND" if isinstance(x, dict) and x.get("price_tnd") else "price on the site"
+            lines.append(f"{x.get('item') or x.get('name')} at {x.get('shop')} ({price})" if isinstance(x, dict) else str(x))
+        return f"I found {len(res)} pieces in local shops. Best matches: " + "; ".join(lines) + "."
+    if agent == "challenges":
+        ch = r.get("challenges") or []
+        if not ch:
+            return "There is no open challenge right now. Check again soon in Share & challenges."
+        names = _names(ch, ("title", "name"))
+        return f"{len(ch)} challenges for you: " + ", ".join(names[:4]) + ". Open Share & challenges to join one."
+    return None

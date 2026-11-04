@@ -52,7 +52,8 @@ _BUY = (r"\b(sh?o?u?ld i (buy|by|bye|get|purchase|take)|should i b(uy|y)|buy (it
 _SHOP = (r"\b(find .*(shop|store|boutique|tunis|sfax|sousse|near)|where (can|to|do) (i )?(buy|get|find)|"
          r"in a (shop|store)|local shops?|boutiques?|magasins?|win nal9a|win nlawej|ou (acheter|trouver))\b")
 _WEAR = (r"\b(what (should|do|can|shall) i wear|wear (today|tomorrow|tonight)|outfit|tenue|look (for|of) (today|tomorrow)|"
-         r"n?elbes|chnowa nelbes|quoi (mettre|porter)|habiller|dress me)\b")
+         r"n?elbes|chnowa nelbes|quoi (mettre|porter)|habiller|dress me|another (one|outfit)|une autre|autre tenue|"
+         r"change (it|the outfit|the shoes|the top)|remix|wa7da okhra|why this outfit|pourquoi cette tenue)\b")
 _WARDROBE = r"\b((show|list|see|what('s| is) in|open) my (wardrobe|closet|clothes|pieces)|garde-?robe|dressing)\b"
 _CHALLENGE = r"\b(challenges?|d[ée]fis?|contest|concours)\b"
 _STYLE = r"\b(my style|what is my style|style profile|mon style|i (love|like|hate|don'?t like)|j'?(aime|adore|d[ée]teste))\b"
