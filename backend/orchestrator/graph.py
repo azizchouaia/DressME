@@ -178,8 +178,10 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
                 from .understand import intent_of
 
                 text = last.content if isinstance(last.content, str) else str(last.content)
+                from .replies import yes_no
+
                 new = intent_of(text)
-                if new and new != pending.get("agent"):
+                if new and (new != pending.get("agent") or (len(text.split()) >= 4 and yes_no(text) is None)):
                     pending = None
             return {"tool_calls": 0, "pending_question": None, "pending": None, "answering": pending}
         return {}
@@ -245,6 +247,13 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
             args = dict(call.get("args") or {})
             args.setdefault("user_id", user_id)
             args.setdefault("session_id", session_id)
+            if call["name"] == "localshop" and not args.get("answer"):
+                from .replies import account_of
+
+                acc = account_of(user_id)
+                if not args.get("gender") and acc.get("gender") in ("female", "male"):
+                    args["gender"] = {"female": "women", "male": "men"}[acc["gender"]]
+                args.setdefault("language", "en")
             if att.get("image"):  # the photo sent with the message goes to the agent that reads photos
                 if call["name"] == "smartbuy" and not args.get("answer"):
                     args["probe_image"] = att.get("probe") or att["image"]
@@ -293,11 +302,12 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
             return {}  # already the answer (a question the rules asked)
         if isinstance(last, ToolMessage) and "AGENT_ERROR" in str(last.content):
             return {"messages": [AIMessage(content=agent_error_reply(getattr(last, "name", "") or "", str(last.content)))]}
-        payload = last_payload(state["messages"]) or {}
+        turn = _this_turn(state["messages"])
+        payload = last_payload(turn) or {}
         if use_rules:
             from .replies import from_facts
 
-            fixed = from_facts(tool_name(state["messages"]), payload)
+            fixed = from_facts(tool_name(turn), payload)
             if fixed:
                 return {"messages": [AIMessage(content=fixed)]}
         system = f"{WRITER_PROMPT}\nFacts:\n{json.dumps(protected_facts(payload), ensure_ascii=False)}"
@@ -364,6 +374,14 @@ async def run_turn(graph, *, user_id: str, session_id: str, message: str, attach
         "session_id": session_id,
         "last_agent": out.get("last_agent"),
     }
+
+
+def _this_turn(messages: list) -> list:
+    """The messages after the user's last message (an older agent result must not answer this turn)."""
+    for i in range(len(messages) - 1, -1, -1):
+        if isinstance(messages[i], HumanMessage):
+            return messages[i:]
+    return messages
 
 
 def last_payload(messages: list) -> dict | None:

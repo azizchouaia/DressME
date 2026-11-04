@@ -37,7 +37,11 @@ def description(g: dict) -> str:
     colour = ((g.get("colors") or [{}])[0] or {}).get("name") or ""
     parts = [colour, g.get("pattern") if g.get("pattern") not in (None, "solid") else "", g.get("material") or "",
              g.get("subcategory") or g.get("category") or "piece"]
-    return " ".join(p for p in parts if p).strip()
+    words: list[str] = []
+    for w in " ".join(p for p in parts if p).split():  # "denim denim jeans" -> "denim jeans"
+        if w.lower() not in (x.lower() for x in words):
+            words.append(w)
+    return " ".join(words)
 
 
 @lru_cache(maxsize=2048)

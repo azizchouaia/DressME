@@ -21,7 +21,7 @@ def test_m1_pieces_become_m2_items(monkeypatch):
     monkeypatch.setattr("modules.m01_wardrobe.config.use_mocks", lambda default: False)
     out = user_wardrobe.m1_garments("usr_real")
     assert [g["item_id"] for g in out] == ["a", "b"]
-    assert len(out[0]["embedding"]) == 1024 and out[0]["name"] == "navy linen linen shirt"
+    assert len(out[0]["embedding"]) == 1024 and out[0]["name"] == "navy linen shirt"
     assert user_wardrobe.m1_garments("demo_f") == []
 
     c = asyncio.run(wardrobe.catalog("usr_real"))

@@ -127,6 +127,26 @@ def get_user(email: str) -> dict | None:
     return _pg_get(eng, email) if eng else _json_load().get(email)
 
 
+def user_by_id(user_id: str) -> dict | None:
+    """The account of a user_id (for the assistant: gender and city of the person talking)."""
+    try:
+        eng = _pg()
+        if eng:
+            from sqlalchemy import text
+
+            with eng.begin() as conn:
+                row = conn.execute(text(f"SELECT {', '.join(FIELDS)} FROM users WHERE user_id = :u"),
+                                   {"u": user_id}).mappings().first()
+                if row:
+                    return dict(row)
+        for u in _json_load().values():
+            if u.get("user_id") == user_id:
+                return u
+    except Exception:  # noqa: BLE001 - no account store: nothing to add
+        return None
+    return None
+
+
 def insert_user(u: dict) -> bool:
     """False when the email is taken."""
     eng = _pg()

@@ -56,7 +56,8 @@ _WEAR = (r"\b(what (should|do|can|shall) i wear|wear (today|tomorrow|tonight)|ou
          r"change (it|the outfit|the shoes|the top)|remix|wa7da okhra|why this outfit|pourquoi cette tenue)\b")
 _WARDROBE = r"\b((show|list|see|what('s| is) in|open) my (wardrobe|closet|clothes|pieces)|garde-?robe|dressing)\b"
 _CHALLENGE = r"\b(challenges?|d[ée]fis?|contest|concours)\b"
-_STYLE = r"\b(my style|what is my style|style profile|mon style|i (love|like|hate|don'?t like)|j'?(aime|adore|d[ée]teste))\b"
+_PROFILE = r"\b(my style|what('s| is) my style|style profile|mon style|quel est mon style|chnowa style)\b"
+_STYLE = r"\b(i (love|like|hate|don'?t like|prefer)|j'?(aime|adore|d[ée]teste|pr[ée]f[èe]re)|n7eb|nheb|ma n7ebch)\b"
 _TRYON = r"\b(try (it )?on|avatar|see it on me|3d)\b"
 _LAUNDRY = r"\b(laundry|lessive|machine|dirty|sale|wash)\b"
 
@@ -92,7 +93,7 @@ def intent_of(text: str) -> str | None:
     """smartbuy | localshop | stylist | wardrobe | challenges | taste | tryon | laundry | None (let the LLM decide)."""
     low = norm(text)
     for name, rx in (("localshop", _SHOP), ("smartbuy", _BUY), ("challenges", _CHALLENGE), ("wardrobe", _WARDROBE),
-                     ("tryon", _TRYON), ("laundry", _LAUNDRY), ("stylist", _WEAR), ("taste", _STYLE)):
+                     ("tryon", _TRYON), ("laundry", _LAUNDRY), ("stylist", _WEAR), ("profile", _PROFILE), ("taste", _STYLE)):
         if re.search(rx, low):
             return name
     return None

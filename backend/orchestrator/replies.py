@@ -53,13 +53,35 @@ def yes_no(text: str) -> bool | None:
     return None
 
 
+def account_of(user_id: str) -> dict:
+    try:
+        from api.routes.auth import user_by_id
+
+        return user_by_id(user_id) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def clean(s: str) -> str:
+    """Fix text read with the wrong encoding ('10 Ã— 10' -> '10 × 10') and doubled words ('denim denim')."""
+    s = str(s)
+    if "Ã" in s or "â" in s:
+        for enc in ("cp1252", "latin-1"):
+            try:
+                s = s.encode(enc).decode("utf-8")
+                break
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+    return re.sub(r"\b(\w+) \1\b", r"\1", s)
+
+
 def _names(items, key=("name", "label", "subcategory", "item", "title")) -> list[str]:
     out = []
     for it in items or []:
         if isinstance(it, dict):
-            out.append(next((str(it[k]) for k in key if it.get(k)), str(it.get("id", ""))))
+            out.append(clean(next((str(it[k]) for k in key if it.get(k)), str(it.get("id", "")))))
         else:
-            out.append(str(it))
+            out.append(clean(it))
     return [n for n in out if n]
 
 
@@ -75,7 +97,18 @@ def from_facts(agent: str | None, p: dict) -> str | None:
         extra = f" It makes {r['new_outfits']} new outfits with your clothes." if r.get("new_outfits") else ""
         return f"{head} {body}{extra}".strip()
     if agent == "stylist" and isinstance(r.get("reply"), str) and r["reply"].strip():
-        return r["reply"].strip()
+        return clean(r["reply"].strip())
+    if agent == "profile":
+        if r.get("onboarded") is False:
+            return ("I don't know your style yet. Open My style and swipe 10 looks (right if you like, left if not): "
+                    "it takes one minute, then I can tell you.")
+        tops = r.get("top_styles") or []
+        if tops:
+            parts = [f"{s.get('style')} ({round(100 * float(s.get('share') or 0))} %)" for s in tops[:3] if isinstance(s, dict)]
+            return ("From your swipes, your style is " + ", ".join(parts)
+                    + ". Every outfit I propose follows it; open My style to see what I learnt.")
+    if agent == "taste":
+        return "Noted! I'll remember it and show you more of what you like in your next outfits and suggestions."
     if agent == "wardrobe":
         items = r.get("items") or []
         if not items:

@@ -33,7 +33,10 @@ ROUTES = [
     ("Show me the challenges", "challenges"),
     ("quels sont les défis", "challenges"),
     ("I love oversize sweaters", "taste"),
-    ("what is my style", "taste"),
+    ("what is my style", "profile"),
+    ("quel est mon style", "profile"),
+    ("j'adore les couleurs claires", "taste"),
+    ("where can i find a black dress in tunis", "localshop"),
     ("try it on my avatar", "tryon"),
 ]
 
@@ -149,3 +152,10 @@ def test_local_shop_gets_its_own_arguments():
     hit = route_by_rules("where can i buy black boots in sousse under 200 dt", TOOLS)
     assert hit["args"] == {"query": "where can i buy black boots in sousse under 200 dt", "subcategory": "boots",
                            "color": "black", "max_price_tnd": 200.0, "city": "Sousse"}
+
+
+def test_a_new_request_is_not_taken_as_an_answer():
+    from orchestrator.replies import clean
+
+    assert clean("10 Ã— 10 capsule") == "10 × 10 capsule"
+    assert clean("denim denim jeans") == "denim jeans"
