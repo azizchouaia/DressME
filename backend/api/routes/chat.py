@@ -73,6 +73,7 @@ class ChatOut(BaseModel):
     session_id: str
     last_agent: str | None = None
     photo: dict | None = None  # what the photo was read as
+    trace: list[dict] = []  # the orchestrator's workflow for this turn (shown under the answer)
     error: str | None = None  # what went wrong (for the team; the reply stays friendly)
 
 

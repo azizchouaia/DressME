@@ -192,6 +192,9 @@ GENERAL_PROMPT = (
 
 
 def gaps_reply(found: list[dict]) -> str:
+    if found and found[0].get("ready"):
+        return ("You already have the key pieces for that event (a blazer, a shirt, smart shoes). Ask me "
+                "\"what should I wear for the wedding?\" and I'll build the outfit from your clothes.")
     if not found:
         return ("Your wardrobe already covers the essentials (or I can't read it right now). Add pieces in Wardrobe "
                 "and ask me again, or ask me for an outfit.")
@@ -199,3 +202,15 @@ def gaps_reply(found: list[dict]) -> str:
     more = (" Next: " + ", ".join(g["piece"] for g in rest) + ".") if rest else ""
     return (f"The piece that would help you most is a {first['piece']}: {first['why']}.{more} "
             f"Say \"find it in a shop\" and I'll look in local shops, or send me a photo of one to judge it.")
+
+
+_FORMAL = {"blazer", "loafers", "shirt", "dress", "chinos", "trousers"}
+_EVENT = r"\b(wedding|mariage|3ers|party|soir[ée]e|event|interview|entretien|ceremony|dinner)\b"
+
+
+def occasion_gaps(found: list[dict], text: str) -> list[dict]:
+    """For a wedding / event, the formal pieces first; otherwise the 5 most useful gaps."""
+    if re.search(_EVENT, norm(text)):
+        formal = [g for g in found if g["piece"].split(" ", 1)[-1] in _FORMAL]
+        return formal[:5] if formal else [{"gap": "", "piece": "", "why": "", "have": 0, "ready": True}]
+    return found[:5]

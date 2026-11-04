@@ -218,12 +218,14 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
 
                     from .replies import gaps_reply
 
-                    found = user_gaps(state.get("user_id"))
+                    from .replies import occasion_gaps
+
+                    found = occasion_gaps(user_gaps(state.get("user_id"), k=11), text)
                     mem = {"agent": "localshop", "piece": {"type": found[0]["piece"].split(" ", 1)[1],
                                                            "colour": found[0]["piece"].split(" ", 1)[0], "price": None},
-                           "text": f"find {found[0]['piece']}"} if found else None
+                           "text": f"find {found[0]['piece']}"} if found and found[0]["piece"] else None
                     return {"messages": [AIMessage(content=gaps_reply(found), additional_kwargs={"final": True})],
-                            "memory": mem, "cards": [{"gaps": found}] if found else []}
+                            "memory": mem, "cards": [{"gaps": [g for g in found if g["piece"]]}] if found else []}
                 if hit and "ask" in hit:  # a clear intent but a missing detail: ask, remember the intent
                     return {"messages": [AIMessage(content=hit["ask"], additional_kwargs={"final": True})],
                             "intent": hit["intent"]}
@@ -420,7 +422,73 @@ async def run_turn(graph, *, user_id: str, session_id: str, message: str, attach
         "cards": out.get("cards") or [],
         "session_id": session_id,
         "last_agent": out.get("last_agent"),
+        "trace": trace_of(message, _this_turn(out.get("messages") or []), out.get("cards") or []),
     }
+
+
+AGENT_NAMES = {"smartbuy": "Smart Buy (BO5)", "stylist": "Stylist (BO2)", "localshop": "Local shops (BO6)",
+               "wardrobe": "Wardrobe (M1)", "profile": "Style profile (M5)", "taste": "Taste (M5)",
+               "challenges": "Challenges (BO7)", "tryon": "Try-on (BO9)", "share": "Share (BO7)", "trips": "Trips",
+               "talk": "Talk"}
+
+
+def _short(d: dict, keys: int = 4) -> str:
+    parts = []
+    for k, v in (d or {}).items():
+        if k in ("user_id", "session_id") or v in (None, "", {}, []):
+            continue
+        if isinstance(v, dict):
+            v = _short(v, 3)
+        parts.append(f"{k}: {str(v)[:40]}")
+        if len(parts) >= keys:
+            break
+    return ", ".join(parts)
+
+
+def trace_of(message: str, turn: list, cards: list) -> list[dict]:
+    """The workflow of one turn, for the app: understood -> routed -> agent answered -> reply written."""
+    from .understand import intent_of, piece_of
+
+    first = message.split("\n", 1)[0]
+    intent, piece = intent_of(first), {k: v for k, v in piece_of(first).items() if v}
+    steps = [{"step": "understand", "title": "Orchestrator understood",
+              "detail": (f"intent: {intent}" if intent else "no clear intent (free question)")
+              + (f" · {_short(piece)}" if piece else "")}]
+    used = False
+    for m in turn:
+        if isinstance(m, AIMessage) and m.tool_calls:
+            for c in m.tool_calls:
+                name = c.get("name")
+                steps.append({"step": "route", "agent": name, "title": f"Asked {AGENT_NAMES.get(name, name)}",
+                              "detail": _short(c.get("args") or {})})
+        elif isinstance(m, ToolMessage):
+            used = True
+            body = m.content
+            try:
+                body = json.loads(body) if isinstance(body, str) else body
+            except json.JSONDecodeError:
+                pass
+            failed = getattr(m, "status", "") == "error" or (isinstance(body, dict) and bool(body.get("error")))
+            res = body.get("result") if isinstance(body, dict) and isinstance(body.get("result"), dict) else body
+            detail = ""
+            if isinstance(res, dict):
+                detail = _short({k: res.get(k) for k in ("verdict", "score", "question")})
+                for k in ("outfits", "items", "results", "challenges"):
+                    if isinstance(res.get(k), list):
+                        detail = (detail + ", " if detail else "") + f"{len(res[k])} {k}"
+            steps.append({"step": "agent", "agent": m.name, "ok": not failed,
+                          "title": f"{AGENT_NAMES.get(m.name, m.name)} {'failed' if failed else 'answered'}",
+                          "detail": detail or ("error handled kindly" if failed else "done")})
+    gaps = next((c["gaps"] for c in cards if isinstance(c, dict) and "gaps" in c), None)
+    if gaps is not None:
+        used = True
+        steps.append({"step": "agent", "agent": "gaps", "ok": True, "title": "Wardrobe gaps checked (M1)",
+                      "detail": f"{len(gaps)} missing essentials"})
+    last = next((m for m in reversed(turn) if isinstance(m, AIMessage) and not m.tool_calls), None)
+    rules = bool(last and last.additional_kwargs.get("final"))
+    steps.append({"step": "reply", "title": "Reply written",
+                  "detail": "from the agent's facts" if used else ("by the rules (no LLM)" if rules else "by the LLM")})
+    return steps
 
 
 def _this_turn(messages: list) -> list:

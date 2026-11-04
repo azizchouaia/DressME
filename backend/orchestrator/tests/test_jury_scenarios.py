@@ -222,3 +222,26 @@ def test_what_am_i_missing_is_answered_from_the_wardrobe(monkeypatch):
     g = build_graph(model=Writer(), tools=[_tool("localshop", lambda **k: None)], rules=True)
     r = asyncio.run(run_turn(g, user_id="jury", session_id="g1", message="what am I missing?"))
     assert "white t-shirt" in r["reply"] and r["cards"][0]["gaps"][0]["piece"] == "white t-shirt"
+
+
+def test_the_turn_shows_its_workflow():
+    seen = []
+    g = _graph(seen)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="t1", message="should I buy a navy blazer at 120 TND"))
+    steps = [s["step"] for s in r["trace"]]
+    assert steps == ["understand", "route", "agent", "reply"]
+    assert "Smart Buy" in r["trace"][1]["title"] and r["trace"][2]["ok"] and "verdict: think" in r["trace"][2]["detail"]
+    hi = asyncio.run(run_turn(g, user_id="jury", session_id="t2", message="hello"))
+    assert [s["step"] for s in hi["trace"]] == ["understand", "reply"] and "rules" in hi["trace"][-1]["detail"]
+
+
+def test_missing_for_a_wedding_gives_formal_gaps(monkeypatch):
+    import shared.wardrobe_gaps as wg
+
+    monkeypatch.setattr(wg, "user_gaps", lambda uid, k=5: [
+        {"gap": "white|black t-shirt", "piece": "white t-shirt", "why": "a tee", "have": 0},
+        {"gap": "navy|black|grey blazer", "piece": "navy blazer", "why": "a dark blazer", "have": 0}])
+    assert route_by_rules("what m i missing for a wedding outfit that i will attend", TOOLS) == {"gaps": True}
+    g = build_graph(model=Writer(), tools=[_tool("localshop", lambda **k: None)], rules=True)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="g2", message="what m i missing for a wedding outfit"))
+    assert "navy blazer" in r["reply"] and "t-shirt" not in r["reply"]

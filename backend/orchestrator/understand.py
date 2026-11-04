@@ -59,7 +59,7 @@ _CHALLENGE = r"\b(challenges?|d[ée]fis?|contest|concours)\b"
 _PROFILE = r"\b(my style|what('s| is) my style|style profile|mon style|quel est mon style|chnowa style)\b"
 _STYLE = r"\b(i (love|like|hate|don'?t like|prefer)|j'?(aime|adore|d[ée]teste|pr[ée]f[èe]re)|n7eb|nheb|ma n7ebch)\b"
 _TRYON = r"\b(try (it )?on|avatar|see it on me|3d)\b"
-_GAPS = (r"\b(what (am i|i'?m) missing|what('s| is) missing|what should i buy( next)?|gaps? (in|of) my wardrobe|"
+_GAPS = (r"\b(what (am i|i'?m|m i|im) missing|missing (in|from) my (wardrobe|closet)|what('s| is) missing|what should i buy( next)?|gaps? (in|of) my wardrobe|"
          r"qu'?est-ce qui (me )?manque|ce qui me manque|quoi acheter|chnowa yna9es|chnowa nechri)\b")
 _LAUNDRY = r"\b(laundry|lessive|machine|dirty|sale|wash)\b"
 

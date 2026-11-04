@@ -22,8 +22,9 @@ class _Msg {
         agent = null,
         actions = const [],
         cards = const [],
+        trace = const [],
         isQuestion = false;
-  _Msg.bot(this.text, {this.agent, this.actions = const [], this.cards = const [], this.isQuestion = false, this.photoLabel})
+  _Msg.bot(this.text, {this.agent, this.actions = const [], this.cards = const [], this.trace = const [], this.isQuestion = false, this.photoLabel})
       : mine = false,
         photo = null;
 
@@ -32,6 +33,7 @@ class _Msg {
   final String? agent;
   final List<Json> actions;
   final List<Json> cards;
+  final List<Json> trace; // the orchestrator's workflow for this answer
   final bool isQuestion;
   final Uint8List? photo; // the user's photo
   final String? photoLabel; // what the assistant read in it
@@ -134,6 +136,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             agent: r['last_agent'] as String?,
             actions: jsonList(r['next_actions']),
             cards: jsonList(r['cards']),
+            trace: jsonList(r['trace']),
             isQuestion: question != null,
             photoLabel: seen == null ? null : '$seen',
           )));
@@ -346,6 +349,7 @@ class _Bubble extends StatelessWidget {
               const SizedBox(height: 6),
             ],
             Text(msg.text, style: DmText.body.copyWith(color: mine ? Colors.white : DmColors.text, fontSize: 14)),
+            if (msg.trace.isNotEmpty) _Workflow(steps: msg.trace),
             for (final c in msg.cards.take(3)) ...[
               _CardFacts(card: c),
               Consumer(builder: (_, ref, __) => AgentCardView(card: c, api: ref.read(dmApiProvider))),
@@ -450,3 +454,75 @@ class _TypingState extends State<_Typing> with SingleTickerProviderStateMixin {
 }
 
 double _bounce(double p) => p < .5 ? -8 * p : -8 * (1 - p);
+
+
+/// "How I answered": the orchestrator's steps for this answer (understood -> asked an agent -> it answered -> reply).
+class _Workflow extends StatefulWidget {
+  const _Workflow({required this.steps});
+
+  final List<Json> steps;
+
+  @override
+  State<_Workflow> createState() => _WorkflowState();
+}
+
+class _WorkflowState extends State<_Workflow> {
+  bool open = false;
+
+  IconData _icon(Json s) => switch ('${s['step']}') {
+        'understand' => Icons.psychology_outlined,
+        'route' => Icons.call_split_rounded,
+        'agent' => s['ok'] == false ? Icons.error_outline : Icons.smart_toy_outlined,
+        _ => Icons.chat_bubble_outline,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final agents = [for (final s in widget.steps) if (s['step'] == 'agent') '${s['title']}'.replaceAll(' answered', '').replaceAll(' failed', '').replaceAll(' checked (M1)', '')];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        InkWell(
+          onTap: () => setState(() => open = !open),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.account_tree_outlined, size: 14, color: DmColors.gold),
+            const SizedBox(width: 4),
+            Text(agents.isEmpty ? 'How I answered' : 'How I answered · ${agents.join(' → ')}',
+                style: const TextStyle(color: DmColors.gold, fontSize: 12, fontWeight: FontWeight.w600)),
+            Icon(open ? Icons.expand_less : Icons.expand_more, size: 16, color: DmColors.gold),
+          ]),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          child: !open
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Column(children: [
+                    for (var i = 0; i < widget.steps.length; i++)
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Column(children: [
+                          CircleAvatar(
+                            radius: 11,
+                            backgroundColor: widget.steps[i]['ok'] == false ? DmColors.warningBg : const Color(0xFFF3EBDD),
+                            child: Icon(_icon(widget.steps[i]), size: 13, color: DmColors.inkDeep),
+                          ),
+                          if (i < widget.steps.length - 1) Container(width: 1.5, height: 18, color: DmColors.border),
+                        ]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('${widget.steps[i]['title']}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                            if ('${widget.steps[i]['detail'] ?? ''}'.isNotEmpty)
+                              Text('${widget.steps[i]['detail']}', style: const TextStyle(fontSize: 11.5, color: DmColors.muted)),
+                            const SizedBox(height: 4),
+                          ]),
+                        ),
+                      ]),
+                  ]),
+                ),
+        ),
+      ]),
+    );
+  }
+}
