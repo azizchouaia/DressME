@@ -358,7 +358,8 @@ def test_styles_and_look_pictures(client):
     ui = client.get("/m05/ui")
     assert ui.status_code == 200 and "M5" in ui.text
     assert client.get("/m05/ui/app.js").status_code == 200
-    assert client.post("/m05/gaps", json={"user_id": DEMO}).json()["mocked"] is True
+    gaps = client.post("/m05/gaps", json={"user_id": DEMO}).json()  # real gaps of the M1 wardrobe, no mock
+    assert gaps["mocked"] is False and isinstance(gaps["result"]["gaps"], list)
 
 
 async def test_reference_looks_use_their_local_photos(client, cfg, monkeypatch, tmp_path):

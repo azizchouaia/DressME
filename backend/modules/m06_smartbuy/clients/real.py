@@ -281,8 +281,12 @@ class HybridClients:
         return [{"items": [s for s in o["item_ids"] if s != cid]} for o in (r.get("result") or r)["outfits"]]
 
     # ---------- M5 · style profile (BO4): no branch yet -> mock
-    def gaps(self, user_id):  # M5 (BO3, Bali) not built yet: real users get none, never fake gaps
-        return [] if self._is_real_user(user_id) else self.mock.gaps(user_id)
+    def gaps(self, user_id):  # real users: the essentials their M1 wardrobe misses (shared/wardrobe_gaps.py)
+        if not self._is_real_user(user_id):
+            return self.mock.gaps(user_id)
+        from shared.wardrobe_gaps import user_gaps
+
+        return [g["gap"] for g in user_gaps(user_id, k=8)]
 
     def goals(self, user_id):  # M12 (BO4, Bali) not built yet: empty for real users
         return {"templates": [], "budget": {}} if self._is_real_user(user_id) else self.mock.goals(user_id)

@@ -59,6 +59,8 @@ _CHALLENGE = r"\b(challenges?|d[ée]fis?|contest|concours)\b"
 _PROFILE = r"\b(my style|what('s| is) my style|style profile|mon style|quel est mon style|chnowa style)\b"
 _STYLE = r"\b(i (love|like|hate|don'?t like|prefer)|j'?(aime|adore|d[ée]teste|pr[ée]f[èe]re)|n7eb|nheb|ma n7ebch)\b"
 _TRYON = r"\b(try (it )?on|avatar|see it on me|3d)\b"
+_GAPS = (r"\b(what (am i|i'?m) missing|what('s| is) missing|what should i buy( next)?|gaps? (in|of) my wardrobe|"
+         r"qu'?est-ce qui (me )?manque|ce qui me manque|quoi acheter|chnowa yna9es|chnowa nechri)\b")
 _LAUNDRY = r"\b(laundry|lessive|machine|dirty|sale|wash)\b"
 
 
@@ -92,7 +94,7 @@ def piece_of(text: str) -> dict:
 def intent_of(text: str) -> str | None:
     """smartbuy | localshop | stylist | wardrobe | challenges | taste | tryon | laundry | None (let the LLM decide)."""
     low = norm(text)
-    for name, rx in (("localshop", _SHOP), ("smartbuy", _BUY), ("challenges", _CHALLENGE), ("wardrobe", _WARDROBE),
+    for name, rx in (("gaps", _GAPS), ("localshop", _SHOP), ("smartbuy", _BUY), ("challenges", _CHALLENGE), ("wardrobe", _WARDROBE),
                      ("tryon", _TRYON), ("laundry", _LAUNDRY), ("stylist", _WEAR), ("profile", _PROFILE), ("taste", _STYLE)):
         if re.search(rx, low):
             return name

@@ -624,6 +624,12 @@ class GapFillingAgent(IdeaAgent):
             "outerwear": f"{neutral} jacket",
             "dress": f"{neutral} dress",
         }[slot]
+        # the essentials check of the real wardrobe (shared/wardrobe_gaps.py) refines the piece when it finds one
+        from shared.wardrobe_gaps import gaps_for
+
+        essentials = gaps_for(cat.get("m2_items") or cat.get("items") or [])
+        if essentials:
+            piece = essentials[0]["piece"]
         tops, bottoms = cnt.get("top", 0), cnt.get("bottom", 0)
         gain = {
             "top": bottoms,
@@ -640,6 +646,8 @@ class GapFillingAgent(IdeaAgent):
             "wardrobe_by_category": dict(cnt),
             "missing_slot": slot,
             "suggested_piece": piece,
+            "why": essentials[0]["why"] if essentials else None,
+            "other_gaps": [g["piece"] for g in essentials[1:4]],
             "new_outfits_estimate": gain,
             "shops": (shops.get("data") or {}).get("results", [])[:3],
             "next_actions": self.CARD["handoff"],

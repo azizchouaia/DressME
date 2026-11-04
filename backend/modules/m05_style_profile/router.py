@@ -134,7 +134,11 @@ async def profile_envelope(req: ProfileRequest):
 
 @router.post("/gaps", response_model=GapsResponse)
 def gaps(req: GapsRequest):
-    return mock.gaps(req.model_dump())
+    """The essentials missing in the user's wardrobe (M1), computed from their own pieces."""
+    from shared.wardrobe_gaps import user_gaps
+
+    found = user_gaps(req.user_id) if req.user_id else []
+    return {"result": {"gaps": found, "source": "m1 wardrobe"}, "mocked": False}
 
 
 # --- demo UI + look pictures --------------------------------------------------------------------------

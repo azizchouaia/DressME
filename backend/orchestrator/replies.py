@@ -189,3 +189,13 @@ GENERAL_PROMPT = (
     "do: choose an outfit, judge a purchase (BUY / THINK / SKIP), find a piece in local shops.\n"
     "Never mention functions, tools, JSON, modules or documentation. Never invent the user's clothes."
 )
+
+
+def gaps_reply(found: list[dict]) -> str:
+    if not found:
+        return ("Your wardrobe already covers the essentials (or I can't read it right now). Add pieces in Wardrobe "
+                "and ask me again, or ask me for an outfit.")
+    first, rest = found[0], found[1:4]
+    more = (" Next: " + ", ".join(g["piece"] for g in rest) + ".") if rest else ""
+    return (f"The piece that would help you most is a {first['piece']}: {first['why']}.{more} "
+            f"Say \"find it in a shop\" and I'll look in local shops, or send me a photo of one to judge it.")

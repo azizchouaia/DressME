@@ -212,3 +212,13 @@ def test_memory_across_turns_in_the_graph():
     run("should I buy a navy blazer at 120 TND")
     run("and in white?")
     assert seen[-1] == ("smartbuy", "custom:blazer:white", 120.0)
+
+
+def test_what_am_i_missing_is_answered_from_the_wardrobe(monkeypatch):
+    import shared.wardrobe_gaps as wg
+
+    monkeypatch.setattr(wg, "user_gaps", lambda uid, k=5: [
+        {"gap": "white|black t-shirt", "piece": "white t-shirt", "why": "a plain tee goes with every bottom you own", "have": 1}])
+    g = build_graph(model=Writer(), tools=[_tool("localshop", lambda **k: None)], rules=True)
+    r = asyncio.run(run_turn(g, user_id="jury", session_id="g1", message="what am I missing?"))
+    assert "white t-shirt" in r["reply"] and r["cards"][0]["gaps"][0]["piece"] == "white t-shirt"

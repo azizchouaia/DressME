@@ -108,6 +108,8 @@ def route_by_rules(text: str, tool_names: set, attachment: dict | None = None, p
     if not intent and att.get("image"):
         intent = "smartbuy"  # a photo alone: "what do you think of this piece?"
     intent = {"laundry": "stylist"}.get(intent, intent)
+    if intent == "gaps":
+        return {"gaps": True}
     if not intent or intent not in tool_names:
         return None
     if intent == "smartbuy":
@@ -211,6 +213,17 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
                     return {"messages": [AIMessage(content=chat, additional_kwargs={"final": True})], "intent": None}
                 hit = route_by_rules(text, {getattr(t, "name", None) for t in chosen}, state.get("attachment"),
                                      state.get("intent"), state.get("memory"))
+                if hit and hit.get("gaps"):  # what is missing in my wardrobe: computed from M1, no LLM
+                    from shared.wardrobe_gaps import user_gaps
+
+                    from .replies import gaps_reply
+
+                    found = user_gaps(state.get("user_id"))
+                    mem = {"agent": "localshop", "piece": {"type": found[0]["piece"].split(" ", 1)[1],
+                                                           "colour": found[0]["piece"].split(" ", 1)[0], "price": None},
+                           "text": f"find {found[0]['piece']}"} if found else None
+                    return {"messages": [AIMessage(content=gaps_reply(found), additional_kwargs={"final": True})],
+                            "memory": mem, "cards": [{"gaps": found}] if found else []}
                 if hit and "ask" in hit:  # a clear intent but a missing detail: ask, remember the intent
                     return {"messages": [AIMessage(content=hit["ask"], additional_kwargs={"final": True})],
                             "intent": hit["intent"]}
