@@ -187,11 +187,21 @@ def _step(line: str) -> str | None:
     return None
 
 
+def _pipeline_python() -> str:
+    """The clothes environment. A new machine gets ai/.venv from the requirements file."""
+    remu = str(ROOT / "ai" / "remu")
+    if remu not in sys.path:
+        sys.path.insert(0, remu)
+    from garment_pipeline import fitting_python
+
+    return str(fitting_python())
+
+
 def _run(user: str, kind: str, mirror: bool) -> None:
     folder = _user_dir(user)
     info = _read(folder / "user.json")
     photos = folder / "photos"
-    command = [sys.executable, str(PIPELINE), str(photos / "front"), str(photos / "back")]
+    command = [_pipeline_python(), str(PIPELINE), str(photos / "front"), str(photos / "back")]
     if mirror:
         command.append("--mirror-front")
     digest = _digest(user, mirror)
@@ -271,6 +281,17 @@ def delete_outfit(user: str, outfit: str) -> dict:
         raise ValueError("Unknown outfit.")
     shutil.rmtree(_user_dir(user) / "outfits" / outfit, ignore_errors=True)
     return user_view(user)
+
+
+def delete_user(user: str) -> dict:
+    folder = _user_dir(user)
+    if not (folder / "user.json").is_file():
+        raise ValueError("Unknown user.")
+    with job_lock:
+        if job.get("busy") and job.get("user") == user:
+            raise ValueError("This avatar is still being built.")
+    shutil.rmtree(folder)
+    return {"deleted": user}
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -52,7 +52,9 @@
       }
       .drop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
       .drop b { display: block; color: var(--ink); font-weight: 600; }
-      .drop input { display: none; }
+      .drop input {
+        position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px;
+      }
       .tip { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
       .check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
       .error { color: var(--bad); min-height: 1.4em; margin: 12px 0 0; }
@@ -61,8 +63,9 @@
       .stack > * + * { margin-top: 18px; }
 
       .users { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
-      .user { text-align: left; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+      .user { position: relative; text-align: left; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 18px; cursor: pointer; }
       .user .face { width: 54px; height: 54px; border-radius: 50%; margin-bottom: 12px; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+      .user .remove { position: absolute; top: 8px; right: 8px; border: 0; background: none; color: var(--muted); padding: 0 6px; font-size: 20px; line-height: 1; }
       .user.new { display: grid; place-items: center; border-style: dashed; color: var(--muted); }
 
       .steps { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 10px; }
@@ -184,7 +187,14 @@
               <h2 id="home-name"></h2>
               <div class="muted" id="home-meta"></div>
             </div>
-            <button type="button" class="ghost small" id="switch-user">Switch</button>
+            <div class="row">
+              <button type="button" class="ghost small" id="delete-user">Delete</button>
+              <button type="button" class="ghost small" id="switch-user">Switch</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <label class="check"><input type="checkbox" id="show-face" checked /> Face</label>
+            <label class="check"><input type="checkbox" id="show-hair" checked /> Hairstyle</label>
           </div>
           <nav class="tabs">
             <button type="button" data-tab="wardrobe" class="on">Wardrobe</button>
@@ -243,9 +253,9 @@
     </section>
 
     <template id="photo-slot">
-      <label class="drop"><input type="file" accept="image/*" capture="environment" /><span><b></b>Tap to choose a photo</span><img alt="" hidden /></label>
+      <label class="drop"><input type="file" accept="image/*" /><span><b></b>Tap to choose a photo</span><img alt="" hidden /></label>
     </template>
 
-    <script type="module" src="./studio.mjs?v=38"></script>
+    <script type="module" src="./studio.mjs?v=50"></script>
   </body>
 </html>

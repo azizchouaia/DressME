@@ -1,0 +1,10 @@
+{
+  "name": "okok",
+  "mesh": "/avatars/okok/avatar.glb",
+  "skin": "#d5b9ad",
+  "hair": "#433932",
+  "body": "smplx_thin.glb",
+  "look": {
+    "hair": "short03"
+  }
+}

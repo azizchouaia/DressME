@@ -32,7 +32,7 @@ REQ = ROOT / "ai" / "requirements-studio.txt"
 VENDOR_PYTHON = ROOT / "ai" / "vendor" / "TripoSR" / ".venv" / "Scripts" / "python.exe"
 LOCAL_VENV = ROOT / "ai" / ".venv"
 OUTPUTS = r"^(outfit_reco\.obj|outfit_smplx\.obj|fit/.*)$"
-FIT_PROBE = "import numpy,trimesh,PIL,scipy,pygltflib,fast_simplification,torch,smplx,transformers"
+FIT_PROBE = "import numpy,trimesh,PIL,scipy,pygltflib,fast_simplification,torch,smplx; from transformers import VitPoseForPoseEstimation"
 
 
 def _interpreter(venv: Path) -> Path:

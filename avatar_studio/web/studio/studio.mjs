@@ -1,4 +1,4 @@
-const API = 'http://127.0.0.1:8893/api'
+const API = '/api'
 const STEPS = {
   avatar: [
     'Checking the photos',
@@ -30,7 +30,7 @@ async function api(path, options = {}) {
   try {
     response = await fetch(`${API}${path}`, options)
   } catch {
-    throw new Error('The studio server is not running. Start it with: py -3 ai/remu/studio_server.py')
+    throw new Error('The app backend is not answering.')
   }
   const data = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(data.error || 'Something went wrong.')
@@ -98,7 +98,7 @@ function morphsFor(user) {
 }
 
 function lookFor(user, pieces) {
-  return { url: user.avatar, height: user.height, hair: user.hair, profile: user.profile, wear: pieces, gender: user.gender, shape: morphsFor(user) }
+  return { url: user.avatar, height: user.height, hair: user.hair, profile: user.profile, wear: pieces, gender: user.gender, shape: morphsFor(user), face: $('#show-face').checked, hairOn: $('#show-hair').checked }
 }
 
 function applyBody() {
@@ -119,19 +119,34 @@ function wear(outfit) {
 
 // --- screens ---------------------------------------------------------------
 
+async function deleteUser(user) {
+  if (!confirm(`Delete ${user.name}? This removes the avatar, the photos, and the saved outfits.`)) return
+  await api(`/users/${user.id}`, { method: 'DELETE' })
+  localStorage.removeItem(`dressme.wearing.${user.id}`)
+  if (localStorage.getItem('dressme.user') === user.id) localStorage.removeItem('dressme.user')
+  state.users = state.users.filter((item) => item.id !== user.id)
+  if (state.user?.id === user.id) state.user = null
+  if (!state.users.length) return startCreate(false)
+  renderUsers()
+  show('users')
+}
+
 function renderUsers() {
   const list = $('#user-list')
   list.innerHTML = ''
   for (const user of state.users) {
-    const card = document.createElement('button')
-    card.type = 'button'
+    const card = document.createElement('div')
     card.className = 'user'
     const skin = user.profile?.skin || '#c9a58c'
     const status = user.ready ? `${user.outfits.length} saved outfit${user.outfits.length === 1 ? '' : 's'}` : 'Avatar not built yet'
-    card.innerHTML = `<div class="face" style="background:${skin}"></div><h3></h3><div class="muted"></div>`
+    card.innerHTML = `<button type="button" class="remove" aria-label="Delete avatar">×</button><div class="face" style="background:${skin}"></div><h3></h3><div class="muted"></div>`
     card.querySelector('h3').textContent = user.name
     card.querySelector('.muted').textContent = status
     card.addEventListener('click', () => openUser(user.id))
+    card.querySelector('.remove').addEventListener('click', (event) => {
+      event.stopPropagation()
+      deleteUser(user).catch((error) => alert(error.message))
+    })
     list.append(card)
   }
   const add = document.createElement('button')
@@ -271,7 +286,7 @@ async function openUser(id, options = {}) {
     viewer.addEventListener('load', () => {
       if (state.pendingLook) sendLook(state.pendingLook)
     })
-    viewer.src = '/viewer/index.html?embed=1&v=178'
+    viewer.src = '/viewer/index.html?embed=1&v=190'
   }
   const saved = localStorage.getItem(`dressme.wearing.${user.id}`)
   const outfit = options.draft && user.draft ? user.draft : user.outfits.find((item) => item.id === saved) || user.draft || user.outfits[0] || null
@@ -420,11 +435,20 @@ $('#wear-body').addEventListener('click', () => wear(null))
 $('#show-skeleton').addEventListener('change', () => {
   viewer.contentWindow?.postMessage(JSON.stringify({ type: 'skeleton', on: $('#show-skeleton').checked }), '*')
 })
+$('#show-face').addEventListener('change', () => {
+  viewer.contentWindow?.postMessage(JSON.stringify({ type: 'face', on: $('#show-face').checked }), '*')
+})
+$('#show-hair').addEventListener('change', () => {
+  viewer.contentWindow?.postMessage(JSON.stringify({ type: 'hair-visible', on: $('#show-hair').checked }), '*')
+})
 
 $('#switch-user').addEventListener('click', async () => {
   state.users = await api('/users')
   renderUsers()
   show('users')
+})
+$('#delete-user').addEventListener('click', () => {
+  if (state.user) deleteUser(state.user).catch((error) => alert(error.message))
 })
 
 // --- start -----------------------------------------------------------------
