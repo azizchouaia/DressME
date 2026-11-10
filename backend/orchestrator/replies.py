@@ -111,6 +111,17 @@ def from_facts(agent: str | None, p: dict) -> str | None:
         return "Noted! I'll remember it and show you more of what you like in your next outfits and suggestions."
     if agent == "wardrobe":
         items = r.get("items") or []
+        cat = r.get("category")
+        word = {"top": "tops", "bottom": "bottoms", "shoes": "pairs of shoes", "outerwear": "jackets and coats",
+                "dress": "dresses", "accessory": "accessories"}.get(cat or "", "pieces")
+        if cat and not items:
+            return f"You have no {word} in your wardrobe yet. Open Wardrobe and add a photo of one."
+        if cat:
+            names = _names(items)
+            if len(items) == 1:
+                word = {"tops": "top", "bottoms": "bottom", "pairs of shoes": "pair of shoes", "dresses": "dress",
+                        "jackets and coats": "jacket or coat", "accessories": "accessory"}.get(word, word)
+            return f"You have {len(items)} {word}: {', '.join(names[:8])}" + (f" and {len(names) - 8} more" if len(names) > 8 else "") + "."
         if not items:
             return "Your wardrobe is empty for now. Open Wardrobe and add a photo of a piece to start."
         names = _names(items)

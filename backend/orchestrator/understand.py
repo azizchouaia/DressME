@@ -47,20 +47,36 @@ COLOUR_WORDS = {
 }
 
 _BUY = (r"\b(sh?o?u?ld i (buy|by|bye|get|purchase|take)|should i b(uy|y)|buy (it|this|that|a|an|the)|by (it|this|a|an)|"
-        r"worth (it|buying|the price)|good (buy|deal|price)|is it a good|acheter|j'?ach[eè]te|je (l'?)?ach[eè]te|"
+        r"worth (it|buying|the price|\d+)|is (it|this|that) worth|good (buy|deal|price)|is it a good|i (want|wanna|plan) to (buy|get)|"
+        r"thinking (of|about) buying|acheter|j'?ach[eè]te|je (l'?)?ach[eè]te|"
         r"vaut|ça vaut|nechri|nichri|n?chri|nichrih|nechrih|yest7a9|ya7lili)\b")
-_SHOP = (r"\b(find .*(shop|store|boutique|tunis|sfax|sousse|near)|where (can|to|do) (i )?(buy|get|find)|"
-         r"in a (shop|store)|local shops?|boutiques?|magasins?|win nal9a|win nlawej|ou (acheter|trouver))\b")
-_WEAR = (r"\b(what (should|do|can|shall) i wear|wear (today|tomorrow|tonight)|outfit|tenue|look (for|of) (today|tomorrow)|"
-         r"n?elbes|chnowa nelbes|quoi (mettre|porter)|habiller|dress me|another (one|outfit)|une autre|autre tenue|"
-         r"change (it|the outfit|the shoes|the top)|remix|wa7da okhra|why this outfit|pourquoi cette tenue)\b")
-_WARDROBE = r"\b((show|list|see|what('s| is) in|open) my (wardrobe|closet|clothes|pieces)|garde-?robe|dressing)\b"
+_SHOP = (r"\b(find .*(shop|store|boutique|tunis|sfax|sousse|near|under \d+|in [a-z]+$)|find me [a-z ]+ (under|below|less than) |"
+         r"where (can|to|do|could) (i )?(buy|get|find)|in a (shop|store)|(any|which) (shop|store)s?|local shops?|boutiques?|"
+         r"magasins?|near me|nearby|win nal9a|win nlawej|ou (acheter|trouver)|o[uù] (acheter|trouver))\b")
+_WEAR = (r"\b(what (should|do|can|shall) i wear|what to wear|wear (today|tomorrow|tonight|to|for|on)|outfits?|tenue|"
+         r"looks? (for|of) |(a|an|give me a|suggest a) [a-z]* ?look|look for|n?elbes|chnowa nelbes|quoi (mettre|porter)|habiller|dress me|"
+         r"another (one|outfit|look)|une autre|autre tenue|change (it|the outfit|the shoes|the top)|remix|wa7da okhra|"
+         r"why this outfit|pourquoi cette tenue|what goes (with|well)|goes with my|match(es)? (with )?my|pair (with|my)|"
+         r"combine|build (an|a|me an?) (outfit|look)|pick (an|a|me an?) (outfit|look))\b")
+_WARDROBE = (r"\b((show|list|see|what('s| is) in|open) (me )?(all )?my (wardrobe|closet|clothes|pieces|items)|garde-?robe|dressing|"
+             r"^my (wardrobe|closet|clothes)$|(in|from) my (wardrobe|closet)|(what|which) .*(do|did) i (have|own)|"
+             r"how many (pieces|clothes|items|[a-z-]+s) do i (have|own)|do i (have|own) (a|an|any|some)|"
+             r"(show|list|see)( me)?( just| only)?( the| my)? ?(tops?|top's|uppers?|bottoms?|shoes|jackets?|coats?|dresse?s|"
+             r"t-shirts?|shirts?|pants|jeans|accessories))\b")
 _CHALLENGE = r"\b(challenges?|d[ée]fis?|contest|concours)\b"
-_PROFILE = r"\b(my style|what('s| is) my style|style profile|mon style|quel est mon style|chnowa style)\b"
+_PROFILE = (r"\b(my style|what('s| is) my style|style profile|mon style|quel est mon style|chnowa style|"
+            r"(what|which) (kind|type|sort) of style|describe my style|my fashion (style|taste))\b")
 _STYLE = r"\b(i (love|like|hate|don'?t like|prefer)|j'?(aime|adore|d[ée]teste|pr[ée]f[èe]re)|n7eb|nheb|ma n7ebch)\b"
-_TRYON = r"\b(try (it )?on|avatar|see it on me|3d)\b"
-_GAPS = (r"\b(what (am i|i'?m|m i|im) missing|missing (in|from) my (wardrobe|closet)|what('s| is) missing|what should i buy( next)?|gaps? (in|of) my wardrobe|"
-         r"qu'?est-ce qui (me )?manque|ce qui me manque|quoi acheter|chnowa yna9es|chnowa nechri)\b")
+_TRYON = r"\b(try (it |this |them )?on|avatar|see (it|this|that|the) ?(outfit|look)? on me|on my body|3d)\b"
+_GAPS = (r"\b(what (am i|i'?m|m i|im) missing|what (essentials|pieces|basics|clothes) (am i|i'?m) missing|"
+         r"missing (in|from) my (wardrobe|closet)|what('s| is) (missing|lacking)|gaps?\b.*\b(wardrobe|closet)|"
+         r"(wardrobe|closet) gaps?|what should i buy( next)?|what (do|should) i (need to )?buy|what do i need|"
+         r"(pieces?|items?|clothes) (do )?i lack|i lack|lacking|complete my (wardrobe|closet)|"
+         r"recommend (something|a piece|pieces) to buy|qu'?est-ce qui (me )?manque|ce qui me manque|manque dans ma|"
+         r"quoi acheter|chnowa yna9es\w*|yna9es\w*|chnowa nechri)")
+_TRIPS = (r"\b(pack|packing|suitcase|valise|bagage|luggage|trip|travel|voyage|vacation|vacances|holiday|"
+          r"going to [a-z]+ for \d+ days?|safra)\b")
+_SHARE = r"\b(share|post|publish|partager|publier)\b.*\b(outfit|look|tenue|it|this)\b"
 _LAUNDRY = r"\b(laundry|lessive|machine|dirty|sale|wash)\b"
 
 
@@ -94,8 +110,9 @@ def piece_of(text: str) -> dict:
 def intent_of(text: str) -> str | None:
     """smartbuy | localshop | stylist | wardrobe | challenges | taste | tryon | laundry | None (let the LLM decide)."""
     low = norm(text)
-    for name, rx in (("gaps", _GAPS), ("localshop", _SHOP), ("smartbuy", _BUY), ("challenges", _CHALLENGE), ("wardrobe", _WARDROBE),
-                     ("tryon", _TRYON), ("laundry", _LAUNDRY), ("stylist", _WEAR), ("profile", _PROFILE), ("taste", _STYLE)):
+    for name, rx in (("gaps", _GAPS), ("localshop", _SHOP), ("smartbuy", _BUY), ("challenges", _CHALLENGE), ("profile", _PROFILE),
+                     ("trips", _TRIPS), ("share", _SHARE), ("tryon", _TRYON), ("wardrobe", _WARDROBE), ("laundry", _LAUNDRY),
+                     ("stylist", _WEAR), ("taste", _STYLE)):
         if re.search(rx, low):
             return name
     return None
@@ -142,3 +159,34 @@ def followup(text: str, intent: str | None, piece: dict, mem: dict):
     if agent in ("stylist", "taste", "profile"):
         return "stylist", piece, f"{mem.get('text', '')} — {text}".strip(" —")
     return None
+
+
+CATEGORY_WORDS = {
+    "top": ["top", "tops", "top's", "upper", "uppers", "t-shirt", "t-shirts", "shirt", "shirts", "sweater", "sweaters",
+            "haut", "hauts", "chemise", "pull", "polo"],
+    "bottom": ["bottom", "bottoms", "pants", "trousers", "jeans", "jean", "skirt", "skirts", "short", "shorts", "bas",
+               "pantalon", "serwel"],
+    "shoes": ["shoe", "shoes", "sneakers", "boots", "chaussures", "sabbat"],
+    "outerwear": ["jacket", "jackets", "coat", "coats", "outerwear", "veste", "manteau", "blazer"],
+    "dress": ["dress", "dresses", "robe", "robes"],
+    "accessory": ["accessory", "accessories", "bag", "bags", "belt", "hat"],
+}
+
+
+def category_of(text: str) -> str | None:
+    """The wardrobe category a message asks for ("show me my tops" -> top), else None."""
+    return _find(CATEGORY_WORDS, norm(text))
+
+
+def only_category(payload: dict, text: str) -> dict:
+    """Keep only the asked category in a wardrobe result (the app's cards and the written answer agree)."""
+    cat = category_of(text)
+    if not cat or not isinstance(payload, dict):
+        return payload
+    inner = payload.get("result") if isinstance(payload.get("result"), dict) else payload
+    items = inner.get("items")
+    if not isinstance(items, list):
+        return payload
+    kept = [it for it in items if isinstance(it, dict) and str(it.get("category") or "").lower() == cat]
+    inner = {**inner, "items": kept, "category": cat}
+    return {**payload, "result": inner} if inner is not payload and "result" in payload else inner

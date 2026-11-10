@@ -302,6 +302,10 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
         name = tool_name(state["messages"])
         log.info("session=%s tool=%s call=%s", state.get("session_id"), name, calls)
         cards = list(state.get("cards") or [])
+        if name == "wardrobe" and payload is not None:  # "show me my tops": only that category
+            from .understand import only_category
+
+            payload = only_category(payload, _user_text(state["messages"]))
         if payload is not None:
             cards.append(payload)
         update: dict[str, Any] = {"tool_calls": calls, "cards": cards, "last_agent": name}
@@ -337,6 +341,10 @@ def build_graph(model=None, tools=None, checkpointer=None, rules=None):
         if use_rules:
             from .replies import from_facts
 
+            if tool_name(turn) == "wardrobe":
+                from .understand import only_category
+
+                payload = only_category(payload, _user_text(turn))
             fixed = from_facts(tool_name(turn), payload)
             if fixed:
                 return {"messages": [AIMessage(content=fixed)]}
@@ -489,6 +497,11 @@ def trace_of(message: str, turn: list, cards: list) -> list[dict]:
     steps.append({"step": "reply", "title": "Reply written",
                   "detail": "from the agent's facts" if used else ("by the rules (no LLM)" if rules else "by the LLM")})
     return steps
+
+
+def _user_text(messages: list) -> str:
+    m = next((m for m in reversed(messages) if isinstance(m, HumanMessage)), None)
+    return (m.content if isinstance(m.content, str) else str(m.content)) if m else ""
 
 
 def _this_turn(messages: list) -> list:

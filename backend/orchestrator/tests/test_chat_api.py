@@ -36,3 +36,17 @@ def test_chat_message_calls_the_real_smartbuy_agent(monkeypatch):
 def test_chat_agents_lists_every_agent():
     names = {c["name"] for c in TestClient(app).get("/chat/agents").json()["agents"]}
     assert {"wardrobe", "stylist", "smartbuy", "localshop", "tryon", "share", "challenges", "taste", "talk"} <= names
+
+
+def test_conversations_are_saved_and_reopened(tmp_path, monkeypatch):
+    import shared.chat_history as h
+
+    monkeypatch.setattr(h, "DIR", tmp_path)
+    h.add_turn("u1", "s1", "should I buy a navy blazer at 120 TND", {"reply": "THINK", "last_agent": "smartbuy",
+                                                                      "trace": [{"step": "reply"}]})
+    h.add_turn("u1", "s1", "and in black?", {"reply": "BUY"})
+    rows = h.conversations("u1")
+    assert rows[0]["id"] == "s1" and rows[0]["count"] == 2 and rows[0]["title"].startswith("should I buy")
+    conv = h.conversation("u1", "s1")
+    assert conv["messages"][1]["agent"] == "smartbuy" and conv["messages"][3]["text"] == "BUY"
+    assert h.delete("u1", "s1") and h.conversations("u1") == []

@@ -48,3 +48,4 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 ml/data/users/
+ml/data/chat_history/

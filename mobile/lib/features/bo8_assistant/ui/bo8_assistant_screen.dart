@@ -111,6 +111,124 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  /// Open a saved conversation: its messages come back with their cards and workflow, and the chat continues in it.
+  Future<void> _open(String id) async {
+    try {
+      final c = await ref.read(dmApiProvider).get('/chat/history/${DemoUsers.wardrobe}/$id');
+      setState(() {
+        _session = id;
+        _msgs
+          ..clear()
+          ..addAll([
+            for (final m in jsonList(c['messages']))
+              m['role'] == 'user'
+                  ? _Msg.user('${m['text'] ?? ''}')
+                  : _Msg.bot('${m['text'] ?? ''}',
+                      agent: m['agent'] as String?,
+                      actions: jsonList(m['actions']),
+                      cards: jsonList(m['cards']),
+                      trace: jsonList(m['trace']),
+                      isQuestion: m['question'] == true),
+          ]);
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiError(e))));
+    }
+  }
+
+  String _when(num? t) {
+    if (t == null) return '';
+    final d = DateTime.fromMillisecondsSinceEpoch((t * 1000).round());
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+    if (diff.inDays < 1) return '${diff.inHours} h ago';
+    if (diff.inDays < 7) return '${diff.inDays} d ago';
+    return '${d.day}/${d.month}/${d.year}';
+  }
+
+  Future<void> _history(BuildContext context) async {
+    final api = ref.read(dmApiProvider);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DmColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(DmRadius.panel))),
+      builder: (sheet) => StatefulBuilder(builder: (sheet, refresh) {
+        return SizedBox(
+          height: MediaQuery.of(sheet).size.height * 0.7,
+          child: FutureBuilder<Json>(
+            future: api.get('/chat/history/${DemoUsers.wardrobe}'),
+            builder: (_, snap) {
+              final rows = jsonList(snap.data?['conversations']);
+              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 6),
+                  child: Row(children: [
+                    Text('Conversations', style: DmText.title.copyWith(fontSize: 22)),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheet);
+                        setState(() {
+                          _msgs.clear();
+                          _session = 'app-${DateTime.now().millisecondsSinceEpoch}';
+                        });
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('New'),
+                    ),
+                  ]),
+                ),
+                if (snap.connectionState != ConnectionState.done)
+                  const Expanded(child: Center(child: CircularProgressIndicator(color: DmColors.gold)))
+                else if (snap.hasError)
+                  Padding(padding: const EdgeInsets.all(20), child: Text(apiError(snap.error!)))
+                else if (rows.isEmpty)
+                  const Padding(padding: EdgeInsets.all(20), child: Text('No conversation yet. Ask me something!'))
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                      itemCount: rows.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, i) {
+                        final c = rows[i];
+                        final current = c['id'] == _session;
+                        return Material(
+                          color: current ? const Color(0xFFF3EBDD) : Colors.white,
+                          borderRadius: BorderRadius.circular(DmRadius.card),
+                          child: ListTile(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(DmRadius.card)),
+                            leading: const Icon(Icons.chat_bubble_outline_rounded, color: DmColors.gold),
+                            title: Text('${c['title'] ?? 'Conversation'}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text('${c['count'] ?? 0} messages · ${_when(c['updated'] as num?)}'),
+                            trailing: IconButton(
+                              tooltip: 'Delete',
+                              icon: const Icon(Icons.delete_outline_rounded),
+                              onPressed: () async {
+                                await api.delete('/chat/history/${DemoUsers.wardrobe}/${c['id']}');
+                                if (current) setState(() => _msgs.clear());
+                                refresh(() {});
+                              },
+                            ),
+                            onTap: () {
+                              Navigator.pop(sheet);
+                              _open('${c['id']}');
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ]);
+            },
+          ),
+        );
+      }),
+    );
+  }
+
   Future<void> _send(String text) async {
     final t = text.trim();
     final photo = _photo;
@@ -159,6 +277,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         title: const Text('DressMe assistant'),
         actions: [
+          IconButton(tooltip: 'History', icon: const Icon(Icons.history_rounded), onPressed: () => _history(context)),
           IconButton(tooltip: 'Agents', icon: const Icon(Icons.hub_outlined), onPressed: () => _agents(context)),
           IconButton(
             tooltip: 'New conversation',
@@ -393,8 +512,9 @@ class _CardFacts extends StatelessWidget {
       ],
       if (card['piece'] != null) '${card['piece']}',
       if (card['results'] is List) '${(card['results'] as List).length} shop results',
-      if (card['outfits'] is List) '${(card['outfits'] as List).length} outfits',
-      if ((card['result'] as Map?)?['outfits'] is List) '${((card['result'] as Map)['outfits'] as List).length} outfits',
+      if (card['outfits'] is List && (card['outfits'] as List).isNotEmpty) '${(card['outfits'] as List).length} outfits',
+      if ((card['result'] as Map?)?['outfits'] is List && ((card['result'] as Map)['outfits'] as List).isNotEmpty)
+        '${((card['result'] as Map)['outfits'] as List).length} outfits',
       if ((card['result'] as Map?)?['items'] is List) '${((card['result'] as Map)['items'] as List).length} pieces',
       if (card['challenges'] is List) '${(card['challenges'] as List).length} challenges',
     ];

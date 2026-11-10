@@ -93,6 +93,9 @@ async def message(inp: ChatIn):
                              attachment=attachment)
         if attachment:
             out["photo"] = {k: attachment.get(k) for k in ("label", "subcategory", "colour")}
+        from shared.chat_history import add_turn
+
+        add_turn(inp.user_id, inp.session_id, inp.message.strip() or "📷 Photo", out)
     except HTTPException:
         raise
     except Exception as e:  # noqa: BLE001 - never a raw error in the chat: a short answer + the reason in the log
@@ -103,6 +106,31 @@ async def message(inp: ChatIn):
         return {"reply": reply, "question": None, "next_actions": [], "cards": [], "session_id": inp.session_id,
                 "last_agent": None, "error": f"{type(e).__name__}: {e}"[:300]}
     return out
+
+
+@router.get("/history/{user_id}")
+def history(user_id: str):
+    """The user's saved conversations, newest first."""
+    from shared.chat_history import conversations
+
+    return {"conversations": conversations(user_id)}
+
+
+@router.get("/history/{user_id}/{session_id}")
+def history_one(user_id: str, session_id: str):
+    from shared.chat_history import conversation
+
+    conv = conversation(user_id, session_id)
+    if not conv:
+        raise HTTPException(404, "conversation not found")
+    return conv
+
+
+@router.delete("/history/{user_id}/{session_id}")
+def history_delete(user_id: str, session_id: str):
+    from shared.chat_history import delete
+
+    return {"deleted": delete(user_id, session_id)}
 
 
 @router.get("/agents")

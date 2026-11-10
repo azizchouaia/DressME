@@ -245,3 +245,19 @@ def test_missing_for_a_wedding_gives_formal_gaps(monkeypatch):
     g = build_graph(model=Writer(), tools=[_tool("localshop", lambda **k: None)], rules=True)
     r = asyncio.run(run_turn(g, user_id="jury", session_id="g2", message="what m i missing for a wedding outfit"))
     assert "navy blazer" in r["reply"] and "t-shirt" not in r["reply"]
+
+
+@pytest.mark.parametrize("text", ["show me the top's that i have in my wardrobe", "show me just the uppers",
+                                  "what shoes do i have", "show my bottoms"])
+def test_wardrobe_by_category(text):
+    assert route_by_rules(text, TOOLS)["name"] == "wardrobe", text
+
+
+def test_only_the_asked_category():
+    from orchestrator.understand import only_category
+    from orchestrator.replies import from_facts
+
+    p = {"items": [{"name": "navy t-shirt", "category": "top"}, {"name": "denim jeans", "category": "bottom"}]}
+    tops = only_category(p, "show me my tops")
+    assert [i["name"] for i in tops["items"]] == ["navy t-shirt"]
+    assert from_facts("wardrobe", tops) == "You have 1 top: navy t-shirt."
